@@ -1,5 +1,3 @@
-stream-overlay/package-lock.json
-stream-overlay/node_modules
 .idea
 *.pyc
-.*pytest_cache
+*pytest_cache
