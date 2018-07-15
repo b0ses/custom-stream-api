@@ -1,0 +1,15 @@
+language: python
+python:
+  - "3.5"
+
+# command to install dependencies
+before_install:
+  - sudo apt-get update
+
+install:
+  - pip install -r api/requirements.txt
+
+# command to run tests
+script:
+#   - pytest --rootdir=api #decomment when tests are actually there
+  - flake8 api
