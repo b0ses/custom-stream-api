@@ -2,7 +2,7 @@ import logging
 from flask import Flask, request
 from flask_socketio import SocketIO
 
-import settings
+from custom_stream_api import settings
 
 app = Flask(__name__)
 logger = logging.getLogger()
