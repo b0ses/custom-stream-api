@@ -14,9 +14,9 @@ The logic behind everything. Takes in POSTs and does magic.
 ```
 ##### Settings
 
-Fill in your [settings](settings.py).
+Fill in your [settings](custom_stream_api/settings.py).
 
 ##### Running
 ```
-    (custom-stream-overlay) python3 app.py
+    (custom-stream-overlay) python3 custom_stream_api/server.py
 ```

@@ -4,4 +4,4 @@ HOST = '127.0.0.1'
 PORT = 5000
 
 # Just fill this in with whatever. Adds security to your server.
-SECRET = ''
+SECRET = 'asdfasdfasdfasdfasd'
