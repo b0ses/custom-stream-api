@@ -1,5 +1,6 @@
 import logging
 from flask import Flask, request
+from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from custom_stream_api import settings
@@ -12,6 +13,7 @@ socketio = SocketIO(app)
 
 
 @app.route('/alert', methods=['POST'])
+@cross_origin()
 def alert():
     if request.method == 'POST':
         data = request.get_json()
