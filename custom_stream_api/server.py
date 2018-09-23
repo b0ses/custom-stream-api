@@ -6,7 +6,7 @@ from flask_socketio import SocketIO
 from custom_stream_api import settings
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*":{"origins":"*"}})
 logger = logging.getLogger()
 
 app.config['SECRET_KEY'] = settings.SECRET
