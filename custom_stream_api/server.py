@@ -6,6 +6,7 @@ from flask_socketio import SocketIO
 from custom_stream_api import settings
 
 app = Flask(__name__)
+CORS(app)
 logger = logging.getLogger()
 
 app.config['SECRET_KEY'] = settings.SECRET
@@ -13,7 +14,6 @@ socketio = SocketIO(app)
 
 
 @app.route('/alert', methods=['POST'])
-@cross_origin()
 def alert():
     if request.method == 'POST':
         data = request.get_json()
