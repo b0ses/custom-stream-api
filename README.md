@@ -7,10 +7,13 @@ The logic behind everything. Takes in POSTs and does magic.
 ##### Installing
 ```
     # Install pip3
-    apt-get install python3-pip
+    > apt-get install python3-pip
     # Work in your virtual environment (however you want that setup)
+    > workon custom-stream-api
     # Install dependencies
-    (custom-stream-overlay) pip3 install -r requirements.txt
+    > (custom-stream-overlay) pip3 install -r requirements.txt
+    # Add this directory to your virtual environment
+    add2virtualenv [path to this directory]
 ```
 ##### Settings
 
