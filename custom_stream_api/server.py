@@ -18,7 +18,8 @@ def alert():
     if request.method == 'POST':
         data = request.get_json()
         message = data.get('message')
-        socketio.emit('FromAPI', {"message": message}, namespace='/', broadcast=True)
+        sound = data.get('sound')
+        socketio.emit('FromAPI', {"message": message, "sound": sound}, namespace='/', broadcast=True)
         return "Message Received"
 
 
