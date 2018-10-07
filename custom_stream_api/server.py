@@ -17,9 +17,13 @@ socketio = SocketIO(app)
 def alert():
     if request.method == 'POST':
         data = request.get_json()
-        message = data.get('message')
-        sound = data.get('sound')
-        socketio.emit('FromAPI', {"message": message, "sound": sound}, namespace='/', broadcast=True)
+        socket_data = {
+            'message': data.get('message'),
+            'sound': data.get('sound'),
+            'effect': data.get('effect'),
+            'duration': data.get('duration')
+        }
+        socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
         return "Message Received"
 
 
