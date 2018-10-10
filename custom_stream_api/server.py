@@ -2,15 +2,20 @@ import logging
 from flask import Flask, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
+from flask_migrate import Migrate
 
+from custom_stream_api.models import db
 from custom_stream_api import settings
 
 app = Flask(__name__)
-CORS(app, resources={r"/*":{"origins":"*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 logger = logging.getLogger()
 
 app.config['SECRET_KEY'] = settings.SECRET
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 socketio = SocketIO(app)
+db.init_app(app)
+migrate = Migrate(app, db)
 
 
 @app.route('/alert', methods=['POST'])
