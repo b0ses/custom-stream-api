@@ -11,5 +11,5 @@ install:
 
 # command to run tests
 script:
-  - pytest --rootdir=custom_stream_api
+  - pytest
   - flake8 api
