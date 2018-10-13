@@ -1,6 +1,4 @@
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from custom_stream_api.shared import db
 
 
 class Alert(db.Model):
