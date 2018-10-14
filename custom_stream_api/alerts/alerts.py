@@ -25,26 +25,25 @@ def validate_effect(effect=''):
 
 
 def validate_duration(duration=3000):
-    try:
-        return int(duration)
-    except ValueError:
+    if not str(duration).isdigit():
         raise Exception('Invalid duration: {}'.format(duration))
+    return int(duration)
 
 
-def generate_name(name=None, message='', sound=''):
+def generate_name(name='', message='', sound=''):
     generated_name = name
-    if generated_name is None and message:
+    if not generated_name and message:
         generated_name = message
-    elif generated_name is None and sound:
+    elif not generated_name and sound:
         generated_name = validate_sound(sound)
-    else:
+    elif not generated_name:
         raise Exception('Can\'t generate blank alert name.')
 
     return generated_name.strip().lower().replace(' ', '_')
 
 
-def alert(name=None, message='', sound='', effect='', duration=3000):
-    if name is not None:
+def alert(name='', message='', sound='', effect='', duration=3000):
+    if not name:
         alert_obj = Alert.query.filter_by(name=name).one_or_none()
         if not alert_obj:
             raise Exception('Alert not found: {}'.format(name))
