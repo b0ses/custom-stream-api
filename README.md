@@ -1,10 +1,10 @@
-#### The API
+## The API
 
 The logic behind everything. Takes in POSTs and does magic.
 * Send messages to your Stream Overlay to do stuff
 * Hooks up to your chatbot
 
-##### Installing
+### Installing
 ```
     # Install pip3
     > apt-get install python3-pip
@@ -15,11 +15,15 @@ The logic behind everything. Takes in POSTs and does magic.
     # Add this directory to your virtual environment
     add2virtualenv [path to this directory]
 ```
-##### Settings
+### Settings
 
 Fill in your [settings](custom_stream_api/settings.py).
 
-##### Running
+### Running
 ```
     (custom-stream-overlay) python3 custom_stream_api/server.py
 ```
+
+### Documentation
+
+* [Sending Alerts](docs/alerts.md)
