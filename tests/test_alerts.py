@@ -1,0 +1,121 @@
+from custom_stream_api.alerts import alerts
+
+
+def test_validate_sound():
+    # Allow blank sounds
+    assert alerts.validate_sound() is None
+    assert alerts.validate_sound('') is None
+
+    # Success tests
+    test_mp3 = 'http://www.test.com/test_mp3.mp3'
+    test_wav = 'http://www.test.com/some/random/dir/test_wav.wav'
+    assert alerts.validate_sound(test_mp3) == 'test_mp3'
+    assert alerts.validate_sound(test_wav) == 'test_wav'
+
+    # Fail tests
+    wrong_extension_1 = 'http://www.test.com/test_mp3.blah'
+    wrong_extension_2 = 'http://www.test.com/test_mp3.mp3s'
+    wrong_url_1 = 'htp://www.test.com/test_mp3.mp3'
+    wrong_url_2 = 'htp://test_mp3.mp3'
+    wrong_url_3 = 'htp://www./test_mp3.mp3'
+    for fail_test_sound in [wrong_extension_1, wrong_extension_2, wrong_url_1, wrong_url_2, wrong_url_3]:
+        validated_sound = None
+        try:
+            validated_sound = alerts.validate_sound(fail_test_sound)
+        except Exception:
+            assert True
+        assert validated_sound is None
+
+
+def test_validate_effect():
+    # Allow blank effects
+    assert alerts.validate_effect() == ''
+    assert alerts.validate_effect('') == ''
+
+    # Success tests
+    for effect in alerts.VALID_EFFECTS:
+        assert alerts.validate_effect(effect) == effect
+
+    # Fail tests
+    non_existent_effect = 'blahhhhh'
+    validated_effect = None
+    try:
+        validated_effect = alerts.validate_effect(non_existent_effect)
+    except Exception:
+        assert True
+    assert validated_effect is None
+
+
+def test_validate_duration():
+    # Allow blank effects
+    assert alerts.validate_duration() == 3000
+
+    # Success tests
+    assert alerts.validate_duration(1) == 1
+    assert alerts.validate_duration('2') == 2
+
+    # Fail tests
+    for bad_duration in ['', -3000, '1.2']:
+        validated_duration = None
+        try:
+            validated_duration = alerts.validate_duration(bad_duration)
+        except Exception:
+            assert True
+        assert validated_duration is None
+
+
+def test_generate_name():
+    # Testg cleaning up the string
+    assert alerts.generate_name(name=' test') == 'test'
+    assert alerts.generate_name(name='test name') == 'test_name'
+    assert alerts.generate_name(name='Test Name') == 'test_name'
+
+    # Tests getting the name from the message
+    assert alerts.generate_name(message='test message') == 'test_message'
+
+    # Tests getting the name from the message
+    test_sound = 'http://www.test.com/test_sound.mp3'
+    assert alerts.generate_name(sound=test_sound) == 'test_sound'
+
+
+def test_add_remove_list_alerts(test_app):
+    with test_app.app_context():
+        # Testing add alerts
+        test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
+        test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
+        test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
+        alerts.add_alert(message='Test Message 1', sound=test_sound_1)
+        alerts.add_alert(message='Test Message 2', sound=test_sound_2)
+        alerts.add_alert(message='Test Message 3', sound=test_sound_3)
+
+        # Testing list alert
+        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
+        assert len(all_alerts) == 3
+        expected_alerts = [1, 2, 3]
+        current_index = 0
+        for alert in all_alerts:
+            expected_alert_num = expected_alerts[current_index]
+            assert alert == {
+                'name': 'test_message_{}'.format(expected_alert_num),
+                'text': 'Test Message {}'.format(expected_alert_num),
+                'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
+                'image': None
+            }
+            current_index += 1
+
+        # Testing remove alert
+        alerts.remove_alert('test_message_2')
+
+        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
+        assert len(all_alerts) == 2
+        expected_alerts = [1, 3]
+        current_index = 0
+        for alert in all_alerts:
+            expected_alert_num = expected_alerts[current_index]
+            assert alert == {
+                'name': 'test_message_{}'.format(expected_alert_num),
+                'text': 'Test Message {}'.format(expected_alert_num),
+                'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
+                'image': None
+            }
+            current_index += 1

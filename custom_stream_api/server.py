@@ -1,31 +1,9 @@
 import logging
-from flask import Flask, request
-from flask_cors import CORS
-from flask_socketio import SocketIO
 
 from custom_stream_api import settings
+from custom_stream_api.shared import app, socketio
 
-app = Flask(__name__)
-CORS(app, resources={r"/*":{"origins":"*"}})
 logger = logging.getLogger()
-
-app.config['SECRET_KEY'] = settings.SECRET
-socketio = SocketIO(app)
-
-
-@app.route('/alert', methods=['POST'])
-def alert():
-    if request.method == 'POST':
-        data = request.get_json()
-        socket_data = {
-            'message': data.get('message'),
-            'sound': data.get('sound'),
-            'effect': data.get('effect'),
-            'duration': data.get('duration')
-        }
-        socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
-        return "Message Received"
-
 
 if __name__ == '__main__':
     if not settings.SECRET:
