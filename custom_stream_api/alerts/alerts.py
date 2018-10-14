@@ -43,7 +43,7 @@ def generate_name(name='', message='', sound=''):
 
 
 def alert(name='', message='', sound='', effect='', duration=3000):
-    if not name:
+    if name:
         alert_obj = Alert.query.filter_by(name=name).one_or_none()
         if not alert_obj:
             raise Exception('Alert not found: {}'.format(name))
