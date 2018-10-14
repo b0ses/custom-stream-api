@@ -35,13 +35,14 @@ def create_app(init_db=True):
     CORS(app, resources={r'/*': {'origins': '*'}})
 
     app.config['SECRET_KEY'] = settings.SECRET
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db = SQLAlchemy()
     if init_db:
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
         db.init_app(app)
     migrate = Migrate(app, db)
+    migrate.directory = 'custom_stream_api/migrations'
     socketio = SocketIO(app)
 
     from custom_stream_api.alerts.views import alert_endpoints
