@@ -12,6 +12,7 @@ socketio = None
 db = None
 migrate = None
 
+
 class InvalidUsage(Exception):
     status_code = 400
 

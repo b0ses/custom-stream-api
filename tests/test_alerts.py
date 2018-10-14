@@ -3,8 +3,8 @@ from custom_stream_api.alerts import alerts
 
 def test_validate_sound():
     # Allow blank sounds
-    assert alerts.validate_sound() == None
-    assert alerts.validate_sound('') == None
+    assert alerts.validate_sound() is None
+    assert alerts.validate_sound('') is None
 
     # Success tests
     test_mp3 = 'http://www.test.com/test_mp3.mp3'
@@ -22,7 +22,7 @@ def test_validate_sound():
         validated_sound = None
         try:
             validated_sound = alerts.validate_sound(fail_test_sound)
-        except:
+        except Exception:
             assert True
         assert validated_sound is None
 
@@ -41,7 +41,7 @@ def test_validate_effect():
     validated_effect = None
     try:
         validated_effect = alerts.validate_effect(non_existent_effect)
-    except:
+    except Exception:
         assert True
     assert validated_effect is None
 
@@ -59,9 +59,9 @@ def test_validate_duration():
         validated_duration = None
         try:
             validated_duration = alerts.validate_duration(bad_duration)
-        except:
+        except Exception:
             assert True
-        assert validated_duration == None
+        assert validated_duration is None
 
 
 def test_generate_name():

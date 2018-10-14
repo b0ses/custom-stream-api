@@ -46,7 +46,6 @@ def add_alert_post():
         return jsonify({'message': 'Alert in database: {}'.format(alert_name)})
 
 
-
 @alert_endpoints.route('/remove_alert', methods=['POST'])
 def remove_alert_post():
     if request.method == 'POST':
