@@ -6,10 +6,7 @@ These endpoints are in charge of managing and displaying your alerts.
 
 You can send any alert whatsoever with this endpoint, regardless of it being in the database.
 
-url: `/alerts/alert`
-
-type: `POST`
-
+`POST` `/alerts/alert`
 
 Request:
 ```
@@ -49,10 +46,7 @@ You can save alerts in the database and just refer to them when calling the abov
 
 You can store alerts in the database.
 
-url: `/alerts/add_alert`
-
-type: `POST`
-
+`POST` `/alerts/add_alert`
 
 Request:
 ```
@@ -82,9 +76,7 @@ Possible Messages
 
 All of the alerts.
 
-url: `/alerts/`
-
-type: `GET`
+`GET` `/alerts/`
 
 Response:
 ```
@@ -110,9 +102,7 @@ Note: `image` is a work in progress, currently `null`
 
 Remove an alert from the database.
 
-url: `/alerts/remove_alert`
-
-type: `POST`
+`POST` `/alerts/remove_alert`
 
 Request:
 ```
