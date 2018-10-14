@@ -4,11 +4,12 @@ These endpoints are in charge of managing and displaying your alerts.
 
 ## Sending an Alert
 
+You can send any alert whatsoever with this endpoint, regardless of it being in the database.
+
 url: `/alerts/alert`
 
 type: `POST`
 
-You can send any alert whatsoever with this endpoint, regardless of it being in the database.
 
 Request:
 ```
@@ -20,7 +21,7 @@ Request:
 }
 ```
 
-* `name` (string, optional, ''): The name of the alert stored in the database (see example below)
+* `name` (string, optional, ''): The name of the alert stored in the database (see below)
 * `message` (string, optional, ''): The text you want to be displayed, can be blank
 * `sound` (string, optional, ''): The URL of the sound you want to be played along with the message, can be blank
 * `duration` (integer, optional, `3000`): Milliseconds you want the text to be displayed, the sound will play entirely
@@ -46,11 +47,12 @@ You can save alerts in the database and just refer to them when calling the abov
 
 ### Saving Alerts
 
+You can store alerts in the database.
+
 url: `/alerts/add_alert`
 
 type: `POST`
 
-You can store alerts in the database.
 
 Request:
 ```
@@ -78,11 +80,11 @@ Possible Messages
 
 ### Listing Available Alerts
 
+All of the alerts.
+
 url: `/alerts/`
 
 type: `GET`
-
-All of the alerts.
 
 Response:
 ```
@@ -106,11 +108,11 @@ Note: `image` is a work in progress, currently `null`
 
 ### Deleting Alerts
 
+Remove an alert from the database.
+
 url: `/alerts/remove_alert`
 
 type: `POST`
-
-Remove an alert from the database.
 
 Request:
 ```
