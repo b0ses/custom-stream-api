@@ -15,6 +15,14 @@ The logic behind everything. Takes in POSTs and does magic.
     # Add this directory to your virtual environment
     add2virtualenv [path to this directory]
 ```
+
+### Setting up a new DB
+```
+    # cd custom_stream_api
+    # export FLASK_APP=server.py
+    # flask db upgrade head -d migrations
+```
+
 ### Settings
 
 Fill in your [settings](custom_stream_api/settings.py).
