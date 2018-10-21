@@ -50,16 +50,14 @@ def alert(name='', text='', sound='', effect='', duration=3000):
         socket_data = alert_obj.as_dict()
     else:
         validate_sound(sound)
+        effect = validate_effect(effect)
+        duration = validate_duration(duration)
         socket_data = {
             'text': text,
-            'sound': sound
+            'sound': sound,
+            'effect': effect,
+            'duration': duration
         }
-    effect = validate_effect(effect)
-    duration = validate_duration(duration)
-    socket_data.update({
-        'effect': effect,
-        'duration': duration
-    })
     socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
 
 
@@ -67,14 +65,16 @@ def list_alerts():
     return list(Alert.query.order_by(Alert.name.asc()).all())
 
 
-def add_alert(name='', text='', sound=''):
+def add_alert(name='', text='', sound='', duration=3000, effect=''):
     generated_name = generate_name(name, text, sound)
     found_alert = Alert.query.filter_by(name=generated_name).one_or_none()
     if found_alert:
         return found_alert.name
     else:
         validate_sound(sound)
-        new_alert = Alert(name=generated_name, text=text, sound=sound)
+        effect = validate_effect(effect)
+        duration = validate_duration(duration)
+        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect)
         db.session.add(new_alert)
         db.session.commit()
         return new_alert.name

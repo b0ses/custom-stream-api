@@ -37,7 +37,9 @@ def add_alert_post():
         add_alert_data = {
             'name': data.get('name'),
             'text': data.get('text'),
-            'sound': data.get('sound')
+            'sound': data.get('sound'),
+            'duration': data.get('duration'),
+            'effect': data.get('effect')
         }
         try:
             alert_name = alerts.add_alert(**add_alert_data)
