@@ -29,7 +29,6 @@ def test_validate_sound():
 
 def test_validate_effect():
     # Allow blank effects
-    assert alerts.validate_effect() == ''
     assert alerts.validate_effect('') == ''
 
     # Success tests
@@ -47,9 +46,6 @@ def test_validate_effect():
 
 
 def test_validate_duration():
-    # Allow blank effects
-    assert alerts.validate_duration() == 3000
-
     # Success tests
     assert alerts.validate_duration(1) == 1
     assert alerts.validate_duration('2') == 2

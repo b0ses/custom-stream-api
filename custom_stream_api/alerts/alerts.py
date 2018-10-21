@@ -17,14 +17,15 @@ def validate_sound(sound=''):
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
 
-def validate_effect(effect=''):
+def validate_effect(effect):
+    effect = effect or ''
     if effect in VALID_EFFECTS:
         return effect
     else:
         raise Exception('Invalid effect: {}'.format(effect))
 
 
-def validate_duration(duration=3000):
+def validate_duration(duration):
     if not str(duration).isdigit():
         raise Exception('Invalid duration: {}'.format(duration))
     return int(duration)

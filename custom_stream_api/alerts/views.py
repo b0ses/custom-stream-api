@@ -11,11 +11,11 @@ def alert_post():
     if request.method == 'POST':
         data = request.get_json()
         alert_data = {
-            'name': data.get('name'),
-            'text': data.get('text'),
-            'sound': data.get('sound'),
-            'effect': data.get('effect'),
-            'duration': data.get('duration')
+            'name': data.get('name', ''),
+            'text': data.get('text', ''),
+            'sound': data.get('sound', ''),
+            'duration': data.get('duration', 3000),
+            'effect': data.get('effect', '')
         }
         try:
             alerts.alert(**alert_data)
@@ -35,11 +35,11 @@ def add_alert_post():
     if request.method == 'POST':
         data = request.get_json()
         add_alert_data = {
-            'name': data.get('name'),
-            'text': data.get('text'),
-            'sound': data.get('sound'),
-            'duration': data.get('duration'),
-            'effect': data.get('effect')
+            'name': data.get('name', ''),
+            'text': data.get('text', ''),
+            'sound': data.get('sound', ''),
+            'duration': data.get('duration', 3000),
+            'effect': data.get('effect', '')
         }
         try:
             alert_name = alerts.add_alert(**add_alert_data)
