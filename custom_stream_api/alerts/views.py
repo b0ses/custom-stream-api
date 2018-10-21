@@ -12,7 +12,7 @@ def alert_post():
         data = request.get_json()
         alert_data = {
             'name': data.get('name'),
-            'message': data.get('message'),
+            'text': data.get('text'),
             'sound': data.get('sound'),
             'effect': data.get('effect'),
             'duration': data.get('duration')
@@ -36,7 +36,7 @@ def add_alert_post():
         data = request.get_json()
         add_alert_data = {
             'name': data.get('name'),
-            'message': data.get('message'),
+            'text': data.get('text'),
             'sound': data.get('sound')
         }
         try:
