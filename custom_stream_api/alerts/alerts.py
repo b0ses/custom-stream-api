@@ -3,7 +3,7 @@ import re
 from custom_stream_api.alerts.models import Alert
 from custom_stream_api.shared import db, socketio
 
-VALID_SOUNDS = ['wav', 'mp3']
+VALID_SOUNDS = ['wav', 'mp3', 'ogg']
 SOUND_REGEX = '^(http[s]?):\/?\/?([^:\/\s]+)((\/\w+)*\/)([\w\-\.]+)\.({})$'.format('|'.join(VALID_SOUNDS))
 VALID_EFFECTS = ['', 'fade']
 
