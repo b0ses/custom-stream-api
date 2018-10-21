@@ -99,7 +99,9 @@ def test_add_remove_list_alerts(test_app):
                 'name': 'test_text_{}'.format(expected_alert_num),
                 'text': 'Test Text {}'.format(expected_alert_num),
                 'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None
+                'image': None,
+                'duration': 3000,
+                'effect': ''
             }
             current_index += 1
 
@@ -116,6 +118,8 @@ def test_add_remove_list_alerts(test_app):
                 'name': 'test_text_{}'.format(expected_alert_num),
                 'text': 'Test Text {}'.format(expected_alert_num),
                 'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None
+                'image': None,
+                'duration': 3000,
+                'effect': ''
             }
             current_index += 1
