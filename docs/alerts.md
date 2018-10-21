@@ -11,7 +11,7 @@ You can send any alert whatsoever with this endpoint, regardless of it being in 
 Request:
 ```
 {
-	"message": "It works!",
+	"text": "It works!",
 	"sound": "https://www.myinstants.com/media/sounds/super-mario-coin-sound.mp3",
 	"duration": 1000,
 	"effect": ""
@@ -19,7 +19,7 @@ Request:
 ```
 
 * `name` (string, optional, ''): The name of the alert stored in the database (see below)
-* `message` (string, optional, ''): The text you want to be displayed, can be blank
+* `text` (string, optional, ''): The text you want to be displayed, can be blank
 * `sound` (string, optional, ''): The URL of the sound you want to be played along with the message, can be blank
 * `duration` (integer, optional, `3000`): Milliseconds you want the text to be displayed, the sound will play entirely
 * `effect` (string, optional, ''): How you want the text to appear
@@ -51,13 +51,13 @@ You can store alerts in the database.
 Request:
 ```
 {
-	"message": "It works!",
+	"text": "It works!",
 	"sound": "https://www.myinstants.com/media/sounds/super-mario-coin-sound.mp3"
 }
 ```
 
 * `name` (string, optional, ''): The name of the alert. If not provided, it will be derived from the message. Note, this means for sound bites, you have to name them
-* `message` (string, optional, ''): The text you want to be displayed, can be blank
+* `text` (string, optional, ''): The text you want to be displayed, can be blank
 * `sound` (string, optional, ''): The URL of the sound you want to be played along with the message, can be blank
 
 Response:

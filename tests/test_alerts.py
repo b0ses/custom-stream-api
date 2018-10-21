@@ -29,7 +29,6 @@ def test_validate_sound():
 
 def test_validate_effect():
     # Allow blank effects
-    assert alerts.validate_effect() == ''
     assert alerts.validate_effect('') == ''
 
     # Success tests
@@ -47,9 +46,6 @@ def test_validate_effect():
 
 
 def test_validate_duration():
-    # Allow blank effects
-    assert alerts.validate_duration() == 3000
-
     # Success tests
     assert alerts.validate_duration(1) == 1
     assert alerts.validate_duration('2') == 2
@@ -70,10 +66,10 @@ def test_generate_name():
     assert alerts.generate_name(name='test name') == 'test_name'
     assert alerts.generate_name(name='Test Name') == 'test_name'
 
-    # Tests getting the name from the message
-    assert alerts.generate_name(message='test message') == 'test_message'
+    # Tests getting the name from the text
+    assert alerts.generate_name(text='test text') == 'test_text'
 
-    # Tests getting the name from the message
+    # Tests getting the name from the text
     test_sound = 'http://www.test.com/test_sound.mp3'
     assert alerts.generate_name(sound=test_sound) == 'test_sound'
 
@@ -84,9 +80,9 @@ def test_add_remove_list_alerts(test_app):
         test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
         test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
         test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
-        alerts.add_alert(message='Test Message 1', sound=test_sound_1)
-        alerts.add_alert(message='Test Message 2', sound=test_sound_2)
-        alerts.add_alert(message='Test Message 3', sound=test_sound_3)
+        alerts.add_alert(text='Test Text 1', sound=test_sound_1)
+        alerts.add_alert(text='Test Text 2', sound=test_sound_2)
+        alerts.add_alert(text='Test Text 3', sound=test_sound_3)
 
         # Testing list alert
         all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
@@ -96,15 +92,17 @@ def test_add_remove_list_alerts(test_app):
         for alert in all_alerts:
             expected_alert_num = expected_alerts[current_index]
             assert alert == {
-                'name': 'test_message_{}'.format(expected_alert_num),
-                'text': 'Test Message {}'.format(expected_alert_num),
+                'name': 'test_text_{}'.format(expected_alert_num),
+                'text': 'Test Text {}'.format(expected_alert_num),
                 'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None
+                'image': None,
+                'duration': 3000,
+                'effect': ''
             }
             current_index += 1
 
         # Testing remove alert
-        alerts.remove_alert('test_message_2')
+        alerts.remove_alert('test_text_2')
 
         all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
         assert len(all_alerts) == 2
@@ -113,9 +111,11 @@ def test_add_remove_list_alerts(test_app):
         for alert in all_alerts:
             expected_alert_num = expected_alerts[current_index]
             assert alert == {
-                'name': 'test_message_{}'.format(expected_alert_num),
-                'text': 'Test Message {}'.format(expected_alert_num),
+                'name': 'test_text_{}'.format(expected_alert_num),
+                'text': 'Test Text {}'.format(expected_alert_num),
                 'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None
+                'image': None,
+                'duration': 3000,
+                'effect': ''
             }
             current_index += 1
