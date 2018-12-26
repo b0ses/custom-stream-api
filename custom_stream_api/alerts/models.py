@@ -11,3 +11,12 @@ class Alert(db.Model):
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class GroupAlert(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group_name = db.Column(db.String(128), nullable=False)
+    alert_name = db.Column(db.String(128), db.ForeignKey('alert.name'), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint('group_name', 'alert_name', name='_group_alert_uc'),
+    )

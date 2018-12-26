@@ -74,48 +74,84 @@ def test_generate_name():
     assert alerts.generate_name(sound=test_sound) == 'test_sound'
 
 
-def test_add_remove_list_alerts(test_app):
-    with test_app.app_context():
-        # Testing add alerts
-        test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
-        test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
-        test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
-        alerts.add_alert(text='Test Text 1', sound=test_sound_1)
-        alerts.add_alert(text='Test Text 2', sound=test_sound_2)
-        alerts.add_alert(text='Test Text 3', sound=test_sound_3)
+def test_alerts(app):
+    # Testing add alerts
+    test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
+    alerts.add_alert(text='Test Text 1', sound=test_sound_1)
+    test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
+    alerts.add_alert(text='Test Text 2', sound=test_sound_2)
+    test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
+    alerts.add_alert(text='Test Text 3', sound=test_sound_3)
 
-        # Testing list alert
-        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-        assert len(all_alerts) == 3
-        expected_alerts = [1, 2, 3]
-        current_index = 0
-        for alert in all_alerts:
-            expected_alert_num = expected_alerts[current_index]
-            assert alert == {
-                'name': 'test_text_{}'.format(expected_alert_num),
-                'text': 'Test Text {}'.format(expected_alert_num),
-                'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None,
-                'duration': 3000,
-                'effect': ''
-            }
-            current_index += 1
+    # Testing list alert
+    all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
+    assert len(all_alerts) == 3
+    expected_alerts = [1, 2, 3]
+    current_index = 0
+    for alert in all_alerts:
+        expected_alert_num = expected_alerts[current_index]
+        assert alert == {
+            'name': 'test_text_{}'.format(expected_alert_num),
+            'text': 'Test Text {}'.format(expected_alert_num),
+            'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
+            'image': None,
+            'duration': 3000,
+            'effect': ''
+        }
+        current_index += 1
 
-        # Testing remove alert
-        alerts.remove_alert('test_text_2')
+    # Testing remove alert
+    alerts.remove_alert('test_text_2')
 
-        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-        assert len(all_alerts) == 2
-        expected_alerts = [1, 3]
-        current_index = 0
-        for alert in all_alerts:
-            expected_alert_num = expected_alerts[current_index]
-            assert alert == {
-                'name': 'test_text_{}'.format(expected_alert_num),
-                'text': 'Test Text {}'.format(expected_alert_num),
-                'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-                'image': None,
-                'duration': 3000,
-                'effect': ''
-            }
-            current_index += 1
+    all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
+    assert len(all_alerts) == 2
+    expected_alerts = [1, 3]
+    current_index = 0
+    for alert in all_alerts:
+        expected_alert_num = expected_alerts[current_index]
+        assert alert == {
+            'name': 'test_text_{}'.format(expected_alert_num),
+            'text': 'Test Text {}'.format(expected_alert_num),
+            'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
+            'image': None,
+            'duration': 3000,
+            'effect': ''
+        }
+        current_index += 1
+
+
+def test_group_alerts(app):
+    test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
+    test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
+    test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
+    alerts.add_alert(text='Test Text 1', sound=test_sound_1)
+    alerts.add_alert(text='Test Text 2', sound=test_sound_2)
+    alerts.add_alert(text='Test Text 3', sound=test_sound_3)
+
+    # Testing add to group
+    alerts.add_to_group('first_two', ['test_text_1', 'test_text_2'])
+    alerts.add_to_group('last_two', ['test_text_2', 'test_text_3'])
+
+    # Testing list groups
+    all_groups = alerts.list_groups()
+    expected_groups = {
+        'first_two': [
+            'test_text_1',
+            'test_text_2'
+        ],
+        'last_two': [
+            'test_text_2',
+            'test_text_3'
+        ],
+    }
+    assert all_groups == expected_groups
+
+    # Testing remove from group
+    alerts.remove_from_group('first_two', ['test_text_2'])
+    group_alerts = alerts.list_groups()['first_two']
+    expected = ['test_text_1']
+    assert expected == group_alerts
+
+    # Testing remove whole group
+    alerts.remove_group('last_two')
+    assert 'last_two' not in alerts.list_groups()

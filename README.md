@@ -18,9 +18,8 @@ The logic behind everything. Takes in POSTs and does magic.
 
 ### Setting up a new DB
 ```
-    # cd custom_stream_api
-    # export FLASK_APP=server.py
-    # flask db upgrade head -d migrations
+    # export FLASK_APP=custom_stream_api/server.py
+    # flask db upgrade head -d custom_stream_api/migrations
 ```
 
 ### Settings
