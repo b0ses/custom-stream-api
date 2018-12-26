@@ -60,3 +60,62 @@ def remove_alert_post():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Alert removed: {}'.format(alert_name)})
+
+
+@alert_endpoints.route('/group_alert', methods=['POST'])
+def group_alert_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        alert_data = {
+            'group_name': data.get('group_name', '')
+        }
+        try:
+            alerts.random_alert(**alert_data)
+            return jsonify({'message': 'Displayed alert'})
+        except Exception as e:
+            raise InvalidUsage(str(e))
+
+@alert_endpoints.route('/groups', methods=['GET'])
+def list_groups_get():
+    return jsonify(alerts.list_groups())
+
+@alert_endpoints.route('/add_to_group', methods=['POST'])
+def add_to_group_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        add_to_group_data = {
+            'group_name': data.get('group_name'),
+            'alert_names': data.get('alert_names')
+        }
+        try:
+            alert_names = alerts.add_to_group(**add_to_group_data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})
+
+@alert_endpoints.route('/remove_from_group', methods=['POST'])
+def remove_from_group_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        remove_from_group_data = {
+            'group_name': data.get('group_name'),
+            'alert_names': data.get('alert_names')
+        }
+        try:
+            alert_names = alerts.remove_from_group(**remove_from_group_data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Removed from {}: {}'.format(data.get('group_name'), alert_names)})
+
+@alert_endpoints.route('/remove_group', methods=['POST'])
+def remove_group_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        remove_group_data = {
+            'group_name': data.get('group_name'),
+        }
+        try:
+            group_name = alerts.remove_group(**remove_group_data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Group removed: {}'.format(group_name)})
