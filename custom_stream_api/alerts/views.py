@@ -75,9 +75,11 @@ def group_alert_post():
         except Exception as e:
             raise InvalidUsage(str(e))
 
+
 @alert_endpoints.route('/groups', methods=['GET'])
 def list_groups_get():
     return jsonify(alerts.list_groups())
+
 
 @alert_endpoints.route('/add_to_group', methods=['POST'])
 def add_to_group_post():
@@ -93,6 +95,7 @@ def add_to_group_post():
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})
 
+
 @alert_endpoints.route('/remove_from_group', methods=['POST'])
 def remove_from_group_post():
     if request.method == 'POST':
@@ -106,6 +109,7 @@ def remove_from_group_post():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Removed from {}: {}'.format(data.get('group_name'), alert_names)})
+
 
 @alert_endpoints.route('/remove_group', methods=['POST'])
 def remove_group_post():

@@ -104,6 +104,7 @@ def random_alert(group_name):
     r_alert = random.choice(group)
     return alert(r_alert)
 
+
 def list_groups():
     # {'group_name': ['alert_name1', 'alert_name2', ...]}
     all_associations = list(db.session.query(GroupAlert).all())
@@ -116,6 +117,7 @@ def list_groups():
         else:
             groups[group_name] = [alert_name]
     return groups
+
 
 def add_to_group(group_name, alert_names):
     new_alerts = []
@@ -131,6 +133,7 @@ def add_to_group(group_name, alert_names):
             db.session.add(new_association)
     db.session.commit()
     return new_alerts
+
 
 def remove_from_group(group_name, alert_names):
     removed_alerts = []
@@ -149,6 +152,7 @@ def remove_from_group(group_name, alert_names):
             association.delete()
     db.session.commit()
     return removed_alerts
+
 
 def remove_group(group_name):
     group = db.session.query(GroupAlert).filter_by(group_name=group_name)
