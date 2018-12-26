@@ -126,7 +126,6 @@ def add_to_group(group_name, alert_names):
         if not alert.count():
             raise Exception('Alert not found: {}'.format(alert_name))
 
-        print(GroupAlert.query.filter_by(group_name=group_name, alert_name=alert_name).count())
         if not GroupAlert.query.filter_by(group_name=group_name, alert_name=alert_name).count():
             new_alerts.append(alert_name)
             new_association = GroupAlert(group_name=group_name, alert_name=alert_name)
