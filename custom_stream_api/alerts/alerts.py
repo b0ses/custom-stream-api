@@ -73,17 +73,22 @@ def list_alerts():
 
 def add_alert(name='', text='', sound='', duration=3000, effect=''):
     generated_name = generate_name(name, text, sound)
+    validate_sound(sound)
+    effect = validate_effect(effect)
+    duration = validate_duration(duration)
+
     found_alert = Alert.query.filter_by(name=generated_name).one_or_none()
     if found_alert:
-        return found_alert.name
+        found_alert.name = generated_name
+        found_alert.text = text
+        found_alert.sound = sound
+        found_alert.duration = duration
+        found_alert.effect = effect
     else:
-        validate_sound(sound)
-        effect = validate_effect(effect)
-        duration = validate_duration(duration)
         new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect)
         db.session.add(new_alert)
-        db.session.commit()
-        return new_alert.name
+    db.session.commit()
+    return generated_name
 
 
 def remove_alert(name):
