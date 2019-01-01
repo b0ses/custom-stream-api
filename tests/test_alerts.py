@@ -134,21 +134,27 @@ def test_group_alerts(app):
 
     # Testing list groups
     all_groups = alerts.list_groups()
-    expected_groups = {
-        'first_two': [
-            'test_text_1',
-            'test_text_2'
-        ],
-        'last_two': [
-            'test_text_2',
-            'test_text_3'
-        ],
-    }
+    expected_groups = [
+        {
+            'name': 'first_two',
+            'alerts': [
+                'test_text_1',
+                'test_text_2'
+            ]
+        },
+        {
+            'name': 'last_two',
+            'alerts': [
+                'test_text_2',
+                'test_text_3'
+            ]
+        }
+    ]
     assert all_groups == expected_groups
 
     # Testing remove from group
     alerts.remove_from_group('first_two', ['test_text_2'])
-    group_alerts = alerts.list_groups()['first_two']
+    group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
     expected = ['test_text_1']
     assert expected == group_alerts
 
