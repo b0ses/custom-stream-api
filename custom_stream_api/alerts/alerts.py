@@ -112,7 +112,7 @@ def random_alert(group_name):
 
 def list_groups():
     # {'group_name': ['alert_name1', 'alert_name2', ...]}
-    all_associations = list(db.session.query(GroupAlert).all())
+    all_associations = list(db.session.query(GroupAlert).order_by(GroupAlert.group_name).all())
     groups = {}
     for assocation in all_associations:
         group_name = assocation.group_name
