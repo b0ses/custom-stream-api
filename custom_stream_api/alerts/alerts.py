@@ -112,7 +112,7 @@ def random_alert(group_name):
 
 def list_groups():
     # {'group_name': ['alert_name1', 'alert_name2', ...]}
-    all_associations = list(db.session.query(GroupAlert).order_by(GroupAlert.group_name).all())
+    all_associations = list(db.session.query(GroupAlert).all())
     groups = {}
     for assocation in all_associations:
         group_name = assocation.group_name
@@ -121,7 +121,8 @@ def list_groups():
             groups[group_name].append(alert_name)
         else:
             groups[group_name] = [alert_name]
-    return [{'name': group_name, 'alerts': alerts} for group_name, alerts in groups.items()]
+    listed_groups = [{'name': group_name, 'alerts': alerts} for group_name, alerts in groups.items()]
+    return sorted(listed_groups, key = lambda group: group['name'])
 
 
 def save_group(group_name, alert_names):
