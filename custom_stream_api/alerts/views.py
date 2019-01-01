@@ -81,6 +81,21 @@ def list_groups_get():
     return jsonify(alerts.list_groups())
 
 
+@alert_endpoints.route('/save_group', methods=['POST'])
+def save_group_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        add_to_group_data = {
+            'group_name': data.get('group_name'),
+            'alert_names': data.get('alert_names')
+        }
+        try:
+            alert_names = alerts.save_group(**add_to_group_data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})
+
+
 @alert_endpoints.route('/add_to_group', methods=['POST'])
 def add_to_group_post():
     if request.method == 'POST':

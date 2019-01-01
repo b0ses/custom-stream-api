@@ -121,7 +121,16 @@ def list_groups():
             groups[group_name].append(alert_name)
         else:
             groups[group_name] = [alert_name]
-    return groups
+    return [{'name': group_name, 'alerts': alerts} for group_name, alerts in groups.items()]
+
+
+def save_group(group_name, alert_names):
+    # clear out group first
+    found_group = GroupAlert.query.filter_by(group_name=group_name)
+    if found_group.count():
+        found_group.delete()
+
+    return add_to_group(group_name, alert_names)
 
 
 def add_to_group(group_name, alert_names):
