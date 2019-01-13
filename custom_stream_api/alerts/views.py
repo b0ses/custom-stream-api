@@ -6,6 +6,15 @@ from custom_stream_api.shared import InvalidUsage
 alert_endpoints = Blueprint('alerts', __name__)
 
 
+@alert_endpoints.route('/alert/<alert_name>')
+def alert_get(alert_name):
+    try:
+        alerts.alert(name=alert_name)
+        return jsonify({'message': 'Displayed alert'})
+    except Exception as e:
+        raise InvalidUsage(str(e))
+
+
 @alert_endpoints.route('/alert', methods=['POST'])
 def alert_post():
     if request.method == 'POST':

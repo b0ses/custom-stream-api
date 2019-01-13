@@ -122,7 +122,7 @@ def list_groups():
         else:
             groups[group_name] = [alert_name]
     listed_groups = [{'name': group_name, 'alerts': alerts} for group_name, alerts in groups.items()]
-    return sorted(listed_groups, key = lambda group: group['name'])
+    return sorted(listed_groups, key=lambda group: group['name'])
 
 
 def save_group(group_name, alert_names):
