@@ -65,6 +65,7 @@ def alert(name='', text='', sound='', effect='', duration=3000):
             'duration': duration
         }
     socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
+    return socket_data['text']
 
 
 def list_alerts():
