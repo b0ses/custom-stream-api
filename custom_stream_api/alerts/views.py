@@ -6,15 +6,6 @@ from custom_stream_api.shared import InvalidUsage
 alert_endpoints = Blueprint('alerts', __name__)
 
 
-@alert_endpoints.route('/alert/<alert_name>')
-def alert_get(alert_name):
-    try:
-        alerts.alert(name=alert_name)
-        return jsonify({'message': 'Displayed alert'})
-    except Exception as e:
-        raise InvalidUsage(str(e))
-
-
 @alert_endpoints.route('/alert', methods=['POST'])
 def alert_post():
     if request.method == 'POST':
@@ -27,8 +18,10 @@ def alert_post():
             'effect': data.get('effect', '')
         }
         try:
-            alerts.alert(**alert_data)
-            return jsonify({'message': 'Displayed alert'})
+            alert_text = alerts.alert(**alert_data)
+            if not alert_text:
+                alert_text = 'Displayed alert'
+            return jsonify({'message': alert_text})
         except Exception as e:
             raise InvalidUsage(str(e))
 
@@ -79,8 +72,10 @@ def group_alert_post():
             'group_name': data.get('group_name', '')
         }
         try:
-            alerts.random_alert(**alert_data)
-            return jsonify({'message': 'Displayed alert'})
+            alert_text = alerts.random_alert(**alert_data)
+            if not alert_text:
+                alert_text = 'Displayed alert'
+            return jsonify({'message': alert_text})
         except Exception as e:
             raise InvalidUsage(str(e))
 
