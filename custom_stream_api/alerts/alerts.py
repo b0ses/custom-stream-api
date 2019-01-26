@@ -48,7 +48,7 @@ def generate_name(name='', text='', sound=''):
 
 # ALERTS
 
-def alert(name='', text='', sound='', effect='', duration=3000):
+def alert(name='', text='', sound='', effect='', duration=3000, image=''):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
@@ -62,6 +62,7 @@ def alert(name='', text='', sound='', effect='', duration=3000):
             'text': text,
             'sound': sound,
             'effect': effect,
+            'image': image,
             'duration': duration
         }
     socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
@@ -72,7 +73,13 @@ def list_alerts():
     return list(db.session.query(Alert).order_by(Alert.name.asc()).all())
 
 
-def add_alert(name='', text='', sound='', duration=3000, effect=''):
+def import_alerts(alerts):
+    for alert_data in alerts:
+        add_alert(**alert_data, save=False)
+    db.session.commit()
+
+
+def add_alert(name='', text='', sound='', duration=3000, effect='', image='', save=True):
     generated_name = generate_name(name, text, sound)
     validate_sound(sound)
     effect = validate_effect(effect)
@@ -86,9 +93,10 @@ def add_alert(name='', text='', sound='', duration=3000, effect=''):
         found_alert.duration = duration
         found_alert.effect = effect
     else:
-        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect)
+        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image)
         db.session.add(new_alert)
-    db.session.commit()
+    if save:
+        db.session.commit()
     return generated_name
 
 
@@ -126,16 +134,24 @@ def list_groups():
     return sorted(listed_groups, key=lambda group: group['name'])
 
 
-def save_group(group_name, alert_names):
+def import_groups(groups):
+    for group_data in groups:
+        alerts = group_data['alerts']
+        name = group_data['name']
+        replace_group(name, alerts, save=False)
+    db.session.commit()
+
+
+def replace_group(group_name, alert_names, save=True):
     # clear out group first
     found_group = GroupAlert.query.filter_by(group_name=group_name)
     if found_group.count():
         found_group.delete()
 
-    return add_to_group(group_name, alert_names)
+    return add_to_group(group_name, alert_names, save=save)
 
 
-def add_to_group(group_name, alert_names):
+def add_to_group(group_name, alert_names, save=True):
     new_alerts = []
     for alert_name in alert_names:
         alert = db.session.query(Alert).filter_by(name=alert_name)
@@ -146,7 +162,8 @@ def add_to_group(group_name, alert_names):
             new_alerts.append(alert_name)
             new_association = GroupAlert(group_name=group_name, alert_name=alert_name)
             db.session.add(new_association)
-    db.session.commit()
+    if save:
+        db.session.commit()
     return new_alerts
 
 

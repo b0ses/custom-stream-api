@@ -94,7 +94,7 @@ def test_alerts(app):
             'name': 'test_text_{}'.format(expected_alert_num),
             'text': 'Test Text {}'.format(expected_alert_num),
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': None,
+            'image': '',
             'duration': 3000,
             'effect': ''
         }
@@ -113,7 +113,7 @@ def test_alerts(app):
             'name': 'test_text_{}'.format(expected_alert_num),
             'text': 'Test Text {}'.format(expected_alert_num),
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': None,
+            'image': '',
             'duration': 3000,
             'effect': ''
         }

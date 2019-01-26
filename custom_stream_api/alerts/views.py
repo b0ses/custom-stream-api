@@ -26,10 +26,18 @@ def alert_post():
             raise InvalidUsage(str(e))
 
 
-@alert_endpoints.route('/', methods=['GET'])
+@alert_endpoints.route('/', methods=['GET', 'POST'])
 def list_alerts_get():
-    all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-    return jsonify(all_alerts)
+    if request.method == 'GET':
+        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
+        return jsonify(all_alerts)
+    else:
+        data = request.get_json()
+        try:
+            alerts.import_alerts(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Alerts imported'})
 
 
 @alert_endpoints.route('/add_alert', methods=['POST'])
@@ -80,9 +88,17 @@ def group_alert_post():
             raise InvalidUsage(str(e))
 
 
-@alert_endpoints.route('/groups', methods=['GET'])
+@alert_endpoints.route('/groups', methods=['GET', 'POST'])
 def list_groups_get():
-    return jsonify(alerts.list_groups())
+    if request.method == 'GET':
+        return jsonify(alerts.list_groups())
+    else:
+        data = request.get_json()
+        try:
+            alerts.import_groups(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Groups imported'})
 
 
 @alert_endpoints.route('/save_group', methods=['POST'])
@@ -94,7 +110,7 @@ def save_group_post():
             'alert_names': data.get('alert_names')
         }
         try:
-            alert_names = alerts.save_group(**add_to_group_data)
+            alert_names = alerts.replace_group(**add_to_group_data)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})
