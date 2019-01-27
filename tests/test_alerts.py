@@ -60,6 +60,48 @@ def test_validate_duration():
         assert validated_duration is None
 
 
+def test_validate_image():
+    # Allow blank sounds
+    assert alerts.validate_image() is None
+    assert alerts.validate_image('') is None
+
+    # Success tests
+    test_gif = 'http://www.test.com/test_gif.gif'
+    test_png = 'http://www.test.com/some/random/dir/test_png.png'
+    assert alerts.validate_image(test_gif) == 'test_gif'
+    assert alerts.validate_image(test_png) == 'test_png'
+
+    # Fail tests
+    wrong_extension_1 = 'http://www.test.com/test_gif.blah'
+    wrong_extension_2 = 'http://www.test.com/test_gif.gifs'
+    wrong_url_1 = 'htp://www.test.com/test_gif.gif'
+    wrong_url_2 = 'htp://test_gif.gif'
+    wrong_url_3 = 'htp://www./test_gif.gif'
+    for fail_test_image in [wrong_extension_1, wrong_extension_2, wrong_url_1, wrong_url_2, wrong_url_3]:
+        validated_image = None
+        try:
+            validated_image = alerts.validate_image(fail_test_image)
+        except Exception:
+            assert True
+        assert validated_image is None
+
+
+def test_validate_hex_color():
+    # Valid cases
+    assert alerts.validate_color_hex('#DDD') == '#DDD'
+    assert alerts.validate_color_hex('#111111') == '#111111'
+
+    # Invalid cases
+    invalid_cases = ['DDD', '#', '#1', '#11', '#1111', '#11111', '#GGGGGG']
+    for case in invalid_cases:
+        hex = None
+        try:
+            hex = alerts.validate_color_hex(case)
+        except Exception:
+            assert True
+        assert hex is None
+
+
 def test_generate_name():
     # Testg cleaning up the string
     assert alerts.generate_name(name=' test') == 'test'
@@ -94,9 +136,10 @@ def test_alerts(app):
             'name': 'test_text_{}'.format(expected_alert_num),
             'text': 'Test Text {}'.format(expected_alert_num),
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': None,
+            'image': '',
             'duration': 3000,
-            'effect': ''
+            'effect': '',
+            'thumbnail': ''
         }
         current_index += 1
 
@@ -113,9 +156,10 @@ def test_alerts(app):
             'name': 'test_text_{}'.format(expected_alert_num),
             'text': 'Test Text {}'.format(expected_alert_num),
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': None,
+            'image': '',
             'duration': 3000,
-            'effect': ''
+            'effect': '',
+            'thumbnail': ''
         }
         current_index += 1
 
@@ -140,14 +184,16 @@ def test_group_alerts(app):
             'alerts': [
                 'test_text_1',
                 'test_text_2'
-            ]
+            ],
+            'thumbnail': None
         },
         {
             'name': 'last_two',
             'alerts': [
                 'test_text_2',
                 'test_text_3'
-            ]
+            ],
+            'thumbnail': None
         }
     ]
     assert all_groups == expected_groups
