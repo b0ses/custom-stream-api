@@ -1,7 +1,7 @@
 import re
 import random
 
-from custom_stream_api.alerts.models import Alert, GroupAlert
+from custom_stream_api.alerts.models import Alert, GroupAlertAssociation
 from custom_stream_api.shared import db, socketio
 
 VALID_SOUNDS = ['wav', 'mp3', 'ogg']
@@ -114,14 +114,20 @@ def remove_alert(name):
 # GROUPS
 
 def random_alert(group_name):
-    group = [result[0] for result in db.session.query(GroupAlert.alert_name).filter_by(group_name=group_name)]
+    group = [result[0] for result in db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)]
     r_alert = random.choice(group)
     return alert(r_alert)
 
 
+def linked_alert(group_name, index=0):
+    group = [result[0] for result in db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name).order_by(GroupAlertAssociation.index)]
+    l_alert = group[index]
+    return alert(l_alert)
+
+
 def list_groups():
     # {'group_name': ['alert_name1', 'alert_name2', ...]}
-    all_associations = list(db.session.query(GroupAlert).all())
+    all_associations = list(db.session.query(GroupAlertAssociation).order_by(GroupAlertAssociation.group_name, GroupAlertAssociation.index).all())
     groups = {}
     for assocation in all_associations:
         group_name = assocation.group_name
@@ -144,7 +150,7 @@ def import_groups(groups):
 
 def replace_group(group_name, alert_names, save=True):
     # clear out group first
-    found_group = GroupAlert.query.filter_by(group_name=group_name)
+    found_group = GroupAlertAssociation.query.filter_by(group_name=group_name)
     if found_group.count():
         found_group.delete()
 
@@ -153,15 +159,18 @@ def replace_group(group_name, alert_names, save=True):
 
 def add_to_group(group_name, alert_names, save=True):
     new_alerts = []
+
+    index = GroupAlertAssociation.query.filter_by(group_name=group_name).count()
     for alert_name in alert_names:
         alert = db.session.query(Alert).filter_by(name=alert_name)
         if not alert.count():
             raise Exception('Alert not found: {}'.format(alert_name))
 
-        if not GroupAlert.query.filter_by(group_name=group_name, alert_name=alert_name).count():
+        if not GroupAlertAssociation.query.filter_by(group_name=group_name, alert_name=alert_name).count():
             new_alerts.append(alert_name)
-            new_association = GroupAlert(group_name=group_name, alert_name=alert_name)
+            new_association = GroupAlertAssociation(group_name=group_name, alert_name=alert_name, index=index)
             db.session.add(new_association)
+            index += 1
     if save:
         db.session.commit()
     return new_alerts
@@ -169,7 +178,7 @@ def add_to_group(group_name, alert_names, save=True):
 
 def remove_from_group(group_name, alert_names):
     removed_alerts = []
-    group = db.session.query(GroupAlert).filter_by(group_name=group_name)
+    group = db.session.query(GroupAlertAssociation).filter_by(group_name=group_name)
     if not group.count():
         raise Exception('Group not found: {}'.format(group_name))
 
@@ -178,7 +187,7 @@ def remove_from_group(group_name, alert_names):
         if not alert.count():
             raise Exception('Alert not found: {}'.format(alert_name))
 
-        association = db.session.query(GroupAlert).filter_by(group_name=group_name, alert_name=alert_name)
+        association = db.session.query(GroupAlertAssociation).filter_by(group_name=group_name, alert_name=alert_name)
         if association.count():
             removed_alerts.append(alert_name)
             association.delete()
@@ -187,7 +196,7 @@ def remove_from_group(group_name, alert_names):
 
 
 def remove_group(group_name):
-    group = db.session.query(GroupAlert).filter_by(group_name=group_name)
+    group = db.session.query(GroupAlertAssociation).filter_by(group_name=group_name)
     if group.count():
         group.delete()
         db.session.commit()

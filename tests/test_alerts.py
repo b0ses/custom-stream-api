@@ -96,7 +96,8 @@ def test_alerts(app):
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
             'image': '',
             'duration': 3000,
-            'effect': ''
+            'effect': '',
+            'thumbnail': None
         }
         current_index += 1
 
@@ -115,7 +116,8 @@ def test_alerts(app):
             'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
             'image': '',
             'duration': 3000,
-            'effect': ''
+            'effect': '',
+            'thumbnail': None
         }
         current_index += 1
 
