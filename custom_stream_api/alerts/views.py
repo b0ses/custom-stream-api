@@ -15,7 +15,8 @@ def alert_post():
             'text': data.get('text', ''),
             'sound': data.get('sound', ''),
             'duration': data.get('duration', 3000),
-            'effect': data.get('effect', '')
+            'effect': data.get('effect', ''),
+            'image': data.get('image', '')
         }
         try:
             alert_text = alerts.alert(**alert_data)
@@ -49,7 +50,9 @@ def add_alert_post():
             'text': data.get('text', ''),
             'sound': data.get('sound', ''),
             'duration': data.get('duration', 3000),
-            'effect': data.get('effect', '')
+            'effect': data.get('effect', ''),
+            'image': data.get('image', ''),
+            'thumbnail': data.get('thumbnail', '')
         }
         try:
             alert_name = alerts.add_alert(**add_alert_data)

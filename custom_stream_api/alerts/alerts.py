@@ -79,7 +79,7 @@ def import_alerts(alerts):
     db.session.commit()
 
 
-def add_alert(name='', text='', sound='', duration=3000, effect='', image='', save=True):
+def add_alert(name='', text='', sound='', duration=3000, effect='', image='', thumbnail='', save=True):
     generated_name = generate_name(name, text, sound)
     validate_sound(sound)
     effect = validate_effect(effect)
@@ -91,9 +91,11 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', sa
         found_alert.text = text
         found_alert.sound = sound
         found_alert.duration = duration
+        found_alert.thumbnail = thumbnail
+        found_alert.image = image
         found_alert.effect = effect
     else:
-        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image)
+        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image, thumbnail=thumbnail)
         db.session.add(new_alert)
     if save:
         db.session.commit()
