@@ -110,7 +110,8 @@ def save_group_post():
         data = request.get_json()
         add_to_group_data = {
             'group_name': data.get('group_name'),
-            'alert_names': data.get('alert_names')
+            'alert_names': data.get('alert_names'),
+            'thumbnail': data.get('thumbnail')
         }
         try:
             alert_names = alerts.replace_group(**add_to_group_data)

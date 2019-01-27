@@ -184,14 +184,16 @@ def test_group_alerts(app):
             'alerts': [
                 'test_text_1',
                 'test_text_2'
-            ]
+            ],
+            'thumbnail': None
         },
         {
             'name': 'last_two',
             'alerts': [
                 'test_text_2',
                 'test_text_3'
-            ]
+            ],
+            'thumbnail': None
         }
     ]
     assert all_groups == expected_groups
