@@ -5,7 +5,11 @@ from custom_stream_api.alerts.models import Alert, GroupAlertAssociation
 from custom_stream_api.shared import db, socketio
 
 VALID_SOUNDS = ['wav', 'mp3', 'ogg']
-SOUND_REGEX = '^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$'.format('|'.join(VALID_SOUNDS))
+VALID_IMAGES = ['jpg', 'png', 'tif', 'gif']
+URL_REGEX = '^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$'
+SOUND_REGEX = URL_REGEX.format('|'.join(VALID_SOUNDS))
+IMAGE_REXEX = URL_REGEX.format('|'.join(VALID_IMAGES))
+HEX_CODE_REGEX = '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
 VALID_EFFECTS = ['', 'fade']
 
 
@@ -32,6 +36,24 @@ def validate_duration(duration):
     if not str(duration).isdigit():
         raise Exception('Invalid duration: {}'.format(duration))
     return int(duration)
+
+
+def validate_image(image=''):
+    if image:
+        matches = re.findall(IMAGE_REXEX, image)
+        if not matches:
+            raise Exception('Invalid sound url: {}'.format(image))
+        else:
+            return matches[0][4]  # using the regex, this'll return the filename sans extension
+
+
+def validate_color_hex(color_hex):
+    if color_hex:
+        matches = re.findall(HEX_CODE_REGEX, color_hex)
+        if not matches:
+            raise Exception('Invalid sound url: {}'.format(image))
+        else:
+            return color_hex
 
 
 def generate_name(name='', text='', sound=''):
