@@ -96,10 +96,11 @@ def test_validate_hex_color():
     for case in invalid_cases:
         hex = None
         try:
-            hex =  alerts.validate_color_hex(case)
+            hex = alerts.validate_color_hex(case)
         except Exception:
             assert True
         assert hex is None
+
 
 def test_generate_name():
     # Testg cleaning up the string

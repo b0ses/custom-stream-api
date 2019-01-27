@@ -42,7 +42,7 @@ def validate_image(image=''):
     if image:
         matches = re.findall(IMAGE_REXEX, image)
         if not matches:
-            raise Exception('Invalid sound url: {}'.format(image))
+            raise Exception('Invalid image url: {}'.format(image))
         else:
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
@@ -51,17 +51,30 @@ def validate_color_hex(color_hex):
     if color_hex:
         matches = re.findall(HEX_CODE_REGEX, color_hex)
         if not matches:
-            raise Exception('Invalid sound url: {}'.format(image))
+            raise Exception('Invalid color hex: {}'.format(color_hex))
         else:
             return color_hex
 
 
-def generate_name(name='', text='', sound=''):
+def validate_thumbnail(thumbnail):
+    if thumbnail:
+        if thumbnail[0] == '#':
+            validate_color_hex(thumbnail)
+        elif thumbnail[:4] == 'http':
+            validate_image(thumbnail)
+        else:
+            raise Exception('Invalid thumbnail: {}'.format(thumbnail))
+    return thumbnail
+
+
+def generate_name(name='', text='', sound='', image=''):
     generated_name = name
     if not generated_name and text:
         generated_name = text
     elif not generated_name and sound:
         generated_name = validate_sound(sound)
+    elif not generated_name and image:
+        generated_name = validate_image(image)
     elif not generated_name:
         raise Exception('Can\'t generate blank alert name.')
 
@@ -80,6 +93,7 @@ def alert(name='', text='', sound='', effect='', duration=3000, image=''):
         validate_sound(sound)
         effect = validate_effect(effect)
         duration = validate_duration(duration)
+        validate_image(image)
         socket_data = {
             'text': text,
             'sound': sound,
@@ -106,6 +120,8 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
     validate_sound(sound)
     effect = validate_effect(effect)
     duration = validate_duration(duration)
+    validate_image(image)
+    thumbnail = validate_thumbnail(thumbnail)
 
     found_alert = Alert.query.filter_by(name=generated_name).one_or_none()
     if found_alert:
@@ -117,7 +133,8 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
         found_alert.image = image
         found_alert.effect = effect
     else:
-        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image, thumbnail=thumbnail)
+        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image,
+                          thumbnail=thumbnail)
         db.session.add(new_alert)
     if save:
         db.session.commit()
@@ -138,20 +155,25 @@ def remove_alert(name):
 # GROUPS
 
 def random_alert(group_name):
-    group = [result[0] for result in db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)]
+    alerts_query = db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)
+    group = [result[0] for result in alerts_query]
     r_alert = random.choice(group)
     return alert(r_alert)
 
 
 def linked_alert(group_name, index=0):
-    group = [result[0] for result in db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name).order_by(GroupAlertAssociation.index)]
+    alerts_query = db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)\
+        .order_by(GroupAlertAssociation.index)
+    group = [result[0] for result in alerts_query]
     l_alert = group[index]
     return alert(l_alert)
 
 
 def list_groups():
     # {'group_name': ['alert_name1', 'alert_name2', ...]}
-    all_associations = list(db.session.query(GroupAlertAssociation).order_by(GroupAlertAssociation.group_name, GroupAlertAssociation.index).all())
+    all_associations_query = db.session.query(GroupAlertAssociation)\
+        .order_by(GroupAlertAssociation.group_name, GroupAlertAssociation.index)
+    all_associations = list(all_associations_query.all())
     groups = {}
     for assocation in all_associations:
         group_name = assocation.group_name

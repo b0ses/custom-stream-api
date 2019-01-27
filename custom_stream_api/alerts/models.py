@@ -20,7 +20,9 @@ class GroupAlert(db.Model):
 
     def as_dict(self):
         name = getattr(self, 'group_name')
-        alerts = [result[0] for result in db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=name).order_by(GroupAlertAssociation.index)]
+        alerts_query = db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=name)\
+            .order_by(GroupAlertAssociation.index)
+        alerts = [result[0] for result in alerts_query]
         return {'name': name, 'alerts': alerts}
 
 
