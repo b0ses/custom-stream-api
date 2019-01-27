@@ -154,19 +154,21 @@ def remove_alert(name):
 
 # GROUPS
 
-def random_alert(group_name):
-    alerts_query = db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)
-    group = [result[0] for result in alerts_query]
-    r_alert = random.choice(group)
-    return alert(r_alert)
-
-
-def linked_alert(group_name, index=0):
+def group_alert(group_name, random_choice=True):
+    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
+    if not group_alert:
+        raise Exception('Group not found: {}'.format(group_name))
     alerts_query = db.session.query(GroupAlertAssociation.alert_name).filter_by(group_name=group_name)\
         .order_by(GroupAlertAssociation.index)
-    group = [result[0] for result in alerts_query]
-    l_alert = group[index]
-    return alert(l_alert)
+    group_alerts = [result[0] for result in alerts_query]
+    if random_choice:
+        chosen_alert = random.choice(group_alerts)
+    else:
+        chosen_alert = group_alerts[group_alert.current_index]
+        group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
+        db.session.commit()
+
+    return alert(chosen_alert)
 
 
 def list_groups():
@@ -260,7 +262,7 @@ def remove_from_group(group_name, alert_names):
         if association.count():
             removed_alerts.append(alert_name)
             association.delete()
-    
+
     db.session.commit()
     return removed_alerts
 

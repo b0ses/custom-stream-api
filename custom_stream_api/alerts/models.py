@@ -6,7 +6,7 @@ class Alert(db.Model):
     text = db.Column(db.String(128))
     sound = db.Column(db.String(128))
     image = db.Column(db.String(128))
-    duration = db.Column(db.Integer)
+    duration = db.Column(db.Integer, default=500)
     thumbnail = db.Column(db.String(128))
     effect = db.Column(db.String(128))
 
@@ -18,6 +18,7 @@ class GroupAlert(db.Model):
     group_name = db.Column(db.String(128), primary_key=True, nullable=False)
     alerts = db.relationship('GroupAlertAssociation', cascade='all,delete', backref='group_alert')
     thumbnail = db.Column(db.String(128))
+    current_index = db.Column(db.Integer, default=0)
 
     def as_dict(self):
         name = getattr(self, 'group_name')

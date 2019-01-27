@@ -80,10 +80,11 @@ def group_alert_post():
     if request.method == 'POST':
         data = request.get_json()
         alert_data = {
-            'group_name': data.get('group_name', '')
+            'group_name': data.get('group_name', ''),
+            'random_choice': data.get('random', True)
         }
         try:
-            alert_text = alerts.random_alert(**alert_data)
+            alert_text = alerts.group_alert(**alert_data)
             if not alert_text:
                 alert_text = 'Displayed alert'
             return jsonify({'message': alert_text})
