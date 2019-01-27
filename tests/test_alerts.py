@@ -97,7 +97,7 @@ def test_alerts(app):
             'image': '',
             'duration': 3000,
             'effect': '',
-            'thumbnail': None
+            'thumbnail': ''
         }
         current_index += 1
 
@@ -117,7 +117,7 @@ def test_alerts(app):
             'image': '',
             'duration': 3000,
             'effect': '',
-            'thumbnail': None
+            'thumbnail': ''
         }
         current_index += 1
 
