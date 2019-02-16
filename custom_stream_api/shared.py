@@ -11,6 +11,7 @@ app = None
 socketio = None
 db = None
 migrate = None
+chatbot = None
 
 
 class InvalidUsage(Exception):
@@ -30,7 +31,7 @@ class InvalidUsage(Exception):
 
 
 def create_app(init_db=True):
-    global app, socketio, db, migrate
+    global app, socketio, db, migrate, chatbot
 
     app = Flask(__name__)
     CORS(app, resources={r'/*': {'origins': '*'}})
@@ -48,6 +49,20 @@ def create_app(init_db=True):
 
     from custom_stream_api.alerts.views import alert_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
+
+    from custom_stream_api import chatbot
+    chatbot_settings = {
+        'username': settings.USERNAME,
+        'client_id': settings.CLIENT_ID,
+        'token': settings.TOKEN,
+        'channel': settings.CHANNEL,
+        'timeout': settings.TIMEOUT
+    }
+    chatbot = chatbot.setup_chatbot(**chatbot_settings)
+    try:
+        chatbot.start()
+    except Exception as e:
+        print(e)
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
