@@ -65,14 +65,15 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         argv = cmd.split(' ')
         action = argv[0][1:]
 
-        if user in self.banned:
-            self.chat('/me Nice try {}.'.format(user))
-            return
-        elif self.spamming(user):
-            self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
-            return
-
         chat_reactions = {}
+
+        if action in ['alert', 'group_alert'] + list(chat_reactions.keys()):
+            if user in self.banned:
+                self.chat('/me Nice try {}.'.format(user))
+                return
+            elif self.spamming(user):
+                self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
+                return
 
         if action == 'alert':
             self.alert_api(' '.join(argv[1:]))
