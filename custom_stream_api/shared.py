@@ -1,3 +1,6 @@
+import threading
+import traceback
+
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -11,7 +14,9 @@ app = None
 socketio = None
 db = None
 migrate = None
-chatbot = None
+g = {
+    'chatbot': None
+}
 
 
 class InvalidUsage(Exception):
@@ -31,7 +36,7 @@ class InvalidUsage(Exception):
 
 
 def create_app(init_db=True):
-    global app, socketio, db, migrate, chatbot
+    global app, socketio, db, migrate, g
 
     app = Flask(__name__)
     CORS(app, resources={r'/*': {'origins': '*'}})
@@ -50,7 +55,7 @@ def create_app(init_db=True):
     from custom_stream_api.alerts.views import alert_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
 
-    from custom_stream_api import chatbot
+    from custom_stream_api import twitchbot
     chatbot_settings = {
         'username': settings.USERNAME,
         'client_id': settings.CLIENT_ID,
@@ -58,11 +63,13 @@ def create_app(init_db=True):
         'channel': settings.CHANNEL,
         'timeout': settings.TIMEOUT
     }
-    chatbot = chatbot.setup_chatbot(**chatbot_settings)
     try:
-        chatbot.start()
+        g['chatbot'] = twitchbot.TwitchBot(**chatbot_settings)
+        chatbot_t = threading.Thread(target=g['chatbot'].start)
+        chatbot_t.start()
     except Exception as e:
-        print(e)
+        print(traceback.print_exc())
+        print('Unable to start chatbot. Please update your chatbot settings.')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):

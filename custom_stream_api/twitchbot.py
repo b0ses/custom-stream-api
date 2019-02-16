@@ -9,9 +9,6 @@ import time
 
 from custom_stream_api.alerts import alerts
 
-chatbot = None
-
-
 class TwitchBot(irc.bot.SingleServerIRCBot):
     def __init__(self, username, client_id, token, channel, timeout=30):
         self.client_id = client_id
@@ -26,7 +23,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         url = 'https://api.twitch.tv/kraken/users?login=' + channel
         headers = {'Client-ID': client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
         r = requests.get(url, headers=headers).json()
-        self.channel_id = r['users'][0]['_id']
+        try:
+            self.channel_id = r['users'][0]['_id']
+        except KeyError:
+            raise Exception('Unable to connect with the provided credentials.')
 
         # Create IRC bot connection
         server = 'irc.chat.twitch.tv'
@@ -99,14 +99,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def chat(self, message):
         c = self.connection
         c.privmsg(self.channel, message)
-
-
-def setup_chatbot(**kwargs):
-    global chatbot
-    if chatbot:
-        chatbot.stop()
-    chatbot = TwitchBot(**kwargs)
-    return chatbot
 
 
 def main():
