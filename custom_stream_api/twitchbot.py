@@ -2,6 +2,7 @@
 Initial template from twitchdev/chat-samples
 '''
 
+import random
 import sys
 import irc.bot
 import requests
@@ -34,6 +35,41 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         print('Connecting to ' + server + ' on port ' + str(port) + '...')
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], username, username)
 
+        self.chat_reactions = {
+        }
+        self.chat_commands = {
+            'alert': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.alert_api
+            },
+            'group_alert': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.group_alert_api
+            },
+            'chat_reactions': {
+                'badges': [],
+                'callback': self.chat_reactions
+            },
+            'ban': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.ban
+            },
+            'unban': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.unban
+            },
+            'spongebob': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.spongebob
+            }
+        }
+        for chat_reaction, alert_name in self.chat_reactions.items():
+            self.chat_commands[chat_reaction] = {
+                'badges': [],
+                'callback': self.alert_api,
+                'input': alert_name
+            }
+
     def on_welcome(self, c, e):
         print('Joining ' + self.channel)
 
@@ -48,54 +84,73 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         # If a chat message starts with an exclamation point, try to run it as a command
         tags = {tag['key']: tag['value'] for tag in e.tags}
         user = tags['display-name']
-        # subscriber = tags['subscriber']
-        user_type = tags['user-type']
+        badges = [badge.split('/')[0] for badge in tags['badges'].split(',')]
         cmd = e.arguments[0]
         if cmd[:1] == '!':
             print('{} commanded: {}'.format(user, cmd))
-            self.do_command(e, cmd, user, user_type)
+            self.do_command(e, cmd, user, badges)
         return
+
+    def do_command(self, e, cmd, user, badges):
+        argv = cmd.split(' ')
+        command_name = argv[0][1:]
+        command_input = ' '.join(argv[1:])
+
+        command = self.chat_commands.get(command_name, None)
+        if not command:
+            return
+
+        if command['badges'] and not (list(set(badges) & set(command['badges']))):
+            self.chat('/me Nice try {}.'.format(user))
+            return
+
+        input = command['input'] if command.get('input') else command_input
+        command['callback'](user, badges, input)
 
     def spamming(self, user):
         spamming = (user in self.timeouts and ((time.time() - self.timeouts[user]) < self.timeout))
         self.timeouts[user] = time.time()
         return spamming
 
-    def do_command(self, e, cmd, user, user_type):
-        argv = cmd.split(' ')
-        action = argv[0][1:]
+    def alert_api(self, user, badges, input):
+        if user in self.banned:
+            self.chat('/me Nice try {}.'.format(user))
+            return
+        elif self.spamming(user):
+            self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
+            return
 
-        chat_reactions = {}
-
-        if action in ['alert', 'group_alert'] + list(chat_reactions.keys()):
-            if user in self.banned:
-                self.chat('/me Nice try {}.'.format(user))
-                return
-            elif self.spamming(user):
-                self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
-                return
-
-        if action == 'alert':
-            self.alert_api(' '.join(argv[1:]))
-        elif action == 'group_alert':
-            self.group_alert_api(' '.join((argv[1:])))
-        elif action == 'chat_reactions':
-            clean_chat_reactions = str(list(chat_reactions.keys()))[1:-1].replace('\'', '')
-            self.chat('Chat reations include: {}'.format(clean_chat_reactions))
-        elif action in chat_reactions:
-            self.alert_api(chat_reactions[action])
-        elif action == 'ban':
-            self.banned.add(' '.join(argv[1:]))
-        elif action == 'unban':
-            self.banned.discard(' '.join(argv[1:]))
-
-    def alert_api(self, name):
-        message = alerts.alert(name=name)
+        message = alerts.alert(name=input)
         self.chat('/me {}'.format(message))
 
-    def group_alert_api(self, name):
-        message = alerts.group_alert(group_name=name)
+    def group_alert_api(self, user, badges, input):
+        if user in self.banned:
+            self.chat('/me Nice try {}.'.format(user))
+            return
+        elif self.spamming(user):
+            self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
+            return
+
+        message = alerts.group_alert(group_name=input)
         self.chat('/me {}'.format(message))
+
+    def chat_reactions(self, user, badges, input):
+        clean_chat_reactions = str(list(self.chat_reactions.keys()))[1:-1].replace('\'', '')
+        self.chat('Chat reations include: {}'.format(clean_chat_reactions))
+
+    def ban(self, user, badges, input):
+        self.banned.add(input)
+        self.chat('/me Banned {}'.format(input))
+
+    def unban(self, user, badges, input):
+        self.banned.discard(input)
+        self.chat('/me Unbanned {}'.format(input))
+
+    def spongebob(self, user, badges, input):
+        spongebob_message = ' '.join(input)
+        spongebob_message = "".join(random.choice([k.upper(), k]) for k in spongebob_message)
+        spongebob_url = 'https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
+        self.chat('/me {} - {}'.format(spongebob_message, spongebob_url))
 
     def chat(self, message):
         c = self.connection
