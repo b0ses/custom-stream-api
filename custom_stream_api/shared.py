@@ -34,6 +34,9 @@ class InvalidUsage(Exception):
         rv['message'] = self.message
         return rv
 
+def start_chatbot_with_app(app, chatbot):
+    with app.app_context():
+        chatbot.start()
 
 def create_app(init_db=True):
     global app, socketio, db, migrate, g
@@ -65,7 +68,7 @@ def create_app(init_db=True):
     }
     try:
         g['chatbot'] = twitchbot.TwitchBot(**chatbot_settings)
-        chatbot_t = threading.Thread(target=g['chatbot'].start)
+        chatbot_t = threading.Thread(target=start_chatbot_with_app, args=(app, g['chatbot'],))
         chatbot_t.start()
     except Exception as e:
         print(traceback.print_exc())
