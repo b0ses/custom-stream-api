@@ -35,8 +35,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         print('Connecting to ' + server + ' on port ' + str(port) + '...')
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], username, username)
 
-        self.chat_reactions = {
-        }
+        self.chat_reactions = {}
         self.chat_commands = {
             'alert': {
                 'badges': ['moderator', 'broadcaster'],
@@ -61,6 +60,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'spongebob': {
                 'badges': ['moderator', 'broadcaster'],
                 'callback': self.spongebob
+            },
+            'add_chat_reaction': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.add_chat_reaction
+            },
+            'remove_chat_reaction': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.remove_chat_reaction
             }
         }
         for chat_reaction, alert_name in self.chat_reactions.items():
@@ -137,6 +144,21 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def chat_reactions(self, user, badges, input):
         clean_chat_reactions = str(list(self.chat_reactions.keys()))[1:-1].replace('\'', '')
         self.chat('Chat reations include: {}'.format(clean_chat_reactions))
+
+    def add_chat_reaction(self, user, badges, input):
+        chat_reaction_name = input.split()[0]
+        chat_reaction_alert = input.split()[1]
+        self.chat_reactions[chat_reaction_name] = chat_reaction_alert
+        self.chat_commands[chat_reaction_name] = {
+            'badges': [],
+            'callback': self.alert_api,
+            'input': chat_reaction_alert
+        }
+
+    def remove_chat_reaction(self, user, badges, input):
+        chat_reaction_name = input.split()[0]
+        del self.chat_reactions[chat_reaction_name]
+        del self.chat_commands[chat_reaction_name]
 
     def ban(self, user, badges, input):
         self.banned.add(input)
