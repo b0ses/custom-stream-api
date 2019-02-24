@@ -40,7 +40,7 @@ def start_chatbot_with_app(app, chatbot):
         chatbot.start()
 
 
-def create_app(init_db=True, chatbot=True):
+def create_app(init_db=True, chatbot=False):
     global app, socketio, db, migrate, g
 
     app = Flask(__name__)
