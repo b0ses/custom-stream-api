@@ -7,3 +7,12 @@ PORT = 5000
 
 # Just fill this in with whatever. Adds security to your server.
 SECRET = ''
+
+
+# Chatbot Settings
+USERNAME = ''
+CLIENT_ID = ''
+TOKEN = ''
+CHANNEL = ''
+
+TIMEOUT = 30  # seconds between spamming sounds
