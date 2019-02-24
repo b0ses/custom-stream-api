@@ -12,7 +12,7 @@ from custom_stream_api import settings
 
 app = None
 socketio = None
-db = None
+db = SQLAlchemy()
 migrate = None
 g = {
     'chatbot': None
@@ -40,7 +40,7 @@ def start_chatbot_with_app(app, chatbot):
         chatbot.start()
 
 
-def create_app(init_db=True):
+def create_app(init_db=True, chatbot=True):
     global app, socketio, db, migrate, g
 
     app = Flask(__name__)
@@ -49,7 +49,6 @@ def create_app(init_db=True):
     app.config['SECRET_KEY'] = settings.SECRET
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    db = SQLAlchemy()
     if init_db:
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
         db.init_app(app)
@@ -68,13 +67,14 @@ def create_app(init_db=True):
         'channel': settings.CHANNEL,
         'timeout': settings.TIMEOUT
     }
-    try:
-        g['chatbot'] = twitchbot.TwitchBot(**chatbot_settings)
-        chatbot_t = threading.Thread(target=start_chatbot_with_app, args=(app, g['chatbot'],))
-        chatbot_t.start()
-    except Exception as e:
-        print(traceback.print_exc())
-        print('Unable to start chatbot. Please update your chatbot settings.')
+    if chatbot:
+        try:
+            g['chatbot'] = twitchbot.TwitchBot(**chatbot_settings)
+            chatbot_t = threading.Thread(target=start_chatbot_with_app, args=(app, g['chatbot'],))
+            chatbot_t.start()
+        except Exception as e:
+            print(traceback.print_exc())
+            print('Unable to start chatbot. Please update your chatbot settings.')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
@@ -83,6 +83,3 @@ def create_app(init_db=True):
         return response
 
     return app, socketio, db, migrate
-
-
-create_app()
