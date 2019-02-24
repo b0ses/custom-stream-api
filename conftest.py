@@ -13,7 +13,7 @@ def app(request):
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///{}'.format(temp_db_path),
         'TESTING': True
     }
-    app, socketio, db, migrate = create_app(init_db=False)
+    app, socketio, db, migrate, _ = create_app(init_db=False)
     for setting in settings_override:
         app.config[setting] = settings_override[setting]
 
