@@ -34,9 +34,11 @@ class InvalidUsage(Exception):
         rv['message'] = self.message
         return rv
 
+
 def start_chatbot_with_app(app, chatbot):
     with app.app_context():
         chatbot.start()
+
 
 def create_app(init_db=True):
     global app, socketio, db, migrate, g

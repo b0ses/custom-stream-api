@@ -10,6 +10,7 @@ import time
 
 from custom_stream_api.alerts import alerts
 
+
 class TwitchBot(irc.bot.SingleServerIRCBot):
     def __init__(self, username, client_id, token, channel, timeout=30):
         self.client_id = client_id
