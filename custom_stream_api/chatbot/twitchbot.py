@@ -76,8 +76,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             },
             'id': {
                 'badges': ['moderator', 'broadcaster'],
-                'callback': self.chat,
-                'input': self.chatbot_id
+                'callback': self.get_chatbot_id
             },
 
         }
@@ -183,6 +182,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.banned.discard(input)
         self.chat('/me Unbanned {}'.format(input))
 
+    def get_chatbot_id(self, user, badges, input):
+        self.chat('Chatbot ID - {}'.format(self.chatbot_id))
+
     def spongebob(self, user, badges, input):
         spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(input)])
         spongebob_url = 'https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
@@ -214,17 +216,14 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
         print(traceback.print_exc())
         raise Exception('Unable to start chatbot with the provided settings.')
 
-    g['chatbot'] = {
-        'bot': chatbot,
-        'id': chatbot_id
-    }
+    g['chatbot'] = chatbot
     return chatbot_id
 
 
 def stop_chatbot(chatbot_id):
     chatbot = g.get('chatbot', None)
-    if chatbot and chatbot['id'] == uuid.UUID(chatbot_id):
-        chatbot['bot'].disconnect()
+    if chatbot and chatbot.chatbot_id == uuid.UUID(chatbot_id):
+        chatbot.disconnect()
         del g['chatbot']
     else:
         print(traceback.print_exc())
