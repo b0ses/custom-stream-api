@@ -10,9 +10,4 @@ SECRET = ''
 
 
 # Chatbot Settings
-USERNAME = ''
-CLIENT_ID = ''
-TOKEN = ''
-CHANNEL = ''
-
 TIMEOUT = 30  # seconds between spamming sounds
