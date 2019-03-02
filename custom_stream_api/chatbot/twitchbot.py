@@ -2,17 +2,21 @@
 Initial template from twitchdev/chat-samples
 '''
 
-import random
 import sys
 import irc.bot
 import requests
 import time
+import threading
+import traceback
+import uuid
 
 from custom_stream_api.alerts import alerts
+from custom_stream_api.shared import app, g
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
-    def __init__(self, username, client_id, token, channel, timeout=30):
+    def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=30):
+        self.chatbot_id = chatbot_id
         self.client_id = client_id
         self.token = token
         self.channel = '#' + channel
@@ -34,7 +38,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         server = 'irc.chat.twitch.tv'
         port = 6667
         print('Connecting to ' + server + ' on port ' + str(port) + '...')
-        irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], username, username)
+        irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], bot_name, bot_name)
 
         self.chat_reactions = {}
         self.chat_commands = {
@@ -48,7 +52,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             },
             'chat_reactions': {
                 'badges': [],
-                'callback': self.chat_reactions
+                'callback': self.get_chat_reactions
             },
             'ban': {
                 'badges': ['moderator', 'broadcaster'],
@@ -69,7 +73,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'remove_chat_reaction': {
                 'badges': ['moderator', 'broadcaster'],
                 'callback': self.remove_chat_reaction
-            }
+            },
+            'id': {
+                'badges': ['moderator', 'broadcaster'],
+                'callback': self.get_chatbot_id
+            },
+
         }
         for chat_reaction, alert_name in self.chat_reactions.items():
             self.chat_commands[chat_reaction] = {
@@ -142,9 +151,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         message = alerts.group_alert(group_name=input)
         self.chat('/me {}'.format(message))
 
-    def chat_reactions(self, user, badges, input):
-        clean_chat_reactions = str(list(self.chat_reactions.keys()))[1:-1].replace('\'', '')
-        self.chat('Chat reations include: {}'.format(clean_chat_reactions))
+    def get_chat_reactions(self, user, badges, input):
+        if self.chat_reactions:
+            clean_chat_reactions = str(list(self.chat_reactions.keys()))[1:-1].replace('\'', '')
+            msg = 'Chat reations include: {}'.format(clean_chat_reactions)
+        else:
+            msg = 'No chat reactions available'
+        self.chat(msg)
 
     def add_chat_reaction(self, user, badges, input):
         chat_reaction_name = input.split()[0]
@@ -169,15 +182,52 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.banned.discard(input)
         self.chat('/me Unbanned {}'.format(input))
 
+    def get_chatbot_id(self, user, badges, input):
+        self.chat('Chatbot ID - {}'.format(self.chatbot_id))
+
     def spongebob(self, user, badges, input):
-        spongebob_message = ' '.join(input)
-        spongebob_message = "".join(random.choice([k.upper(), k]) for k in spongebob_message)
+        spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(input)])
         spongebob_url = 'https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
         self.chat('/me {} - {}'.format(spongebob_message, spongebob_url))
 
     def chat(self, message):
         c = self.connection
         c.privmsg(self.channel, message)
+
+
+def start_chatbot_with_app(app, chatbot):
+    with app.app_context():
+        try:
+            chatbot.start()
+        except OSError as e:
+            print('Disconnected')
+
+
+def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
+    if 'chatbot' in g:
+        raise Exception('Chatbot already setup')
+    chatbot_id = uuid.uuid4()
+    try:
+        chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
+                            channel=channel, timeout=timeout)
+        chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
+        chatbot_thread.start()
+    except Exception as e:
+        print(traceback.print_exc())
+        raise Exception('Unable to start chatbot with the provided settings.')
+
+    g['chatbot'] = chatbot
+    return chatbot_id
+
+
+def stop_chatbot(chatbot_id):
+    chatbot = g.get('chatbot', None)
+    if chatbot and chatbot.chatbot_id == uuid.UUID(chatbot_id):
+        chatbot.disconnect()
+        del g['chatbot']
+    else:
+        print(traceback.print_exc())
+        raise Exception('Chatbot ID not found')
 
 
 def main():

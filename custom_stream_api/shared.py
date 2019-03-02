@@ -1,12 +1,9 @@
-import threading
-import traceback
-
 from flask import Flask
+from flask import jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
-from flask import jsonify
+from flask_sqlalchemy import SQLAlchemy
 
 from custom_stream_api import settings
 
@@ -14,9 +11,7 @@ app = None
 socketio = None
 db = SQLAlchemy()
 migrate = None
-g = {
-    'chatbot': None
-}
+g = {}
 
 
 class InvalidUsage(Exception):
@@ -33,29 +28,6 @@ class InvalidUsage(Exception):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
-
-
-def start_chatbot_with_app(app, chatbot):
-    with app.app_context():
-        chatbot.start()
-
-
-def setup_chatbot(app, g):
-    from custom_stream_api import twitchbot
-    chatbot_settings = {
-        'username': settings.USERNAME,
-        'client_id': settings.CLIENT_ID,
-        'token': settings.TOKEN,
-        'channel': settings.CHANNEL,
-        'timeout': settings.TIMEOUT
-    }
-    try:
-        g['chatbot'] = twitchbot.TwitchBot(**chatbot_settings)
-        chatbot_t = threading.Thread(target=start_chatbot_with_app, args=(app, g['chatbot'],))
-        chatbot_t.start()
-    except Exception as e:
-        print(traceback.print_exc())
-        print('Unable to start chatbot. Please update your chatbot settings.')
 
 
 def create_app(init_db=True):
@@ -75,7 +47,9 @@ def create_app(init_db=True):
     socketio = SocketIO(app)
 
     from custom_stream_api.alerts.views import alert_endpoints
+    from custom_stream_api.chatbot.views import chatbot_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
+    app.register_blueprint(chatbot_endpoints, url_prefix='/chatbot')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
