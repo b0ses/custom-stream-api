@@ -204,8 +204,8 @@ def start_chatbot_with_app(app, chatbot):
 def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
     if 'chatbot' in g:
         raise Exception('Chatbot already setup')
+    chatbot_id = uuid.uuid4()
     try:
-        chatbot_id = uuid.uuid4()
         chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
                             channel=channel, timeout=timeout)
         chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
@@ -216,7 +216,6 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
 
     g['chatbot'] = {
         'bot': chatbot,
-        'thread': chatbot_thread,
         'id': chatbot_id
     }
     return chatbot_id
@@ -226,7 +225,6 @@ def stop_chatbot(chatbot_id):
     chatbot = g.get('chatbot', None)
     if chatbot and chatbot['id'] == uuid.UUID(chatbot_id):
         chatbot['bot'].disconnect()
-        chatbot['thread'].join()
         del g['chatbot']
     else:
         print(traceback.print_exc())
