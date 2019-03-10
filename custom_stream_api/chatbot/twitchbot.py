@@ -7,17 +7,24 @@ import irc.bot
 import requests
 import time
 import threading
-import traceback
 import uuid
+import logging
 from enum import Enum
 
 from custom_stream_api.alerts import alerts
 from custom_stream_api.shared import app, g, db
 from custom_stream_api.chatbot.models import Alias
 
+logger = logging.getLogger()
+
 
 class Badges(Enum):
     CHAT = 'chat'
+    PREMIUM = 'premium'
+    VERIFIED = 'verified'
+    BOT = 'bot'
+    PARTNER = 'partner'
+    FFZ_SUPPORTER = 'ffz_supporter'
     SUBSCRIBER = 'subscriber'
     VIP = 'vip'
     MODERATOR = 'moderator'
@@ -25,7 +32,6 @@ class Badges(Enum):
     BROADCASTER = 'broadcaster'
     STAFF = 'staff'
     ADMIN = 'admin'
-    PREMIUM = 'premium'
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
@@ -35,8 +41,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.token = token
         self.channel = '#' + channel
 
-        self.badges = [Badges.CHAT, Badges.PREMIUM, Badges.SUBSCRIBER, Badges.VIP, Badges.MODERATOR, Badges.GLOBAL_MOD,
-                       Badges.BROADCASTER, Badges.STAFF, Badges.ADMIN]
+        self.badges = [Badges.CHAT, Badges.PREMIUM, Badges.VERIFIED, Badges.BOT, Badges.FFZ_SUPPORTER, Badges.PARTNER,
+                       Badges.SUBSCRIBER, Badges.VIP, Badges.MODERATOR, Badges.GLOBAL_MOD, Badges.BROADCASTER,
+                       Badges.STAFF, Badges.ADMIN]
 
         self.timeout = timeout  # in seconds
         self.timeouts = {}
@@ -54,13 +61,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         # Create IRC bot connection
         server = 'irc.chat.twitch.tv'
         port = 6667
-        print('Connecting to ' + server + ' on port ' + str(port) + '...')
+        logger.info('Connecting to ' + server + ' on port ' + str(port) + '...')
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], bot_name, bot_name)
 
         self.update_commands()
 
     def on_welcome(self, connection, event):
-        print('Joining ' + self.channel)
+        logger.info('Joining ' + self.channel)
 
         # You must request specific capabilities before you can use them
         connection.cap('REQ', ':twitch.tv/membership')
@@ -76,17 +83,25 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         # If a chat message starts with an exclamation point, try to run it as a command
         tags = {tag['key']: tag['value'] for tag in event.tags}
         user = tags['display-name']
-        badges = [badge.split('/')[0] for badge in tags['badges'].split(',')]
+        badges = self.get_user_badges(tags)
         command = event.arguments[0]
         if command[:1] == '!':
-            print('{} commanded: {}'.format(user, command))
+            logger.info('{} commanded: {}'.format(user, command))
             self.do_command(command, user, badges)
+
+    def get_user_badges(self, tags):
+        badges = [Badges.CHAT]  # baseline
+        for badge in tags['badges'].split(','):
+            badge_string = badge.split('/')[0]
+            badge = self.get_badge(badge_string)
+            if badge:
+                badges.append(badge)
+        return badges
 
     def get_max_badge(self, badges):
         max_badge = Badges.CHAT
         if badges:
-            badge_enums = [self.get_badge(badge) for badge in badges]
-            max_badge = sorted(badge_enums, key=lambda badge: self.badges.index(badge))[-1]
+            max_badge = sorted(badges, key=lambda badge: self.badges.index(badge))[-1]
         return max_badge
 
     def do_command(self, command, user, badges):
@@ -144,7 +159,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             }
 
     def get_badge(self, badge_string):
-        return list(filter(lambda badge: badge.value == badge_string, list(Badges)))[0]
+        badge_objects = list(filter(lambda badge: badge.value == badge_string, list(Badges)))
+        if badge_objects:
+            return badge_objects[0]
+        else:
+            logger.warning('Possible new badge: {}'.format(badge_string))
 
     def get_commands(self, user, badges, input):
         if not input:
@@ -166,7 +185,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return list(db.session.query(Alias).order_by(Alias.command.asc()).all())
 
     def redirect_alias(self, user, badges, input):
-        print('redirect', input, user, badges)
+        logger.info('redirect', input, user, badges)
         self.do_command(input, user, badges)
 
     def import_aliases(self, aliases):
@@ -208,8 +227,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
-        message = alerts.alert(name=input)
-        self.chat('/me {}'.format(message))
+        try:
+            message = alerts.alert(name=input)
+            self.chat('/me {}'.format(message))
+        except Exception:
+            pass
 
     def group_alert_api(self, user, badges, input):
         if user in self.banned:
@@ -219,8 +241,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
-        message = alerts.group_alert(group_name=input)
-        self.chat('/me {}'.format(message))
+        try:
+            message = alerts.group_alert(group_name=input)
+            self.chat('/me {}'.format(message))
+        except Exception:
+            pass
 
     def ban(self, user, badges, input):
         self.banned.add(input)
@@ -246,7 +271,7 @@ def start_chatbot_with_app(app, chatbot):
         try:
             chatbot.start()
         except OSError:
-            print('Disconnected')
+            logger.info('Disconnected')
 
 
 def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
@@ -258,8 +283,8 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
                             channel=channel, timeout=timeout)
         chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
         chatbot_thread.start()
-    except Exception:
-        print(traceback.print_exc())
+    except Exception as e:
+        logger.exception(e)
         raise Exception('Unable to start chatbot with the provided settings.')
 
     g['chatbot'] = chatbot
@@ -271,7 +296,6 @@ def verify_chatbot_id(chatbot_id):
     if chatbot and chatbot.chatbot_id == uuid.UUID(chatbot_id):
         return chatbot
     else:
-        print(traceback.print_exc())
         raise Exception('Chatbot ID not found')
 
 
