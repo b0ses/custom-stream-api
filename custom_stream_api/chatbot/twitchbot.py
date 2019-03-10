@@ -170,7 +170,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             badge = self.get_max_badge(badges)
         else:
             badge = self.get_badge(input)
-        badge_index = self.badges.index(badge)
+        badge_index = self.badges.index(badge) if badge else -1
         commands = [command for command, command_dict in self.commands.items()
                     if badge_index >= self.badges.index(command_dict['badge'])]
 
