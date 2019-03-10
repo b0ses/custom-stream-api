@@ -123,7 +123,7 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
     validate_image(image)
     thumbnail = validate_thumbnail(thumbnail)
 
-    found_alert = Alert.query.filter_by(name=generated_name).one_or_none()
+    found_alert = db.session.query(Alert).filter_by(name=generated_name).one_or_none()
     if found_alert:
         found_alert.name = generated_name
         found_alert.text = text
