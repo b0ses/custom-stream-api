@@ -91,7 +91,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def get_user_badges(self, tags):
         badges = [Badges.CHAT]  # baseline
-        for badge in tags['badges'].split(','):
+        user_bages_str = tags['badges'] or ''
+        for badge in user_bages_str:
             badge_string = badge.split('/')[0]
             badge = self.get_badge(badge_string)
             if badge:
