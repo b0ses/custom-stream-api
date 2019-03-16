@@ -115,7 +115,7 @@ def save_group_post():
             'thumbnail': data.get('thumbnail')
         }
         try:
-            alert_names = alerts.replace_group(**add_to_group_data)
+            alert_names = alerts.set_group(**add_to_group_data)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})

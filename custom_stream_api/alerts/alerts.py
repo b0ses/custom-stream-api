@@ -190,11 +190,11 @@ def import_groups(groups):
         alerts = group_data['alerts']
         name = group_data['name']
         thumbnail = group_data.get('thumbnail', '')
-        replace_group(name, alerts, thumbnail=thumbnail, save=False)
+        set_group(name, alerts, thumbnail=thumbnail, save=False)
     db.session.commit()
 
 
-def replace_group(group_name, alert_names, thumbnail='', save=True):
+def set_group(group_name, alert_names, thumbnail='', save=True):
     thumbnail = validate_thumbnail(thumbnail)
     group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
     if group_alert:
