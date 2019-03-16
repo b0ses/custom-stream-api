@@ -88,3 +88,39 @@ def remove_alias_post():
         return jsonify({'message': 'Alias removed'})
     except Exception as e:
         raise InvalidUsage(str(e))
+
+@chatbot_endpoints.route('/lists', methods=['GET', 'POST'])
+def lists():
+    if 'chatbot' not in g:
+        raise InvalidUsage('No chatbot running. Please start the chatbot beforehand.')
+    if request.method == 'GET':
+        try:
+            all_lists = g['chatbot'].list_lists()
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify(all_lists)
+    else:
+        data = request.get_json()
+        try:
+            g['chatbot'].import_lists(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Lists imported'})
+
+@chatbot_endpoints.route('/counts', methods=['GET', 'POST'])
+def counts():
+    if 'chatbot' not in g:
+        raise InvalidUsage('No chatbot running. Please start the chatbot beforehand.')
+    if request.method == 'GET':
+        try:
+            all_counts = g['chatbot'].list_counts()
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify(all_counts)
+    else:
+        data = request.get_json()
+        try:
+            g['chatbot'].import_counts(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Counts imported'})
