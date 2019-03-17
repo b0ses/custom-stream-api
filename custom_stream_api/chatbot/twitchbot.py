@@ -67,7 +67,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], bot_name, bot_name)
 
         self.update_commands()
-        self.update_banned()
 
     def on_welcome(self, connection, event):
         logger.info('Joining ' + self.channel)
@@ -144,23 +143,31 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             },
             'get_count': {
                 'badge': Badges.MODERATOR,
-                'callback': self.set_count
+                'callback': self.get_count
             },
             'set_count': {
                 'badge': Badges.MODERATOR,
                 'callback': self.set_count
             },
+            'reset_count': {
+                'badge': Badges.MODERATOR,
+                'callback': self.reset_count
+            },
+            'remove_count': {
+                'badge': Badges.MODERATOR,
+                'callback': self.remove_count
+            },
             'add_count': {
                 'badge': Badges.MODERATOR,
                 'callback': self.add_count
             },
-            'substract_count': {
+            'subtract_count': {
                 'badge': Badges.MODERATOR,
                 'callback': self.subtract_count
             },
             'add_list_item': {
                 'badge': Badges.MODERATOR,
-                'callback': self.append_to_list
+                'callback': self.add_to_list
             },
             'remove_list_item': {
                 'badge': Badges.MODERATOR,
@@ -262,44 +269,63 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def import_counts(self, counts):
         for count_dict in counts:
-            self.set_count(count_dict['name'], count_dict['count'], save=False)
+            self.set_count('{} {}'.format(count_dict['name'], count_dict['count']), save=False)
         db.session.commit()
 
-    def add_count(self, name, user=None, badges=None, input=None):
-        count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
+    def add_count(self, input, user=None, badges=None):
+        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
         if not count_obj:
-            count_obj = Count(name=name, count=0)
+            count_obj = Count(name=input, count=0)
+            db.session.add(count_obj)
         count_obj.count += 1
         db.session.commit()
-        self.chat('/me {}: {}'.format(name, count_obj.count))
+        self.chat('/me {}: {}'.format(input, count_obj.count))
         return count_obj.count
 
-    def subtract_count(self, name, user=None, badges=None, input=None):
-        count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
+    def subtract_count(self, input, user=None, badges=None):
+        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
         if not count_obj:
-            count_obj = Count(name=name, count=0)
+            count_obj = Count(name=input, count=0)
+            db.session.add(count_obj)
         count_obj.count -= 1
         db.session.commit()
-        self.chat('/me {}: {}'.format(name, count_obj.count))
+        self.chat('/me {}: {}'.format(input, count_obj.count))
         return count_obj.count
 
-    def get_count(self, name, user=None, badges=None, input=None):
-        count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
+    def get_count(self, input, user=None, badges=None):
+        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
         if not count_obj:
-            self.chat('/me Count {} doesn\'t exist'.format(name))
+            self.chat('/me Count {} doesn\'t exist'.format(input))
             return
-        self.chat('/me {}: {}'.format(name, count_obj.count))
+        self.chat('/me {}: {}'.format(input, count_obj.count))
         return count_obj.count
 
-    def set_count(self, name, count, save=True, user=None, badges=None, input=None):
+    def reset_count(self, input, save=True, user=None, badges=None):
+        return self.set_count('{} 0'.format(input), save=save, user=user, badges=badges)
+
+    def set_count(self, input, save=True, user=None, badges=None):
+        name = input.split()[0]
+        count = input.split()[1]
+        if not (name or count):
+            self.chat('/me Incorrect format')
+            return
         count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
         if not count_obj:
             count_obj = Count(name=name, count=0)
+            db.session.add(count_obj)
         count_obj.count = count
         if save:
             db.session.commit()
         self.chat('/me {}: {}'.format(name, count_obj.count))
         return count_obj.count
+
+    def remove_count(self, input, user=None, badges=None):
+        found_count = db.session.query(Count).filter_by(name=input)
+        if found_count.count():
+            found_count.delete()
+            db.session.commit()
+            self.chat('/me {} removed'.format(input))
+            return found_count
 
     # Lists
 
