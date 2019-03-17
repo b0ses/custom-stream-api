@@ -21,7 +21,8 @@ class List(db.Model):
         return {'name': name, 'items': items}
 
 class ListItem(db.Model):
-    list_name = db.Column(db.String(128), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    list_name = db.Column(db.String(128), db.ForeignKey('list.name'), nullable=False)
     index = db.Column(db.Integer, nullable=False)
     item = db.Column(db.String(128), nullable=False)
 
