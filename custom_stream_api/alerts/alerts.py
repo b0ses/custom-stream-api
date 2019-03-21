@@ -106,7 +106,7 @@ def alert(name='', text='', sound='', effect='', duration=3000, image=''):
 
 
 def list_alerts():
-    return list(db.session.query(Alert).order_by(Alert.name.asc()).all())
+    return [alert.as_dict() for alert in db.session.query(Alert).order_by(Alert.name.asc()).all()]
 
 
 def import_alerts(alerts):

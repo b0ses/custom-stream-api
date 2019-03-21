@@ -6,6 +6,19 @@ from custom_stream_api.shared import InvalidUsage
 alert_endpoints = Blueprint('alerts', __name__)
 
 
+@alert_endpoints.route('/', methods=['GET', 'POST'])
+def list_alerts_get():
+    if request.method == 'GET':
+        return jsonify(alerts.list_alerts())
+    else:
+        data = request.get_json()
+        try:
+            alerts.import_alerts(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Alerts imported'})
+
+
 @alert_endpoints.route('/alert', methods=['POST'])
 def alert_post():
     if request.method == 'POST':
@@ -22,23 +35,9 @@ def alert_post():
             alert_text = alerts.alert(**alert_data)
             if not alert_text:
                 alert_text = 'Displayed alert'
-            return jsonify({'message': alert_text})
         except Exception as e:
             raise InvalidUsage(str(e))
-
-
-@alert_endpoints.route('/', methods=['GET', 'POST'])
-def list_alerts_get():
-    if request.method == 'GET':
-        all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-        return jsonify(all_alerts)
-    else:
-        data = request.get_json()
-        try:
-            alerts.import_alerts(data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': 'Alerts imported'})
+        return jsonify({'message': alert_text})
 
 
 @alert_endpoints.route('/add_alert', methods=['POST'])
@@ -75,6 +74,19 @@ def remove_alert_post():
         return jsonify({'message': 'Alert removed: {}'.format(alert_name)})
 
 
+@alert_endpoints.route('/groups', methods=['GET', 'POST'])
+def list_groups_get():
+    if request.method == 'GET':
+        return jsonify(alerts.list_groups())
+    else:
+        data = request.get_json()
+        try:
+            alerts.import_groups(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Groups imported'})
+
+
 @alert_endpoints.route('/group_alert', methods=['POST'])
 def group_alert_post():
     if request.method == 'POST':
@@ -87,22 +99,9 @@ def group_alert_post():
             alert_text = alerts.group_alert(**alert_data)
             if not alert_text:
                 alert_text = 'Displayed alert'
-            return jsonify({'message': alert_text})
         except Exception as e:
             raise InvalidUsage(str(e))
-
-
-@alert_endpoints.route('/groups', methods=['GET', 'POST'])
-def list_groups_get():
-    if request.method == 'GET':
-        return jsonify(alerts.list_groups())
-    else:
-        data = request.get_json()
-        try:
-            alerts.import_groups(data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': 'Groups imported'})
+        return jsonify({'message': alert_text})
 
 
 @alert_endpoints.route('/save_group', methods=['POST'])
