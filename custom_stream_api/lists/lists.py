@@ -42,31 +42,39 @@ def add_to_list(name, items, save=True):
     return items
 
 
-def list_lists(specific_list=None):
+def list_lists():
     list_query = db.session.query(List)
-    if specific_list:
-        list_query = list_query.filter(List.name == specific_list)
     return [list_obj.as_dict() for list_obj in list_query.order_by(List.name.asc())]
 
 
-def get_list_item(name, item_index=None):
+def get_list(name):
+    list_query = db.session.query(List).filter(List.name == name).first()
+    if list_query:
+        return list_query.as_dict()
+
+
+def get_list_item(name, index=None):
     found_list = db.session.query(List).filter_by(name=name).one_or_none()
     if not found_list:
         return
     items = found_list.items
-    if not item_index:
-        item_index = random.choice(range(0, len(items)))
+    if not index:
+        index = random.choice(range(0, len(items)))
     else:
-        if not isinstance(item_index, int):
-            if not item_index.isdigit():
+        if not isinstance(index, int):
+            if not index.isdigit():
                 return
-            item_index = int(item_index)
-        if item_index > len(items):
+            index = int(index)
+        if index > len(items):
             return
-    return items[item_index].item
+    return items[index].item
 
 
 def remove_from_list(name, index):
+    if not isinstance(index, int):
+        if not index.isdigit():
+            return
+        index = int(index)
     found_list_item = db.session.query(ListItem).filter(ListItem.list_name == name, ListItem.index >= index).\
         order_by(ListItem.index.asc())
     if not found_list_item.count():
@@ -84,9 +92,9 @@ def remove_from_list(name, index):
     return found_list_item
 
 
-def remove_list(list_name):
-    found_list = db.session.query(List).filter_by(name=list_name)
+def remove_list(name):
+    found_list = db.session.query(List).filter_by(name=name)
     if found_list.count():
         found_list.delete()
         db.session.commit()
-        return list_name
+        return name

@@ -34,7 +34,7 @@ def test_import_export(import_lists):
 
 def test_set_list(import_lists):
     lists.set_list('list3', ['six', 'seven'])
-    assert lists.list_lists('list3') == [{'name': 'list3', 'items': ['six', 'seven']}]
+    assert lists.get_list('list3') == {'name': 'list3', 'items': ['six', 'seven']}
 
 
 def test_get_list_item(import_lists):
@@ -43,7 +43,7 @@ def test_get_list_item(import_lists):
 
 def test_remove_from_list(import_lists):
     lists.remove_from_list('list2', 0)
-    assert lists.list_lists('list2') == [{'name': 'list2', 'items': ['five']}]
+    assert lists.get_list('list2') == {'name': 'list2', 'items': ['five']}
 
     # make sure the indexes are reset
     list_item = db.session.query(ListItem).filter_by(list_name='list2', index=0).first()
