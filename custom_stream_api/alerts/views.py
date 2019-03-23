@@ -19,6 +19,26 @@ def list_alerts_get():
         return jsonify({'message': 'Alerts imported'})
 
 
+@alert_endpoints.route('/add_alert', methods=['POST'])
+def add_alert_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        add_alert_data = {
+            'name': data.get('name', ''),
+            'text': data.get('text', ''),
+            'sound': data.get('sound', ''),
+            'duration': data.get('duration', 3000),
+            'effect': data.get('effect', ''),
+            'image': data.get('image', ''),
+            'thumbnail': data.get('thumbnail', '')
+        }
+        try:
+            alert_name = alerts.add_alert(**add_alert_data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Alert in database: {}'.format(alert_name)})
+
+
 @alert_endpoints.route('/alert', methods=['POST'])
 def alert_post():
     if request.method == 'POST':
@@ -38,26 +58,6 @@ def alert_post():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': alert_text})
-
-
-@alert_endpoints.route('/add_alert', methods=['POST'])
-def add_alert_post():
-    if request.method == 'POST':
-        data = request.get_json()
-        add_alert_data = {
-            'name': data.get('name', ''),
-            'text': data.get('text', ''),
-            'sound': data.get('sound', ''),
-            'duration': data.get('duration', 3000),
-            'effect': data.get('effect', ''),
-            'image': data.get('image', ''),
-            'thumbnail': data.get('thumbnail', '')
-        }
-        try:
-            alert_name = alerts.add_alert(**add_alert_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': 'Alert in database: {}'.format(alert_name)})
 
 
 @alert_endpoints.route('/remove_alert', methods=['POST'])
@@ -85,23 +85,6 @@ def list_groups_get():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Groups imported'})
-
-
-@alert_endpoints.route('/group_alert', methods=['POST'])
-def group_alert_post():
-    if request.method == 'POST':
-        data = request.get_json()
-        alert_data = {
-            'group_name': data.get('group_name', ''),
-            'random_choice': data.get('random', True)
-        }
-        try:
-            alert_text = alerts.group_alert(**alert_data)
-            if not alert_text:
-                alert_text = 'Displayed alert'
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': alert_text})
 
 
 @alert_endpoints.route('/save_group', methods=['POST'])
@@ -133,6 +116,23 @@ def add_to_group_post():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Added to {}: {}'.format(data.get('group_name'), alert_names)})
+
+
+@alert_endpoints.route('/group_alert', methods=['POST'])
+def group_alert_post():
+    if request.method == 'POST':
+        data = request.get_json()
+        alert_data = {
+            'group_name': data.get('group_name', ''),
+            'random_choice': data.get('random', True)
+        }
+        try:
+            alert_text = alerts.group_alert(**alert_data)
+            if not alert_text:
+                alert_text = 'Displayed alert'
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': alert_text})
 
 
 @alert_endpoints.route('/remove_from_group', methods=['POST'])
