@@ -154,31 +154,31 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'get_commands': {
                 'badge': Badges.CHAT,
                 'format': '^!get_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
-                'help': '!get_commands []'.format(' | '.join(sorted(BADGE_NAMES))),
+                'help': '!get_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.main_commands, text, badges)
             },
             'get_count_commands': {
                 'badge': self.get_min_badge([command['badge'] for command in self.count_commands.values()]),
                 'format': '^!get_count_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
-                'help': '!get_count_commands []'.format(' | '.join(sorted(BADGE_NAMES))),
+                'help': '!get_count_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.count_commands, text, badges)
             },
             'get_list_commands': {
                 'badge': self.get_min_badge([command['badge'] for command in self.list_commands.values()]),
                 'format': '^!get_list_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
-                'help': '!get_list_commands []'.format(' | '.join(sorted(BADGE_NAMES))),
+                'help': '!get_list_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.list_commands, text, badges)
             },
             'get_alert_commands': {
                 'badge': self.get_min_badge([command['badge'] for command in self.alert_commands.values()]),
                 'format': '^!get_alert_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
-                'help': '!get_alert_commands []'.format(' | '.join(sorted(BADGE_NAMES))),
+                'help': '!get_alert_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.alert_commands, text, badges)
             },
             'get_aliases': {
                 'badge': self.get_min_badge([command['badge'] for command in self.aliases.values()]),
                 'format': '^!get_aliases\s*({})?$'.format('|'.join(BADGE_NAMES)),
-                'help': '!get_aliases []'.format(' | '.join(sorted(BADGE_NAMES))),
+                'help': '!get_aliases [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.aliases, text, badges)
             },
             'spongebob': {

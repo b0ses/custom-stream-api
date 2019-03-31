@@ -86,7 +86,7 @@ def test_get_commands(chatbot):
     # FAIL
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands non-existent-badge', badge_level)
-    expected_response = 'Format: {}'.format('!get_commands []'.format(' | '.join(sorted(models.BADGE_NAMES))))
+    expected_response = 'Format: !get_commands [{}]'.format(' | '.join(sorted(models.BADGE_NAMES)))
     assert chatbot.response == expected_response
 
     # SUCCESS
