@@ -5,7 +5,7 @@ import time
 from custom_stream_api.chatbot import aliases, twitchbot, models
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
-from tests.test_alerts import import_alerts, import_groups
+from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
 from collections import namedtuple
 
 Event = namedtuple('Event', ['tags', 'arguments', ])
@@ -40,6 +40,16 @@ def import_aliases(app):
 
 
 @pytest.fixture
+def import_alerts(app):
+    alerts.import_alerts(IMPORT_ALERTS)
+
+
+@pytest.fixture
+def import_groups(import_alerts):
+    alerts.import_groups(IMPORT_GROUP_ALERTS)
+
+
+@pytest.fixture
 def chatbot(app):
     # we don't need it to actually connect and listen to chat
     # just to respond the way we want it to
@@ -48,7 +58,8 @@ def chatbot(app):
         cls.response = message
 
     with mock.patch.object(twitchbot.TwitchBot, 'chat', new=store_chat):
-        yield twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel', timeout=0.1)
+        yield twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
+                                  timeout=0.1)
 
 
 def simulate_chat(bot, user_name, message, badges):
@@ -59,8 +70,8 @@ def simulate_chat(bot, user_name, message, badges):
     kv_tags = [{'key': key, 'value': value} for key, value in tags.items()]
     bot.on_pubmsg(None, Event(tags=kv_tags, arguments=[message]))
 
-# MAIN COMMANDS
 
+# MAIN COMMANDS
 def test_id(chatbot):
     simulate_chat(chatbot, 'test_user', '!id', [models.Badges.GLOBAL_MODERATOR])
     expected_response = 'Nice try test_user'
@@ -123,8 +134,8 @@ def test_spongebob(chatbot):
     expected_response = 'Nice try test_user'
     assert chatbot.response == expected_response
 
-# ALIASES
 
+# ALIASES
 def test_get_aliases_empty(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
@@ -175,8 +186,8 @@ def test_aliases(import_aliases, chatbot):
     expected_response = 'test_count: 10'
     assert chatbot.response == expected_response
 
-# COUNTS
 
+# COUNTS
 def test_get_count_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
@@ -285,8 +296,8 @@ def test_count_commands(chatbot):
     expected_response = 'Format: !remove_count count_name'
     assert chatbot.response == expected_response
 
-# LISTS
 
+# LISTS
 def test_get_list_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
@@ -350,8 +361,8 @@ def test_list_commands(chatbot):
     expected_response = 'Format: !remove_list_item list_name index'
     assert chatbot.response == expected_response
 
-# ALERTS
 
+# ALERTS
 def fake_alert_api(cls, user, alert):
     if user in lists.get_list('banned_users'):
         cls.chat('Nice try {}'.format(user))
@@ -366,6 +377,7 @@ def fake_alert_api(cls, user, alert):
     except Exception as e:
         pass
 
+
 def fake_group_alert_api(cls, user, group_alert):
     if user in lists.get_list('banned_users'):
         cls.chat('Nice try {}'.format(user))
@@ -379,6 +391,7 @@ def fake_group_alert_api(cls, user, group_alert):
         cls.chat('/me {}'.format(message))
     except Exception as e:
         pass
+
 
 def test_get_alert_commands(chatbot):
     badge_level = []

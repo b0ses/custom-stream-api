@@ -51,6 +51,7 @@ IMPORT_GROUP_ALERTS = [
     }
 ]
 
+
 @pytest.fixture
 def import_alerts(app):
     alerts.import_alerts(IMPORT_ALERTS)
@@ -199,11 +200,13 @@ def test_group_alert(import_groups):
     expected = ['Test Text 2', 'Test Text 3']
     assert alerts.group_alert('last_two', hit_socket=False) in expected
 
+
 def test_remove_from_group(import_groups):
     alerts.remove_from_group('first_two', ['test_text_2'])
     group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
     expected = ['test_text_1']
     assert expected == group_alerts
+
 
 def test_remove_group(import_groups):
     alerts.remove_group('last_two')
