@@ -118,7 +118,7 @@ def list_alerts():
     return [alert.as_dict() for alert in db.session.query(Alert).order_by(Alert.name.asc()).all()]
 
 
-def alert(name='', text='', sound='', effect='', duration=3000, image=''):
+def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
@@ -136,7 +136,8 @@ def alert(name='', text='', sound='', effect='', duration=3000, image=''):
             'image': image,
             'duration': duration
         }
-    socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
+    if hit_socket:
+        socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
     return socket_data['text']
 
 
@@ -219,7 +220,7 @@ def list_groups():
     return sorted(listed_groups, key=lambda group: group['name'])
 
 
-def group_alert(group_name, random_choice=True):
+def group_alert(group_name, random_choice=True, hit_socket=True):
     group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if not group_alert:
         raise Exception('Group not found: {}'.format(group_name))
@@ -231,7 +232,7 @@ def group_alert(group_name, random_choice=True):
         group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
         db.session.commit()
 
-    return alert(chosen_alert)
+    return alert(chosen_alert, hit_socket=hit_socket)
 
 
 def remove_from_group(group_name, alert_names):
