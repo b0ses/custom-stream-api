@@ -10,6 +10,7 @@ chatbot_endpoints = Blueprint('chatbot', __name__)
 
 logger = logging.getLogger()
 
+
 @chatbot_endpoints.route('/start', methods=['POST'])
 def start_post():
     if request.method == 'POST':
@@ -40,6 +41,7 @@ def stop_post():
             return jsonify({'message': 'stopped chatbot'})
         except Exception as e:
             raise InvalidUsage(str(e))
+
 
 @chatbot_endpoints.route('/aliases', methods=['GET', 'POST'])
 def list_aliases_get():

@@ -1,6 +1,7 @@
 from custom_stream_api.shared import db
 from enum import Enum
 
+
 class Badges(Enum):
     CHAT = 'chat'
     BITS = 'bits'
@@ -17,6 +18,7 @@ class Badges(Enum):
     BROADCASTER = 'broadcaster'
     STAFF = 'staff'
     ADMINISTRATOR = 'admin'
+
 
 BADGE_LEVELS = [
     Badges.CHAT,

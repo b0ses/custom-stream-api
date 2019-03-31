@@ -103,7 +103,7 @@ def remove_count_post():
             'name': data.get('name', '')
         }
         try:
-            count = counts.remove_count(**count_data)
+            counts.remove_count(**count_data)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Count removed: {}'.format(count_data['name'])})

@@ -1,5 +1,6 @@
 from custom_stream_api.shared import db
 
+
 class Count(db.Model):
     name = db.Column(db.String(128), primary_key=True, nullable=False)
     count = db.Column(db.Integer, default=0)

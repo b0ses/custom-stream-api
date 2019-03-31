@@ -7,7 +7,6 @@ import sys
 import threading
 import time
 import uuid
-import re
 
 import irc.bot
 import requests
@@ -67,7 +66,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         c = self.connection
         c.privmsg(self.channel, message)
 
-
     # PARSE MESSAGES
 
     def on_pubmsg(self, connection, event):
@@ -125,7 +123,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         found_command['callback'](command_text, user, badges)
-
 
     # COMMANDS
 
@@ -196,6 +193,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.chat('Chatbot ID - {}'.format(self.chatbot_id))
 
     # Alises
+
     def set_aliases(self):
         self.aliases = {}
         for alias in aliases.list_aliases():
@@ -206,6 +204,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             }
 
     # Counts
+
     def set_count_commands(self):
         self.count_commands = {
             'get_count': {
@@ -243,8 +242,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         counts.remove_count(count_name)
         self.chat('{} removed'.format(count_name))
 
-
     # Lists
+
     def set_list_commands(self):
         self.list_commands = {
             'get_list_item': {
@@ -277,6 +276,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.chat('{}. {}'.format(index, item))
 
     # Alerts
+
     def set_alert_commands(self):
         self.alert_commands = {
             'alert': {

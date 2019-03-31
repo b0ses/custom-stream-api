@@ -1,5 +1,6 @@
 from custom_stream_api.shared import db
 
+
 class List(db.Model):
     name = db.Column(db.String(128), primary_key=True, nullable=False)
     items = db.relationship('ListItem', cascade='all,delete', backref='group_alert')
@@ -10,6 +11,7 @@ class List(db.Model):
         items_query = db.session.query(ListItem.item).filter_by(list_name=name).order_by(ListItem.index)
         items = [result[0] for result in items_query]
         return {'name': name, 'items': items}
+
 
 class ListItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)

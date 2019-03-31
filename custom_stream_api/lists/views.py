@@ -22,6 +22,7 @@ def list_lists_get():
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Lists imported'})
 
+
 @lists_endpoints.route('/set_list', methods=['POST'])
 def set_list_post():
     if request.method == 'POST':
@@ -35,6 +36,7 @@ def set_list_post():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'List set: {}'.format(list_data['name'])})
+
 
 @lists_endpoints.route('/add_to_list', methods=['POST'])
 def add_to_list_post():
@@ -50,6 +52,7 @@ def add_to_list_post():
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Added to list: {}'.format(list_data['items'])})
 
+
 @lists_endpoints.route('/get_list', methods=['POST'])
 def get_list():
     if request.method == 'POST':
@@ -62,6 +65,7 @@ def get_list():
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify(list_dict)
+
 
 @lists_endpoints.route('/get_list_item', methods=['POST'])
 def get_list_item_post():
