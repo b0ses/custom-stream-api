@@ -50,7 +50,9 @@ def list_lists():
 def get_list(name):
     list_query = db.session.query(List).filter(List.name == name).first()
     if list_query:
-        return list_query.as_dict()
+        return list(list_query.as_dict()['items'])
+    else:
+        return []
 
 
 def get_list_item(name, index=None):
@@ -79,7 +81,9 @@ def remove_from_list(name, index):
         order_by(ListItem.index.asc())
     if not found_list_item.count():
         return
-    db.session.delete(found_list_item.first())
+    found_list_item_obj = found_list_item.first()
+    found_list_item_value = found_list_item_obj.item
+    db.session.delete(found_list_item_obj)
 
     # reset indexes
     new_index = index
@@ -89,7 +93,7 @@ def remove_from_list(name, index):
 
     db.session.commit()
 
-    return found_list_item
+    return found_list_item_value
 
 
 def remove_list(name):
