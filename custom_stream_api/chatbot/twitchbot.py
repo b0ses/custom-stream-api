@@ -2,39 +2,24 @@
 Initial template from twitchdev/chat-samples
 '''
 
+import logging
 import sys
+import threading
+import time
+import uuid
+import re
+
 import irc.bot
 import requests
-import time
-import threading
-import uuid
-import logging
-import random
-from enum import Enum
 
+from custom_stream_api.shared import app, g
+from custom_stream_api.chatbot.models import Badges, BADGE_LEVELS
+from custom_stream_api.chatbot import aliases
+from custom_stream_api.counts import counts
+from custom_stream_api.lists import lists
 from custom_stream_api.alerts import alerts
-from custom_stream_api.shared import app, g, db
-from custom_stream_api.chatbot.models import Alias, List, ListItem, Count
 
 logger = logging.getLogger()
-
-
-class Badges(Enum):
-    CHAT = 'chat'
-    BITS = 'bits'
-    BITS_CHARITY = 'bits-charity'
-    PREMIUM = 'premium'
-    VERIFIED = 'verified'
-    BOT = 'bot'
-    PARTNER = 'partner'
-    FFZ_SUPPORTER = 'ffz_supporter'
-    SUBSCRIBER = 'subscriber'
-    VIP = 'vip'
-    MODERATOR = 'moderator'
-    GLOBAL_MOD = 'global_mod'
-    BROADCASTER = 'broadcaster'
-    STAFF = 'staff'
-    ADMIN = 'admin'
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
@@ -44,29 +29,29 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.token = token
         self.channel = '#' + channel
 
-        self.badges = [Badges.CHAT, Badges.BITS, Badges.BITS_CHARITY, Badges.PREMIUM, Badges.VERIFIED, Badges.BOT,
-                       Badges.FFZ_SUPPORTER, Badges.PARTNER, Badges.SUBSCRIBER, Badges.VIP, Badges.MODERATOR,
-                       Badges.GLOBAL_MOD, Badges.BROADCASTER, Badges.STAFF, Badges.ADMIN]
+        self.badge_levels = BADGE_LEVELS
 
         self.timeout = timeout  # in seconds
         self.timeouts = {}
 
+        self.commands = {}
+        self.update_commands()
+
+    def connect(self):
         # Get the channel id, we will need this for v5 API calls
-        url = 'https://api.twitch.tv/kraken/users?login=' + channel
-        headers = {'Client-ID': client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
+        url = 'https://api.twitch.tv/kraken/users?login=' + self.channel
+        headers = {'Client-ID': self.client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
         r = requests.get(url, headers=headers).json()
         try:
             self.channel_id = r['users'][0]['_id']
         except KeyError:
-            raise Exception('Unable to connect with the provided credentials.')
+            raise Exception('Unable to connect with the provided credentials')
 
         # Create IRC bot connection
         server = 'irc.chat.twitch.tv'
         port = 6667
         logger.info('Connecting to ' + server + ' on port ' + str(port) + '...')
-        irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + token)], bot_name, bot_name)
-
-        self.update_commands()
+        irc.bot.SingleServerIRCBot.__init__(self, [(server, port, 'oauth:' + self.token)], self.bot_name, self.bot_name)
 
     def on_welcome(self, connection, event):
         logger.info('Joining ' + self.channel)
@@ -81,6 +66,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         c = self.connection
         c.privmsg(self.channel, message)
 
+
+    # PARSE MESSAGES
+
     def on_pubmsg(self, connection, event):
         # If a chat message starts with an exclamation point, try to run it as a command
         tags = {tag['key']: tag['value'] for tag in event.tags}
@@ -88,7 +76,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         badges = self.get_user_badges(tags)
         command = event.arguments[0]
         if command[:1] == '!':
-            logger.info('{} commanded: {}'.format(user, command))
+            logger.info('{} (badges:{}) commanded: {}'.format(user, badges, command))
             self.do_command(command, user, badges)
 
     def get_user_badges(self, tags):
@@ -101,102 +89,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 badges.append(badge)
         return badges
 
-    def get_max_badge(self, badges):
-        max_badge = Badges.CHAT
-        if badges:
-            max_badge = sorted(badges, key=lambda badge: self.badges.index(badge))[-1]
-        return max_badge
-
-    def do_command(self, command, user, badges):
-        argv = command.split(' ')
-        command_name = argv[0][1:]
-        command_input = ' '.join(argv[1:])
-
-        found_command = self.commands.get(command_name, None)
-        if not found_command:
-            return
-
-        if self.badges.index(self.get_max_badge(badges)) < self.badges.index(found_command['badge']):
-            self.chat('/me Nice try {}.'.format(user))
-            return
-
-        expected_input = found_command['input'] if found_command.get('input') else command_input
-        found_command['callback'](user=user, badges=badges, input=expected_input)
-
-    def update_commands(self):
-        self.commands = {
-            'id': {
-                'badge': Badges.MODERATOR,
-                'callback': self.get_chatbot_id
-            },
-            'get_commands': {
-                'badge': Badges.CHAT,
-                'callback': self.get_commands
-            },
-            'alert': {
-                'badge': Badges.MODERATOR,
-                'callback': self.alert_api
-            },
-            'group_alert': {
-                'badge': Badges.MODERATOR,
-                'callback': self.group_alert_api
-            },
-            'get_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.get_count
-            },
-            'set_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.set_count
-            },
-            'reset_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.reset_count
-            },
-            'remove_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.remove_count
-            },
-            'add_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.add_count
-            },
-            'subtract_count': {
-                'badge': Badges.MODERATOR,
-                'callback': self.subtract_count
-            },
-            'add_list_item': {
-                'badge': Badges.MODERATOR,
-                'callback': self.add_to_list
-            },
-            'remove_list_item': {
-                'badge': Badges.MODERATOR,
-                'callback': self.remove_from_list
-            },
-            'display_list_item': {
-                'badge': Badges.MODERATOR,
-                'callback': self.display_list_item
-            },
-            'ban': {
-                'badge': Badges.MODERATOR,
-                'callback': self.ban
-            },
-            'unban': {
-                'badge': Badges.MODERATOR,
-                'callback': self.unban
-            },
-            'spongebob': {
-                'badge': Badges.MODERATOR,
-                'callback': self.spongebob
-            }
-        }
-        for alias in self.list_aliases():
-            self.commands[alias.alias] = {
-                'badge': self.get_badge(alias.badge),
-                'callback': self.redirect_alias,
-                'input': alias.command
-            }
-
     def get_badge(self, badge_string):
         badge_objects = list(filter(lambda badge: badge.value == badge_string, list(Badges)))
         if badge_objects:
@@ -204,17 +96,94 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         else:
             logger.warning('Possible new badge: {}'.format(badge_string))
 
-    def get_commands(self, user, badges, input):
-        if not input:
-            badge = self.get_max_badge(badges)
-        else:
-            badge = self.get_badge(input)
-        badge_index = self.badges.index(badge) if badge else -1
-        commands = [command for command, command_dict in self.commands.items()
-                    if badge_index >= self.badges.index(command_dict['badge'])]
+    def get_min_badge(self, badges):
+        min_badge = Badges.CHAT
+        if badges:
+            min_badge = sorted(badges, key=lambda badge: self.badge_levels.index(badge))[0]
+        return min_badge
 
-        if commands:
-            clean_reactions = str(commands)[1:-1].replace('\'', '')
+    def get_max_badge(self, badges):
+        max_badge = Badges.CHAT
+        if badges:
+            max_badge = sorted(badges, key=lambda badge: self.badge_levels.index(badge))[-1]
+        return max_badge
+
+    def do_command(self, text, user, badges):
+        argv = text.split(' ')
+        command_name = argv[0][1:]
+        command_text = ' '.join(argv[1:])
+
+        found_command = self.commands.get(command_name, None)
+        if not found_command:
+            return
+
+        if command_name == 'mod_test_alias':
+            print(self.get_max_badge(badges), found_command['badge'])
+        if self.badge_levels.index(self.get_max_badge(badges)) < self.badge_levels.index(found_command['badge']):
+            self.chat('Nice try {}'.format(user))
+            return
+
+        found_command['callback'](command_text, user, badges)
+
+
+    # COMMANDS
+
+    def update_commands(self):
+        # Order is important, just make sure main commands is last
+        self.set_count_commands()
+        self.commands.update(self.count_commands)
+        self.set_list_commands()
+        self.commands.update(self.list_commands)
+        self.set_alert_commands()
+        self.commands.update(self.alert_commands)
+        self.set_aliases()
+        self.commands.update(self.aliases)
+        self.set_main_commands()
+        self.commands.update(self.main_commands)
+
+    def set_main_commands(self):
+        self.main_commands = {
+            'id': {
+                'badge': Badges.BROADCASTER,
+                'callback': lambda text, user, badges: self.get_chatbot_id()
+            },
+            'get_commands': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.display_commands(self.main_commands, text, badges)
+            },
+            'get_count_commands': {
+                'badge': self.get_min_badge([command['badge'] for command in self.count_commands.values()]),
+                'callback': lambda text, user, badges: self.display_commands(self.count_commands, text, badges)
+            },
+            'get_list_commands': {
+                'badge': self.get_min_badge([command['badge'] for command in self.list_commands.values()]),
+                'callback': lambda text, user, badges: self.display_commands(self.list_commands, text, badges)
+            },
+            'get_alert_commands': {
+                'badge': self.get_min_badge([command['badge'] for command in self.alert_commands.values()]),
+                'callback': lambda text, user, badges: self.display_commands(self.alert_commands, text, badges)
+            },
+            'get_aliases': {
+                'badge': self.get_min_badge([command['badge'] for command in self.aliases.values()]),
+                'callback': lambda text, user, badges: self.display_commands(self.aliases, text, badges)
+            },
+            'spongebob': {
+                'badge': Badges.SUBSCRIBER,
+                'callback': lambda text, user, badges: self.spongebob(text)
+            }
+        }
+
+    def display_commands(self, commands, badge_level, user_badges=None):
+        if not badge_level:
+            badge = self.get_max_badge(user_badges)
+        else:
+            badge = self.get_badge(badge_level)
+        badge_index = self.badge_levels.index(badge) if badge else -1
+        filtered_commands = sorted([command for command, command_dict in commands.items()
+                                    if badge_index >= self.badge_levels.index(command_dict['badge'])])
+
+        if filtered_commands:
+            clean_reactions = str(filtered_commands)[1:-1].replace('\'', '')
             msg = 'Commands include: {}'.format(clean_reactions)
         else:
             msg = 'No commands available'
@@ -222,243 +191,158 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     # Chatbot ID
 
-    def get_chatbot_id(self, user=None, badges=None, input=None):
+    def get_chatbot_id(self):
         self.chat('Chatbot ID - {}'.format(self.chatbot_id))
 
     # Alises
-
-    def list_aliases(self):
-        return list(db.session.query(Alias).order_by(Alias.command.asc()).all())
-
-    def import_aliases(self, aliases):
-        for alias_dict in aliases:
-            self.add_alias(**alias_dict, save=False)
-        db.session.commit()
-
-    def redirect_alias(self, user, badges, input):
-        logger.info('redirect', input, user, badges)
-        self.do_command(input, user, badges)
-
-    def add_alias(self, alias, command, badge, save=True):
-        found_alias = db.session.query(Alias).filter_by(alias=alias).one_or_none()
-        if found_alias:
-            found_alias.command = command
-            found_alias.badge = badge
-        else:
-            if badge not in [a_badge.value for a_badge in Badges]:
-                raise Exception('Badge \'{}\' not available.'.format(badge))
-            new_alias = Alias(alias=alias, command=command, badge=badge)
-            db.session.add(new_alias)
-        if save:
-            db.session.commit()
-        self.update_commands()
-        return alias
-
-    def remove_alias(self, alias):
-        found_alias = db.session.query(Alias).filter_by(alias=alias)
-        if found_alias.count():
-            found_alias.delete()
-            db.session.commit()
-            self.update_commands()
-            return alias
+    def set_aliases(self):
+        self.aliases = {}
+        for alias in aliases.list_aliases():
+            # Remember to *bind* when looping and making lambdas!
+            self.aliases[alias['alias']] = {
+                'badge': self.get_badge(alias['badge']),
+                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command, user, badges),
+            }
 
     # Counts
+    def set_count_commands(self):
+        self.count_commands = {
+            'get_count': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.chat_count_output(text, counts.get_count(text))
+            },
+            'set_count': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.chat_count_output(text.split()[0],
+                                                                              counts.set_count(text.split()[0],
+                                                                                               text.split()[1]))
+            },
+            'reset_count': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.chat_count_output(text, counts.reset_count(text))
+            },
+            'remove_count': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.remove_count_output(text)
+            },
+            'add_count': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.chat_count_output(text, counts.add_to_count(text))
+            },
+            'subtract_count': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.chat_count_output(text, counts.subtract_from_count(text))
+            }
+        }
 
-    def list_counts(self):
-        return list(db.session.query(Count).all())
+    def chat_count_output(self, count_name, count):
+        self.chat('{}: {}'.format(count_name, count))
 
-    def import_counts(self, counts):
-        for count_dict in counts:
-            self.set_count('{} {}'.format(count_dict['name'], count_dict['count']), save=False)
-        db.session.commit()
+    def remove_count_output(self, count_name):
+        counts.remove_count(count_name)
+        self.chat('{} removed'.format(count_name))
 
-    def add_count(self, input, user=None, badges=None):
-        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
-        if not count_obj:
-            count_obj = Count(name=input, count=0)
-            db.session.add(count_obj)
-        count_obj.count += 1
-        db.session.commit()
-        self.chat('/me {}: {}'.format(input, count_obj.count))
-        return count_obj.count
-
-    def subtract_count(self, input, user=None, badges=None):
-        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
-        if not count_obj:
-            count_obj = Count(name=input, count=0)
-            db.session.add(count_obj)
-        count_obj.count -= 1
-        db.session.commit()
-        self.chat('/me {}: {}'.format(input, count_obj.count))
-        return count_obj.count
-
-    def get_count(self, input, user=None, badges=None):
-        count_obj = db.session.query(Count).filter(Count.name == input).one_or_none()
-        if not count_obj:
-            self.chat('/me Count {} doesn\'t exist'.format(input))
-            return
-        self.chat('/me {}: {}'.format(input, count_obj.count))
-        return count_obj.count
-
-    def reset_count(self, input, save=True, user=None, badges=None):
-        return self.set_count('{} 0'.format(input), save=save, user=user, badges=badges)
-
-    def set_count(self, input, save=True, user=None, badges=None):
-        name = input.split()[0]
-        count = input.split()[1]
-        if not (name or count):
-            self.chat('/me Incorrect format')
-            return
-        count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
-        if not count_obj:
-            count_obj = Count(name=name, count=0)
-            db.session.add(count_obj)
-        count_obj.count = count
-        if save:
-            db.session.commit()
-        self.chat('/me {}: {}'.format(name, count_obj.count))
-        return count_obj.count
-
-    def remove_count(self, input, user=None, badges=None):
-        found_count = db.session.query(Count).filter_by(name=input)
-        if found_count.count():
-            found_count.delete()
-            db.session.commit()
-            self.chat('/me {} removed'.format(input))
-            return found_count
 
     # Lists
+    def set_list_commands(self):
+        self.list_commands = {
+            'get_list_item': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.get_list_item(text.split()[0], text.split()[1])
+            },
+            'add_list_item': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.add_list_item(text.split()[0], text.split()[1])
+            },
+            'remove_list_item': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.remove_list_item(text.split()[0], text.split()[1])
+            }
+        }
 
-    def list_lists(self, specific_list=None):
-        list_query = db.session.query(List)
-        if specific_list:
-            list_query.filter(List.list_name == specific_list)
-        return list(list_query.order_by(List.list_name.asc()))
+    def get_list_item(self, list_name, index):
+        self.output_list_item(index, lists.get_list_item(list_name, int(index)-1))
 
-    def import_lists(self, lists):
-        for list_dict in lists:
-            self.set_list(list_dict['list_name'], list_dict['items'], save=False)
-        db.session.commit()
+    def add_list_item(self, list_name, item):
+        index = len(lists.get_list(list_name)) + 1
+        lists.add_to_list(list_name, [item])
+        self.output_list_item(index, item)
 
-    def set_list(self, name, items, save=True):
-        found_list = db.session.query(List).filter_by(list_name=name).one_or_none()
-        if not found_list:
-            found_list = List(name=name, current_index=0)
-            db.session.add(found_list)
-        else:
-            for item in found_list.items:
-                db.session.delete(item)
-        if save:
-            db.session.commit()
-        return self.add_to_list(name, items, save=save)
+    def remove_list_item(self, list_name, index):
+        item = lists.remove_from_list(list_name, int(index)-1)
+        self.chat('Removed {}. {}'.format(index, item))
 
-    def add_to_list(self, name, items, save=True):
-        new_items = []
+    def output_list_item(self, index, item):
+        self.chat('{}. {}'.format(index, item))
 
-        found_list = List.query.filter_by(name=name).one_or_none()
-        if not found_list:
-            group_alert = List(name=name)
-            db.session.add(group_alert)
+    # Alerts
+    def set_alert_commands(self):
+        self.alert_commands = {
+            'alert': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.alert_api(user, text),
+            },
+            'group_alert': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.group_alert_api(user, text)
+            },
+            'ban': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.ban(text)
+            },
+            'unban': {
+                'badge': Badges.MODERATOR,
+                'callback': lambda text, user, badges: self.unban(text)
+            }
+        }
 
-        index = ListItem.query.filter_by(list_name=name).count()
-        for item in items:
-            item_obj = db.session.query(ListItem).filter_by(item=item)
-            if not item_obj.count():
-                raise Exception('List not found: {}'.format(item))
-
-            if not ListItem.query.filter_by(list_name=name, item=item).count():
-                new_items.append(item)
-                new_item = ListItem(list_name=name, item=item, index=index)
-                db.session.add(new_item)
-                index += 1
-        if save:
-            db.session.commit()
-        return items
-
-    def display_list_item(self, name, item_index=None):
-        found_list = db.session.query(List).filter_by(list_name=name).one_or_none()
-        if not found_list:
-            self.chat('/me List {} doesn\'t exist'.format(name))
-            return
-        items = found_list.items
-        if not item_index.isdigit():
-            self.chat('/me Index {} must be number'.format(item_index))
-            return
-        elif item_index and item_index > len(items):
-            self.chat('/me List {} doesn\'t have {} items'.format(name, item_index))
-            return
-        elif not item_index:
-            item_index = random.choice(items)
-        self.chat('{}. {}'.format(item_index, items[item_index].item))
-
-    def remove_from_list(self, name, index):
-        found_list_item = db.session.query(ListItem).filter_by(list_name=name, index=index).one_or_none()
-        if not found_list_item:
-            self.chat('/me List item not found: {}, {}'.format(name, index))
-
-        db.session.delete(found_list_item)
-        db.session.commit()
-
-        return found_list_item
-
-    def remove_list(self, list_name):
-        found_list = db.session.query(List).filter_by(list_name=list_name)
-        if found_list.count():
-            found_list.delete()
-            db.session.commit()
-            return list_name
-
-    # Custom Stream API
-
-    def alert_api(self, user, badges, input):
-        if user in self.banned:
-            self.chat('/me Nice try {}.'.format(user))
+    def alert_api(self, user, alert):
+        if user in lists.get_list('banned_users'):
+            self.chat('Nice try {}'.format(user))
             return
         elif self.spamming(user):
-            self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
+            self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
         try:
-            message = alerts.alert(name=input)
+            message = alerts.alert(name=alert)
+            self.chat('/me {}'.format(message))
+        except Exception as e:
+            pass
+
+    def group_alert_api(self, user, group_alert):
+        if user in lists.get_list('banned_users'):
+            self.chat('Nice try {}'.format(user))
+            return
+        elif self.spamming(user):
+            self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
+            return
+
+        try:
+            message = alerts.group_alert(group_name=group_alert)
             self.chat('/me {}'.format(message))
         except Exception:
             pass
 
-    def group_alert_api(self, user, badges, input):
-        if user in self.banned:
-            self.chat('/me Nice try {}.'.format(user))
-            return
-        elif self.spamming(user):
-            self.chat('/me No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
-            return
+    def ban(self, ban_user):
+        if ban_user:
+            lists.add_to_list('banned_users', [ban_user])
+            self.chat('Banned {}'.format(ban_user))
+            return ban_user
 
-        try:
-            message = alerts.group_alert(group_name=input)
-            self.chat('/me {}'.format(message))
-        except Exception:
-            pass
-
-    # Banned Users
-
-    def ban(self, user=None, badges=None, input=None):
-        if input:
-            banned_user = self.add_to_list('banned_users', input)
-            self.chat('/me Banned {}'.format(input))
-            return banned_user
-
-    def unban(self, user=None, badges=None, input=None):
-        if input:
-            banned_users = self.list_lists('banned_users')
-            self.set_list('banned_users', [user for user in banned_users if user.item != input])
-            self.chat('/me Unbanned {}'.format(input))
-            return input
+    def unban(self, unban_user):
+        if unban_user:
+            banned_users = lists.get_list('banned_users')
+            lists.set_list('banned_users', [user for user in banned_users if user != unban_user])
+            self.chat('Unbanned {}'.format(unban_user))
+            return unban_user
 
     # Extra commands
 
-    def spongebob(self, user, badges, input):
-        spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(input)])
+    def spongebob(self, text):
+        spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(text)])
         spongebob_url = 'https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
-        self.chat('/me {} - {}'.format(spongebob_message, spongebob_url))
+        self.chat('{} - {}'.format(spongebob_message, spongebob_url))
 
     # Helper commands
 
@@ -483,11 +367,12 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
     try:
         chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
                             channel=channel, timeout=timeout)
+        chatbot.connect()
         chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
         chatbot_thread.start()
     except Exception as e:
         logger.exception(e)
-        raise Exception('Unable to start chatbot with the provided settings.')
+        raise Exception('Unable to start chatbot with the provided settings')
 
     g['chatbot'] = chatbot
     return chatbot_id
@@ -518,6 +403,7 @@ def main():
     channel = sys.argv[4]
 
     bot = TwitchBot(username, client_id, token, channel)
+    bot.connect()
     bot.start()
 
 

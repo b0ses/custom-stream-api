@@ -1,0 +1,323 @@
+import pytest
+import mock
+import time
+
+from custom_stream_api.chatbot import aliases, twitchbot, models
+from custom_stream_api.alerts import alerts
+from custom_stream_api.lists import lists
+from tests.test_alerts import import_alerts, import_groups
+from collections import namedtuple
+
+Event = namedtuple('Event', ['tags', 'arguments', ])
+
+IMPORT_ALIASES = [
+    {
+        "alias": "chat_test_alias",
+        "badge": "chat",
+        "command": "!get_count test_count"
+    },
+    {
+        "alias": "sub_test_alias",
+        "badge": "subscriber",
+        "command": "!get_count test_count"
+    },
+    {
+        "alias": "mod_test_alias",
+        "badge": "moderator",
+        "command": "!set_count test_count 10"
+    },
+    {
+        "alias": "broadcaster_test_alias",
+        "badge": "broadcaster",
+        "command": "!set_count test_count 10"
+    }
+]
+
+
+@pytest.fixture
+def import_aliases(app):
+    aliases.import_aliases(IMPORT_ALIASES)
+
+
+@pytest.fixture
+def chatbot(app):
+    # we don't need it to actually connect and listen to chat
+    # just to respond the way we want it to
+
+    def store_chat(cls, message):
+        cls.response = message
+
+    with mock.patch.object(twitchbot.TwitchBot, 'chat', new=store_chat):
+        yield twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel', timeout=1)
+
+
+def simulate_chat(bot, user_name, message, badges):
+    tags = {
+        'display-name': user_name,
+        'badges': ','.join([badge.value for badge in badges])
+    }
+    kv_tags = [{'key': key, 'value': value} for key, value in tags.items()]
+    bot.on_pubmsg(None, Event(tags=kv_tags, arguments=[message]))
+
+# MAIN COMMANDS
+
+def test_id(chatbot):
+    simulate_chat(chatbot, 'test_user', '!id', [models.Badges.GLOBAL_MODERATOR])
+    expected_response = 'Nice try test_user'
+    assert chatbot.response == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!id', [models.Badges.BROADCASTER])
+    expected_response = 'Chatbot ID - test_id'
+    assert chatbot.response == expected_response
+
+
+def test_get_commands(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
+    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.SUBSCRIBER]
+    simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
+    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, spongebob'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
+    expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
+                        'get_list_commands, spongebob'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
+    expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
+                        'get_list_commands, id, spongebob'
+    assert chatbot.response == expected_response
+
+
+def test_spongebob(chatbot):
+    simulate_chat(chatbot, 'test_user', '!spongebob stop mimicking me', [models.Badges.SUBSCRIBER])
+    expected_response = 'sToP MiMiCkInG Me - https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
+    assert chatbot.response == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!spongebob stop mimicking me', [])
+    expected_response = 'Nice try test_user'
+    assert chatbot.response == expected_response
+
+# ALIASES
+
+def test_get_aliases_empty(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
+    expected_response = 'No commands available'
+    assert chatbot.response == expected_response
+
+
+def test_import_export_aliases(import_aliases):
+    assert aliases.list_aliases() == IMPORT_ALIASES
+
+
+def test_remove_alert(import_aliases):
+    aliases.remove_alias('chat_test_alias')
+    all_aliases = [alias['alias'] for alias in aliases.list_aliases()]
+    assert 'chat_test_alias' not in all_aliases
+
+
+def test_get_aliases(import_aliases, chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
+    expected_response = 'Commands include: chat_test_alias'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.SUBSCRIBER]
+    simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
+    expected_response = 'Commands include: chat_test_alias, sub_test_alias'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
+    expected_response = 'Commands include: chat_test_alias, mod_test_alias, sub_test_alias'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
+    expected_response = 'Commands include: broadcaster_test_alias, chat_test_alias, mod_test_alias, sub_test_alias'
+    assert chatbot.response == expected_response
+
+
+def test_aliases(import_aliases, chatbot):
+    badge_level = [models.Badges.SUBSCRIBER]
+    simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
+    expected_response = 'Nice try test_user'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
+    expected_response = 'test_count: 10'
+    assert chatbot.response == expected_response
+
+# COUNTS
+
+def test_get_count_commands(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
+    expected_response = 'Commands include: get_count'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
+    expected_response = 'Commands include: add_count, get_count, remove_count, reset_count, set_count, subtract_count'
+    assert chatbot.response == expected_response
+
+
+def test_count_commands(chatbot):
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!set_count test_count 10', badge_level)
+    expected_response = 'test_count: 10'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!add_count test_count', badge_level)
+    expected_response = 'test_count: 11'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!subtract_count test_count', badge_level)
+    expected_response = 'test_count: 10'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!reset_count test_count', badge_level)
+    expected_response = 'test_count: 0'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_count test_count', badge_level)
+    expected_response = 'test_count: 0'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!remove_count test_count', badge_level)
+    expected_response = 'test_count removed'
+    assert chatbot.response == expected_response
+
+# LISTS
+
+def test_get_list_commands(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
+    expected_response = 'Commands include: get_list_item'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
+    expected_response = 'Commands include: add_list_item, get_list_item, remove_list_item'
+    assert chatbot.response == expected_response
+
+
+def test_list_commands(chatbot):
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!add_list_item test_list item_one', badge_level)
+    expected_response = '1. item_one'.format()
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!add_list_item test_list item_two', badge_level)
+    expected_response = '2. item_two'.format()
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_item test_list 2', badge_level)
+    expected_response = '2. item_two'.format()
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!remove_list_item test_list 1', badge_level)
+    expected_response = 'Removed 1. item_one'.format()
+    assert chatbot.response == expected_response
+
+# ALERTS
+
+def fake_alert_api(cls, user, alert):
+    if user in lists.get_list('banned_users'):
+        cls.chat('Nice try {}'.format(user))
+        return
+    elif cls.spamming(user):
+        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
+        return
+
+    try:
+        message = alerts.alert(name=alert, hit_socket=False)
+        cls.chat('/me {}'.format(message))
+    except Exception as e:
+        pass
+
+def fake_group_alert_api(cls, user, group_alert):
+    if user in lists.get_list('banned_users'):
+        cls.chat('Nice try {}'.format(user))
+        return
+    elif cls.spamming(user):
+        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
+        return
+
+    try:
+        message = alerts.group_alert(group_name=group_alert, hit_socket=False)
+        cls.chat('/me {}'.format(message))
+    except Exception as e:
+        pass
+
+def test_get_alert_commands(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_alert_commands', badge_level)
+    expected_response = 'Nice try test_user'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!get_alert_commands', badge_level)
+    expected_response = 'Commands include: alert, ban, group_alert, unban'
+    assert chatbot.response == expected_response
+
+
+@mock.patch.object(twitchbot.TwitchBot, 'alert_api', new=fake_alert_api)
+@mock.patch.object(twitchbot.TwitchBot, 'group_alert_api', new=fake_group_alert_api)
+def test_alert_commands(chatbot, import_groups):
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!alert test_text_1', badge_level)
+    expected_response = '/me Test Text 1'
+    assert chatbot.response == expected_response
+
+    # spam check
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
+    expected_response = 'No spamming test_user. Wait another {} seconds.'.format(chatbot.timeout)
+    assert chatbot.response == expected_response
+
+    # that's better
+    time.sleep(chatbot.timeout)
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
+    expected_response = ['/me Test Text 1', '/me Test Text 2']
+    assert chatbot.response in expected_response
+
+    # banning
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!ban test_user2', badge_level)
+    expected_response = 'Banned test_user2'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user2', '!alert test_text_1', badge_level)
+    expected_response = 'Nice try test_user2'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user2', '!unban test_user2', badge_level)
+    expected_response = 'Unbanned test_user2'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user2', '!alert test_text_1', badge_level)
+    expected_response = '/me Test Text 1'
+    assert chatbot.response == expected_response
