@@ -25,6 +25,7 @@ logger = logging.getLogger()
 class TwitchBot(irc.bot.SingleServerIRCBot):
     def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=30):
         self.chatbot_id = chatbot_id
+        self.bot_name = bot_name
         self.client_id = client_id
         self.token = token
         self.channel = '#' + channel
@@ -37,9 +38,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.commands = {}
         self.update_commands()
 
-    def connect(self):
+    def connect_to_channel(self):
         # Get the channel id, we will need this for v5 API calls
-        url = 'https://api.twitch.tv/kraken/users?login=' + self.channel
+        url = 'https://api.twitch.tv/kraken/users?login=' + self.channel[1:]
         headers = {'Client-ID': self.client_id, 'Accept': 'application/vnd.twitchtv.v5+json'}
         r = requests.get(url, headers=headers).json()
         try:
@@ -367,7 +368,7 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
     try:
         chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
                             channel=channel, timeout=timeout)
-        chatbot.connect()
+        chatbot.connect_to_channel()
         chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
         chatbot_thread.start()
     except Exception as e:
@@ -403,7 +404,7 @@ def main():
     channel = sys.argv[4]
 
     bot = TwitchBot(username, client_id, token, channel)
-    bot.connect()
+    bot.connect_to_channel()
     bot.start()
 
 

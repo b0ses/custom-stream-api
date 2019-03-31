@@ -1,11 +1,14 @@
 from flask import Blueprint, request
 from flask import jsonify
+import logging
+
 from custom_stream_api.chatbot import twitchbot
 from custom_stream_api.shared import InvalidUsage
+from custom_stream_api.chatbot import aliases
 
 chatbot_endpoints = Blueprint('chatbot', __name__)
 
-from custom_stream_api.shared import g
+logger = logging.getLogger()
 
 @chatbot_endpoints.route('/start', methods=['POST'])
 def start_post():
@@ -38,24 +41,22 @@ def stop_post():
         except Exception as e:
             raise InvalidUsage(str(e))
 
-
 @chatbot_endpoints.route('/aliases', methods=['GET', 'POST'])
-def aliases():
-    if 'chatbot' not in g:
-        raise InvalidUsage('No chatbot running. Please start the chatbot beforehand.')
+def list_aliases_get():
     if request.method == 'GET':
         try:
-            all_aliases = [alias.as_dict() for alias in g['chatbot'].list_aliases()]
+            all_aliases = aliases.list_aliases()
         except Exception as e:
+            logger.exception(e)
             raise InvalidUsage(str(e))
         return jsonify(all_aliases)
     else:
         data = request.get_json()
         try:
-            g['chatbot'].import_aliases(data)
+            aliases.import_aliases(data)
         except Exception as e:
             raise InvalidUsage(str(e))
-        return jsonify({'message': 'Chat reactions imported'})
+        return jsonify({'message': 'Aliases imported'})
 
 
 @chatbot_endpoints.route('/add_alias', methods=['POST'])
@@ -66,10 +67,8 @@ def add_alias_post():
         'command': data.get('command', ''),
         'badge': data.get('badge', 'broadcaster')
     }
-    chatbot_id = data.get('chatbot_id', '')
     try:
-        chatbot = twitchbot.verify_chatbot_id(chatbot_id)
-        chatbot.add_alias(**alias_data)
+        aliases.add_alias(**alias_data)
         return jsonify({'message': 'Alias added'})
     except Exception as e:
         raise InvalidUsage(str(e))
@@ -81,46 +80,8 @@ def remove_alias_post():
     alias_data = {
         'alias': data.get('alias', '')
     }
-    chatbot_id = data.get('chatbot_id', '')
     try:
-        chatbot = twitchbot.verify_chatbot_id(chatbot_id)
-        chatbot.remove_alias(**alias_data)
+        aliases.remove_alias(**alias_data)
         return jsonify({'message': 'Alias removed'})
     except Exception as e:
         raise InvalidUsage(str(e))
-
-@chatbot_endpoints.route('/lists', methods=['GET', 'POST'])
-def lists():
-    if 'chatbot' not in g:
-        raise InvalidUsage('No chatbot running. Please start the chatbot beforehand.')
-    if request.method == 'GET':
-        try:
-            all_lists = g['chatbot'].list_lists()
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify(all_lists)
-    else:
-        data = request.get_json()
-        try:
-            g['chatbot'].import_lists(data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': 'Lists imported'})
-
-@chatbot_endpoints.route('/counts', methods=['GET', 'POST'])
-def counts():
-    if 'chatbot' not in g:
-        raise InvalidUsage('No chatbot running. Please start the chatbot beforehand.')
-    if request.method == 'GET':
-        try:
-            all_counts = g['chatbot'].list_counts()
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify(all_counts)
-    else:
-        data = request.get_json()
-        try:
-            g['chatbot'].import_counts(data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({'message': 'Counts imported'})
