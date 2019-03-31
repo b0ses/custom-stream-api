@@ -6,7 +6,7 @@ from flask_migrate import upgrade
 from custom_stream_api.shared import create_app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def app(request):
     db_fd, temp_db_path = tempfile.mkstemp()
     settings_override = {
