@@ -69,7 +69,7 @@ def get_list_item(name, index=None):
             index = int(index)
         if index > len(items):
             return
-    return items[index].item
+    return items[index].item, items[index].index
 
 
 def remove_from_list(name, index):

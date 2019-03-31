@@ -73,13 +73,13 @@ def get_list_item_post():
         data = request.get_json()
         list_data = {
             'name': data.get('name', ''),
-            'index': data.get('index', 0)
+            'index': data.get('index', None)
         }
         try:
-            item = lists.get_list_item(**list_data)
+            item, index = lists.get_list_item(**list_data)
         except Exception as e:
             raise InvalidUsage(str(e))
-        return jsonify({'item': item})
+        return jsonify({'item': item, 'index': index})
 
 
 @lists_endpoints.route('/remove_from_list', methods=['POST'])
