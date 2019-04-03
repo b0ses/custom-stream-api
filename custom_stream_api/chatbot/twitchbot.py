@@ -23,7 +23,7 @@ logger = logging.getLogger()
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
-    def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=30):
+    def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=15):
         self.chatbot_id = chatbot_id
         self.bot_name = bot_name
         self.client_id = client_id
@@ -411,7 +411,7 @@ def start_chatbot_with_app(app, chatbot):
             logger.info('Disconnected')
 
 
-def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=30):
+def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=15):
     if 'chatbot' in g:
         raise Exception('Chatbot already setup')
     chatbot_id = uuid.uuid4()
