@@ -373,6 +373,11 @@ def test_get_list_commands(chatbot):
     expected_response = 'Commands include: add_list_item, get_list_item, list_lists, remove_list_item'
     assert chatbot.response == expected_response
 
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
+    expected_response = 'Commands include: add_list_item, get_list_item, list_lists, remove_list, remove_list_item'
+    assert chatbot.response == expected_response
+
 
 def test_list_commands(chatbot):
     badge_level = [models.Badges.MODERATOR]
