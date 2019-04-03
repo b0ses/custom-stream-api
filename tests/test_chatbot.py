@@ -117,6 +117,16 @@ def test_id(chatbot):
     assert chatbot.response == expected_response
 
 
+def test_echo(chatbot):
+    simulate_chat(chatbot, 'test_user', '!echo test test 1 2 3', [models.Badges.MODERATOR])
+    expected_response = 'Nice try test_user'
+    assert chatbot.response == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!echo test test 1 2 3', [models.Badges.BROADCASTER])
+    expected_response = 'test test 1 2 3'
+    assert chatbot.response == expected_response
+
+
 def test_get_commands(chatbot):
     # FAIL
     badge_level = []
@@ -143,13 +153,13 @@ def test_get_commands(chatbot):
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
-    expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
+    expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
                         'get_list_commands, id, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
-    expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
+    expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
                         'get_list_commands, id, spongebob'
     assert chatbot.response == expected_response
 

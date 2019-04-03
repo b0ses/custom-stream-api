@@ -154,6 +154,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!id$',
                 'help': '^!id$'
             },
+            'echo': {
+                'badge': Badges.BROADCASTER,
+                'callback': lambda text, user, badges: self.chat(text),
+                'format': '^!echo\s+.*$',
+                'help': '^!echo message$'
+            },
             'get_commands': {
                 'badge': Badges.CHAT,
                 'format': '^!get_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
