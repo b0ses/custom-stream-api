@@ -321,6 +321,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'callback': lambda text, user, badges: self.remove_list_item(text.split()[0], text.split()[1]),
                 'format': '^!remove_list_item\s+\S+\s+\d+\s*$',
                 'help': '!remove_list_item list_name index'
+            },
+            'remove_list': {
+                'badge': Badges.BROADCASTER,
+                'callback': lambda text, user, badges: self.remove_list(text),
+                'format': '^!remove_list\s+\S+\s*$',
+                'help': '!remove_list list_name'
             }
         }
 
@@ -342,6 +348,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def remove_list_item(self, list_name, index):
         item = lists.remove_from_list(list_name, int(index)-1)
         self.chat('Removed {}. {}'.format(index, item))
+
+    def remove_list(self, list_name):
+        lists.remove_list(list_name)
+        self.chat('Removed list {}'.format(list_name))
 
     def output_list_item(self, index, item):
         self.chat('{}. {}'.format(index, item))

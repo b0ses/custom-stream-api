@@ -430,6 +430,15 @@ def test_list_commands(chatbot):
     expected_response = 'Lists: test_list'
     assert chatbot.response == expected_response
 
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!remove_list test_list', badge_level)
+    expected_response = 'Removed list test_list'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!remove_list test_list', badge_level)
+    expected_response = 'Removed list test_list'
+    assert chatbot.response == expected_response
 
 # ALERTS
 
