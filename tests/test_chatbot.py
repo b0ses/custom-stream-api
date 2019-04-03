@@ -249,12 +249,13 @@ def test_aliases(import_aliases, import_groups, chatbot):
 def test_get_count_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
-    expected_response = 'Commands include: get_count'
+    expected_response = 'Commands include: get_count, list_counts'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
-    expected_response = 'Commands include: add_count, get_count, remove_count, reset_count, set_count, subtract_count'
+    expected_response = 'Commands include: add_count, get_count, list_counts, remove_count, reset_count, set_count, ' \
+                        'subtract_count'
     assert chatbot.response == expected_response
 
 
@@ -337,6 +338,11 @@ def test_count_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_count count with spaces', badge_level)
     expected_response = 'Format: !get_count count_name'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.CHAT]
+    simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
+    expected_response = 'Counts: test_count'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]

@@ -237,6 +237,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def set_count_commands(self):
         self.count_commands = {
+            'list_counts': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.list_counts(),
+                'format': '^!list_counts\s*$',
+                'help': '!list_counts'
+            },
             'get_count': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.chat_count_output(text, counts.get_count(text)),
@@ -276,6 +282,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!subtract_count count_name'
             }
         }
+
+    def list_counts(self):
+        self.chat('Counts: {}'.format(', '.join([count['name'] for count in counts.list_counts()])))
 
     def chat_count_output(self, count_name, count):
         self.chat('{}: {}'.format(count_name, count))
