@@ -108,7 +108,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             max_badge = sorted(badges, key=lambda badge: self.badge_levels.index(badge))[-1]
         return max_badge
 
-    def do_command(self, text, user, badges):
+    def do_command(self, text, user, badges, ignore_badges=False):
         argv = text.split(' ')
         command_name = argv[0][1:]
         command_text = ' '.join(argv[1:])
@@ -117,7 +117,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if not found_command:
             return
 
-        if self.badge_levels.index(self.get_max_badge(badges)) < self.badge_levels.index(found_command['badge']):
+        max_user_badge = self.badge_levels.index(self.get_max_badge(badges))
+        badge_check = max_user_badge < self.badge_levels.index(found_command['badge'])
+        if (not ignore_badges) and badge_check:
             self.chat('Nice try {}'.format(user))
             return
 
@@ -217,7 +219,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             # Remember to *bind* when looping and making lambdas!
             self.aliases[alias['alias']] = {
                 'badge': self.get_badge(alias['badge']),
-                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command, user, badges),
+                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command, user, badges,
+                                                                                                 ignore_badges=True),
                 'format': '!{}'.format(alias['alias']),
                 'help': '!{}'.format(alias['alias'])
             }
