@@ -58,17 +58,17 @@ def get_list(name):
 def get_list_item(name, index=None):
     found_list = db.session.query(List).filter_by(name=name).one_or_none()
     if not found_list:
-        return
+        return None, None
     items = found_list.items
     if not index:
         index = random.choice(range(0, len(items)))
     else:
         if not isinstance(index, int):
             if not index.isdigit():
-                return
+                return None, None
             index = int(index)
         if index > len(items):
-            return
+            return None, None
     return items[index].item, items[index].index
 
 
