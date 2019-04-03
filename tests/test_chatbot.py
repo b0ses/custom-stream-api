@@ -365,12 +365,12 @@ def test_count_commands(chatbot):
 def test_get_list_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: get_list_item'
+    expected_response = 'Commands include: get_list_item, list_lists'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: add_list_item, get_list_item, remove_list_item'
+    expected_response = 'Commands include: add_list_item, get_list_item, list_lists, remove_list_item'
     assert chatbot.response == expected_response
 
 
@@ -423,6 +423,11 @@ def test_list_commands(chatbot):
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!remove_list_item test)list test', badge_level)
     expected_response = 'Format: !remove_list_item list_name index'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!list_lists', badge_level)
+    expected_response = 'Lists: test_list'
     assert chatbot.response == expected_response
 
 

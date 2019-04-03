@@ -297,6 +297,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def set_list_commands(self):
         self.list_commands = {
+            'list_lists': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.list_lists(),
+                'format': '^!list_lists\s*$',
+                'help': '!list_lists'
+            },
             'get_list_item': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.get_list_item(text),
@@ -317,6 +323,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!remove_list_item list_name index'
             }
         }
+
+    def list_lists(self):
+        self.chat('Lists: {}'.format(', '.join([count['name'] for count in lists.list_lists()])))
 
     def get_list_item(self, text):
         argv = text.split()
