@@ -335,25 +335,25 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'alert': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.alert_api(user, badges, text),
-                'format': '!alert\s+\S+\s*',
+                'format': '^!alert\s+\S+\s*$',
                 'help': '!alert alert_name'
             },
             'group_alert': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.group_alert_api(user, badges, text),
-                'format': '!group_alert\s+\S+\s*',
+                'format': '^!group_alert\s+\S+\s*$',
                 'help': '!group_alert group_alert_name'
             },
             'ban': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.ban(text),
-                'format': '!ban\s+\S+\s*',
+                'format': '^!ban\s+\S+\s*$',
                 'help': '!ban chatter'
             },
             'unban': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.unban(text),
-                'format': '!unban\s+\S+\s*',
+                'format': '^!unban\s+\S+\s*$',
                 'help': '!unban banned_chatter'
             }
         }

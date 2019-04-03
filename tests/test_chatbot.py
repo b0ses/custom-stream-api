@@ -480,6 +480,11 @@ def test_alert_commands(chatbot, import_groups):
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!ban test_user2 for real', badge_level)
+    expected_response = 'Format: !ban chatter'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user2', '!alert test_text_1', badge_level)
     expected_response = 'Nice try test_user2'
     assert chatbot.response == expected_response
@@ -491,6 +496,11 @@ def test_alert_commands(chatbot, import_groups):
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user2', '!unban', badge_level)
+    expected_response = 'Format: !unban banned_chatter'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user2', '!unban test_user2 for real', badge_level)
     expected_response = 'Format: !unban banned_chatter'
     assert chatbot.response == expected_response
 
