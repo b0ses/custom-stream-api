@@ -108,6 +108,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             max_badge = sorted(badges, key=lambda badge: self.badge_levels.index(badge))[-1]
         return max_badge
 
+    def _badge_check(self, badges, badge_level):
+        max_user_badge = self.badge_levels.index(self.get_max_badge(badges))
+        return max_user_badge >= self.badge_levels.index(badge_level)
+
     def do_command(self, text, user, badges, ignore_badges=False):
         argv = text.split(' ')
         command_name = argv[0][1:]
@@ -117,9 +121,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if not found_command:
             return
 
-        max_user_badge = self.badge_levels.index(self.get_max_badge(badges))
-        badge_check = max_user_badge < self.badge_levels.index(found_command['badge'])
-        if (not ignore_badges) and badge_check:
+        if (not ignore_badges) and not self._badge_check(badges, found_command['badge']):
             self.chat('Nice try {}'.format(user))
             return
 
@@ -326,13 +328,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.alert_commands = {
             'alert': {
                 'badge': Badges.MODERATOR,
-                'callback': lambda text, user, badges: self.alert_api(user, text),
+                'callback': lambda text, user, badges: self.alert_api(user, badges, text),
                 'format': '!alert\s+\S+\s*',
                 'help': '!alert alert_name'
             },
             'group_alert': {
                 'badge': Badges.MODERATOR,
-                'callback': lambda text, user, badges: self.group_alert_api(user, text),
+                'callback': lambda text, user, badges: self.group_alert_api(user, badges, text),
                 'format': '!group_alert\s+\S+\s*',
                 'help': '!group_alert group_alert_name'
             },
@@ -350,11 +352,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             }
         }
 
-    def alert_api(self, user, alert):
+    def alert_api(self, user, badges, alert):
         if user in lists.get_list('banned_users'):
             self.chat('Nice try {}'.format(user))
             return
-        elif self.spamming(user):
+        elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
@@ -364,11 +366,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         except Exception as e:
             pass
 
-    def group_alert_api(self, user, group_alert):
+    def group_alert_api(self, user, badges, group_alert):
         if user in lists.get_list('banned_users'):
             self.chat('Nice try {}'.format(user))
             return
-        elif self.spamming(user):
+        elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 

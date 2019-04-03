@@ -12,6 +12,11 @@ Event = namedtuple('Event', ['tags', 'arguments', ])
 
 IMPORT_ALIASES = [
     {
+        "alias": "chat_alert",
+        "badge": "chat",
+        "command": "!alert test_text_1"
+    },
+    {
         "alias": "chat_test_alias",
         "badge": "chat",
         "command": "!get_count test_count"
@@ -47,6 +52,36 @@ def import_alerts(app):
 @pytest.fixture
 def import_groups(import_alerts):
     alerts.import_groups(IMPORT_GROUP_ALERTS)
+
+
+def fake_alert_api(cls, user, badges, alert):
+    if user in lists.get_list('banned_users'):
+        cls.chat('Nice try {}'.format(user))
+        return
+    elif not cls._badge_check(badges, models.Badges.MODERATOR) and cls.spamming(user):
+        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
+        return
+
+    try:
+        message = alerts.alert(name=alert, hit_socket=False)
+        cls.chat('/me {}'.format(message))
+    except Exception as e:
+        pass
+
+
+def fake_group_alert_api(cls, user, badges, group_alert):
+    if user in lists.get_list('banned_users'):
+        cls.chat('Nice try {}'.format(user))
+        return
+    elif not cls._badge_check(badges, models.Badges.MODERATOR) and cls.spamming(user):
+        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
+        return
+
+    try:
+        message = alerts.group_alert(group_name=group_alert, hit_socket=False)
+        cls.chat('/me {}'.format(message))
+    except Exception as e:
+        pass
 
 
 @pytest.fixture
@@ -156,26 +191,28 @@ def test_remove_alert(import_aliases):
 def test_get_aliases(import_aliases, chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: chat_test_alias'
+    expected_response = 'Commands include: chat_alert, chat_test_alias'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.SUBSCRIBER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: chat_test_alias, sub_test_alias'
+    expected_response = 'Commands include: chat_alert, chat_test_alias, sub_test_alias'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: chat_test_alias, mod_test_alias, sub_test_alias'
+    expected_response = 'Commands include: chat_alert, chat_test_alias, mod_test_alias, sub_test_alias'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: broadcaster_test_alias, chat_test_alias, mod_test_alias, sub_test_alias'
+    expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, sub_test_alias'
     assert chatbot.response == expected_response
 
 
-def test_aliases(import_aliases, chatbot):
+@mock.patch.object(twitchbot.TwitchBot, 'alert_api', new=fake_alert_api)
+@mock.patch.object(twitchbot.TwitchBot, 'group_alert_api', new=fake_group_alert_api)
+def test_aliases(import_aliases, import_groups, chatbot):
     badge_level = [models.Badges.SUBSCRIBER]
     simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
     expected_response = 'Nice try test_user'
@@ -184,6 +221,17 @@ def test_aliases(import_aliases, chatbot):
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
     expected_response = 'test_count: 10'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!chat_alert', badge_level)
+    expected_response = '/me Test Text 1'
+    assert chatbot.response == expected_response
+
+    # spam test
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!chat_alert', badge_level)
+    expected_response = 'No spamming {}. Wait another {} seconds.'.format('test_user', chatbot.timeout)
     assert chatbot.response == expected_response
 
 
@@ -363,35 +411,6 @@ def test_list_commands(chatbot):
 
 
 # ALERTS
-def fake_alert_api(cls, user, alert):
-    if user in lists.get_list('banned_users'):
-        cls.chat('Nice try {}'.format(user))
-        return
-    elif cls.spamming(user):
-        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
-        return
-
-    try:
-        message = alerts.alert(name=alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
-    except Exception as e:
-        pass
-
-
-def fake_group_alert_api(cls, user, group_alert):
-    if user in lists.get_list('banned_users'):
-        cls.chat('Nice try {}'.format(user))
-        return
-    elif cls.spamming(user):
-        cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
-        return
-
-    try:
-        message = alerts.group_alert(group_name=group_alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
-    except Exception as e:
-        pass
-
 
 def test_get_alert_commands(chatbot):
     badge_level = []
@@ -413,42 +432,25 @@ def test_alert_commands(chatbot, import_groups):
     expected_response = '/me Test Text 1'
     assert chatbot.response == expected_response
 
-    time.sleep(chatbot.timeout)
-
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!alert', badge_level)
     expected_response = 'Format: !alert alert_name'
     assert chatbot.response == expected_response
-
-    time.sleep(chatbot.timeout)
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!alert test_text_1 blah', badge_level)
     expected_response = 'Format: !alert alert_name'
     assert chatbot.response == expected_response
 
-    # spam check
-    badge_level = [models.Badges.MODERATOR]
-    simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
-    expected_response = 'No spamming test_user. Wait another {} seconds.'.format(chatbot.timeout)
-    assert chatbot.response == expected_response
-
-    # that's better
-    time.sleep(chatbot.timeout)
-
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
     expected_response = ['/me Test Text 1', '/me Test Text 2']
     assert chatbot.response in expected_response
 
-    time.sleep(chatbot.timeout)
-
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!group_alert', badge_level)
     expected_response = 'Format: !group_alert group_alert_name'
     assert chatbot.response == expected_response
-
-    time.sleep(chatbot.timeout)
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!group_alert first_two blah', badge_level)
