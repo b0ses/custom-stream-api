@@ -121,7 +121,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             self.chat('Nice try {}'.format(user))
             return
 
-        print(found_command['format'], text)
         if not re.match(found_command['format'], text):
             self.chat('Format: {}'.format(found_command['help']))
             return
