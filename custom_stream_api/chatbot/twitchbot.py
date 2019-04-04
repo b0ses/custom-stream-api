@@ -122,7 +122,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         if (not ignore_badges) and not self._badge_check(badges, found_command['badge']):
-            self.chat('Nice try {}'.format(user))
             return
 
         if not re.match(found_command['format'], text):
@@ -287,7 +286,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.chat('Counts: {}'.format(', '.join([count['name'] for count in counts.list_counts()])))
 
     def chat_count_output(self, count_name, count):
-        self.chat('{}: {}'.format(count_name, count))
+        if count is not None:
+            self.chat('{}: {}'.format(count_name, count))
 
     def remove_count_output(self, count_name):
         counts.remove_count(count_name)
@@ -388,7 +388,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def alert_api(self, user, badges, alert):
         if user in lists.get_list('banned_users'):
-            self.chat('Nice try {}'.format(user))
             return
         elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
@@ -402,7 +401,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def group_alert_api(self, user, badges, group_alert):
         if user in lists.get_list('banned_users'):
-            self.chat('Nice try {}'.format(user))
             return
         elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
