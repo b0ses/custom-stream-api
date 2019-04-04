@@ -77,7 +77,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         command = event.arguments[0]
         if command[:1] == '!':
             logger.info('{} (badges:{}) commanded: {}'.format(user, badges, command))
-            self.do_command(command, user, badges)
+            try:
+                self.do_command(command, user, badges)
+            except Exception as e:
+                logger.exception(e)
 
     def get_user_badges(self, tags):
         badges = [Badges.CHAT]  # baseline
