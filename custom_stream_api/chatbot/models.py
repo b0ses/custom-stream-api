@@ -1,4 +1,43 @@
 from custom_stream_api.shared import db
+from enum import Enum
+
+
+class Badges(Enum):
+    CHAT = 'chat'
+    BITS = 'bits'
+    BITS_CHARITY = 'bits-charity'
+    PREMIUM = 'premium'
+    VERIFIED = 'verified'
+    BOT = 'bot'
+    PARTNER = 'partner'
+    FFZ_SUPPORTER = 'ffz_supporter'
+    SUBSCRIBER = 'subscriber'
+    VIP = 'vip'
+    MODERATOR = 'moderator'
+    GLOBAL_MODERATOR = 'global_mod'
+    BROADCASTER = 'broadcaster'
+    STAFF = 'staff'
+    ADMINISTRATOR = 'admin'
+
+
+BADGE_LEVELS = [
+    Badges.CHAT,
+    Badges.BITS,
+    Badges.BITS_CHARITY,
+    Badges.PREMIUM,
+    Badges.VERIFIED,
+    Badges.BOT,
+    Badges.FFZ_SUPPORTER,
+    Badges.PARTNER,
+    Badges.SUBSCRIBER,
+    Badges.VIP,
+    Badges.MODERATOR,
+    Badges.GLOBAL_MODERATOR,
+    Badges.BROADCASTER,
+    Badges.STAFF,
+    Badges.ADMINISTRATOR
+]
+BADGE_NAMES = [badge.value for badge in BADGE_LEVELS]
 
 
 class Alias(db.Model):

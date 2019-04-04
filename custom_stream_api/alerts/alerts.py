@@ -82,33 +82,6 @@ def generate_name(name='', text='', sound='', image=''):
 
 
 # ALERTS
-
-def alert(name='', text='', sound='', effect='', duration=3000, image=''):
-    if name:
-        alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
-        if not alert_obj:
-            raise Exception('Alert not found: {}'.format(name))
-        socket_data = alert_obj.as_dict()
-    else:
-        validate_sound(sound)
-        effect = validate_effect(effect)
-        duration = validate_duration(duration)
-        validate_image(image)
-        socket_data = {
-            'text': text,
-            'sound': sound,
-            'effect': effect,
-            'image': image,
-            'duration': duration
-        }
-    socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
-    return socket_data['text']
-
-
-def list_alerts():
-    return list(db.session.query(Alert).order_by(Alert.name.asc()).all())
-
-
 def import_alerts(alerts):
     for alert_data in alerts:
         add_alert(**alert_data, save=False)
@@ -141,6 +114,33 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
     return generated_name
 
 
+def list_alerts():
+    return [alert.as_dict() for alert in db.session.query(Alert).order_by(Alert.name.asc()).all()]
+
+
+def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True):
+    if name:
+        alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
+        if not alert_obj:
+            raise Exception('Alert not found: {}'.format(name))
+        socket_data = alert_obj.as_dict()
+    else:
+        validate_sound(sound)
+        effect = validate_effect(effect)
+        duration = validate_duration(duration)
+        validate_image(image)
+        socket_data = {
+            'text': text,
+            'sound': sound,
+            'effect': effect,
+            'image': image,
+            'duration': duration
+        }
+    if hit_socket:
+        socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
+    return socket_data['text']
+
+
 def remove_alert(name):
     alert = db.session.query(Alert).filter_by(name=name)
     if alert.count():
@@ -153,48 +153,16 @@ def remove_alert(name):
 
 
 # GROUPS
-
-def group_alert(group_name, random_choice=True):
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if not group_alert:
-        raise Exception('Group not found: {}'.format(group_name))
-    group_alerts = [result.alert_name for result in group_alert.alerts]
-    if random_choice:
-        chosen_alert = random.choice(group_alerts)
-    else:
-        chosen_alert = group_alerts[group_alert.current_index]
-        group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
-        db.session.commit()
-
-    return alert(chosen_alert)
-
-
-def list_groups():
-    # {'group_name': ['alert_name1', 'alert_name2', ...]}
-    groups = {}
-    group_alerts = list(db.session.query(GroupAlert).all())
-    for group_alert in group_alerts:
-        alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
-        alerts = [alert.alert_name for alert in alerts]
-        groups[group_alert.group_name] = {
-            'name': group_alert.group_name,
-            'alerts': alerts,
-            'thumbnail': group_alert.thumbnail
-        }
-    listed_groups = list(groups.values())
-    return sorted(listed_groups, key=lambda group: group['name'])
-
-
 def import_groups(groups):
     for group_data in groups:
         alerts = group_data['alerts']
         name = group_data['name']
         thumbnail = group_data.get('thumbnail', '')
-        replace_group(name, alerts, thumbnail=thumbnail, save=False)
+        set_group(name, alerts, thumbnail=thumbnail, save=False)
     db.session.commit()
 
 
-def replace_group(group_name, alert_names, thumbnail='', save=True):
+def set_group(group_name, alert_names, thumbnail='', save=True):
     thumbnail = validate_thumbnail(thumbnail)
     group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
     if group_alert:
@@ -234,6 +202,37 @@ def add_to_group(group_name, alert_names, save=True):
     if save:
         db.session.commit()
     return new_alerts
+
+
+def list_groups():
+    # {'group_name': ['alert_name1', 'alert_name2', ...]}
+    groups = {}
+    group_alerts = list(db.session.query(GroupAlert).all())
+    for group_alert in group_alerts:
+        alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
+        alerts = [alert.alert_name for alert in alerts]
+        groups[group_alert.group_name] = {
+            'name': group_alert.group_name,
+            'alerts': alerts,
+            'thumbnail': group_alert.thumbnail
+        }
+    listed_groups = list(groups.values())
+    return sorted(listed_groups, key=lambda group: group['name'])
+
+
+def group_alert(group_name, random_choice=True, hit_socket=True):
+    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
+    if not group_alert:
+        raise Exception('Group not found: {}'.format(group_name))
+    group_alerts = [result.alert_name for result in group_alert.alerts]
+    if random_choice:
+        chosen_alert = random.choice(group_alerts)
+    else:
+        chosen_alert = group_alerts[group_alert.current_index]
+        group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
+        db.session.commit()
+
+    return alert(chosen_alert, hit_socket=hit_socket)
 
 
 def remove_from_group(group_name, alert_names):

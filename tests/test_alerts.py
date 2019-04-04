@@ -1,4 +1,65 @@
+import pytest
+
 from custom_stream_api.alerts import alerts
+
+IMPORT_ALERTS = [
+    {
+        'name': 'test_text_1',
+        'text': 'Test Text 1',
+        'sound': 'http://www.test.com/test_sound_1.mp3',
+        'duration': 3000,
+        'image': '',
+        'thumbnail': '',
+        'effect': ''
+    },
+    {
+        'name': 'test_text_2',
+        'text': 'Test Text 2',
+        'sound': 'http://www.test.com/test_sound_2.mp3',
+        'duration': 3000,
+        'image': '',
+        'thumbnail': '',
+        'effect': ''
+    },
+    {
+        'name': 'test_text_3',
+        'text': 'Test Text 3',
+        'sound': 'http://www.test.com/test_sound_3.mp3',
+        'duration': 3000,
+        'image': '',
+        'thumbnail': '',
+        'effect': ''
+    }
+]
+
+IMPORT_GROUP_ALERTS = [
+    {
+        'name': 'first_two',
+        'alerts': [
+            'test_text_1',
+            'test_text_2'
+        ],
+        'thumbnail': None
+    },
+    {
+        'name': 'last_two',
+        'alerts': [
+            'test_text_2',
+            'test_text_3'
+        ],
+        'thumbnail': None
+    }
+]
+
+
+@pytest.fixture
+def import_alerts(app):
+    alerts.import_alerts(IMPORT_ALERTS)
+
+
+@pytest.fixture
+def import_groups(import_alerts):
+    alerts.import_groups(IMPORT_GROUP_ALERTS)
 
 
 def test_validate_sound():
@@ -116,94 +177,37 @@ def test_generate_name():
     assert alerts.generate_name(sound=test_sound) == 'test_sound'
 
 
-def test_alerts(app):
-    # Testing add alerts
-    test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
-    alerts.add_alert(text='Test Text 1', sound=test_sound_1)
-    test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
-    alerts.add_alert(text='Test Text 2', sound=test_sound_2)
-    test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
-    alerts.add_alert(text='Test Text 3', sound=test_sound_3)
+def test_import_export_alerts(import_alerts):
+    assert alerts.list_alerts() == IMPORT_ALERTS
 
-    # Testing list alert
-    all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-    assert len(all_alerts) == 3
-    expected_alerts = [1, 2, 3]
-    current_index = 0
-    for alert in all_alerts:
-        expected_alert_num = expected_alerts[current_index]
-        assert alert == {
-            'name': 'test_text_{}'.format(expected_alert_num),
-            'text': 'Test Text {}'.format(expected_alert_num),
-            'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': '',
-            'duration': 3000,
-            'effect': '',
-            'thumbnail': ''
-        }
-        current_index += 1
 
-    # Testing remove alert
+def test_remove_alert(import_alerts):
     alerts.remove_alert('test_text_2')
-
-    all_alerts = [alert.as_dict() for alert in alerts.list_alerts()]
-    assert len(all_alerts) == 2
-    expected_alerts = [1, 3]
-    current_index = 0
-    for alert in all_alerts:
-        expected_alert_num = expected_alerts[current_index]
-        assert alert == {
-            'name': 'test_text_{}'.format(expected_alert_num),
-            'text': 'Test Text {}'.format(expected_alert_num),
-            'sound': 'http://www.test.com/test_sound_{}.mp3'.format(expected_alert_num),
-            'image': '',
-            'duration': 3000,
-            'effect': '',
-            'thumbnail': ''
-        }
-        current_index += 1
+    all_alerts = [alert['name'] for alert in alerts.list_alerts()]
+    assert 'test_text_2' not in all_alerts
 
 
-def test_group_alerts(app):
-    test_sound_1 = 'http://www.test.com/test_sound_1.mp3'
-    test_sound_2 = 'http://www.test.com/test_sound_2.mp3'
-    test_sound_3 = 'http://www.test.com/test_sound_3.mp3'
-    alerts.add_alert(text='Test Text 1', sound=test_sound_1)
-    alerts.add_alert(text='Test Text 2', sound=test_sound_2)
-    alerts.add_alert(text='Test Text 3', sound=test_sound_3)
+def test_import_export_groups(import_groups):
+    assert alerts.list_groups() == IMPORT_GROUP_ALERTS
 
-    # Testing add to group
-    alerts.add_to_group('first_two', ['test_text_1', 'test_text_2'])
-    alerts.add_to_group('last_two', ['test_text_2', 'test_text_3'])
 
-    # Testing list groups
-    all_groups = alerts.list_groups()
-    expected_groups = [
-        {
-            'name': 'first_two',
-            'alerts': [
-                'test_text_1',
-                'test_text_2'
-            ],
-            'thumbnail': None
-        },
-        {
-            'name': 'last_two',
-            'alerts': [
-                'test_text_2',
-                'test_text_3'
-            ],
-            'thumbnail': None
-        }
-    ]
-    assert all_groups == expected_groups
+def test_alert(import_alerts):
+    expected = 'Test Text 1'
+    assert alerts.alert('test_text_1', hit_socket=False) == expected
 
-    # Testing remove from group
+
+def test_group_alert(import_groups):
+    expected = ['Test Text 2', 'Test Text 3']
+    assert alerts.group_alert('last_two', hit_socket=False) in expected
+
+
+def test_remove_from_group(import_groups):
     alerts.remove_from_group('first_two', ['test_text_2'])
     group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
     expected = ['test_text_1']
     assert expected == group_alerts
 
-    # Testing remove whole group
+
+def test_remove_group(import_groups):
     alerts.remove_group('last_two')
     assert 'last_two' not in alerts.list_groups()

@@ -47,8 +47,12 @@ def create_app(init_db=True):
     socketio = SocketIO(app)
 
     from custom_stream_api.alerts.views import alert_endpoints
+    from custom_stream_api.lists.views import lists_endpoints
+    from custom_stream_api.counts.views import counts_endpoints
     from custom_stream_api.chatbot.views import chatbot_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
+    app.register_blueprint(lists_endpoints, url_prefix='/lists')
+    app.register_blueprint(counts_endpoints, url_prefix='/counts')
     app.register_blueprint(chatbot_endpoints, url_prefix='/chatbot')
 
     @app.errorhandler(InvalidUsage)
