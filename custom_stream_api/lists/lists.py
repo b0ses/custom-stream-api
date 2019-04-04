@@ -72,6 +72,12 @@ def get_list_item(name, index=None):
     return items[index].item, items[index].index
 
 
+def get_list_size(name):
+    found_list_size = db.session.query(ListItem.index).filter_by(list_name=name).order_by(ListItem.index.desc()).first()
+    if found_list_size:
+        return found_list_size[0] + 1
+
+
 def remove_from_list(name, index):
     if not isinstance(index, int):
         if not index.isdigit():

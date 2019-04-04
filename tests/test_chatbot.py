@@ -380,21 +380,26 @@ def test_count_commands(chatbot):
 def test_get_list_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: get_list_item, list_lists'
+    expected_response = 'Commands include: get_list_item, get_list_size, list_lists'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: add_list_item, get_list_item, list_lists, remove_list_item'
+    expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list_item'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: add_list_item, get_list_item, list_lists, remove_list, remove_list_item'
+    expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list, remove_list_item'
     assert chatbot.response == expected_response
 
 
 def test_list_commands(chatbot):
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!list_lists', badge_level)
+    expected_response = None
+    assert chatbot.response == expected_response
+
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!add_list_item test_list item_one', badge_level)
     expected_response = '1. item_one'
@@ -421,6 +426,16 @@ def test_list_commands(chatbot):
     assert chatbot.response in expected_responses
 
     badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_item non_existent_list 1', badge_level)
+    expected_response = None
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_item test_list 1000', badge_level)
+    expected_response = None
+    assert chatbot.response == expected_response
+
+    badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_list_item', badge_level)
     expected_response = 'Format: !get_list_item list_name [index]'
     assert chatbot.response == expected_response
@@ -430,9 +445,34 @@ def test_list_commands(chatbot):
     expected_response = 'Format: !get_list_item list_name [index]'
     assert chatbot.response == expected_response
 
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_size test_list', badge_level)
+    expected_response = 'test_list size: 2'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_size test_list extra', badge_level)
+    expected_response = 'Format: !get_list_size list_name'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_size', badge_level)
+    expected_response = 'Format: !get_list_size list_name'
+    assert chatbot.response == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_size non_existent_list', badge_level)
+    expected_response = None
+    assert chatbot.response == expected_response
+
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!remove_list_item test_list 1', badge_level)
     expected_response = 'Removed 1. item_one'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!remove_list_item non_existent_list 1', badge_level)
+    expected_response = None
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
@@ -441,7 +481,7 @@ def test_list_commands(chatbot):
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
-    simulate_chat(chatbot, 'test_user', '!remove_list_item test)list test', badge_level)
+    simulate_chat(chatbot, 'test_user', '!remove_list_item test_list test', badge_level)
     expected_response = 'Format: !remove_list_item list_name index'
     assert chatbot.response == expected_response
 

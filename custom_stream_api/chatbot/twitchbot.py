@@ -311,6 +311,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!get_list_item\s+\S+\s*(\s+\d+)?$',
                 'help': '!get_list_item list_name [index]'
             },
+            'get_list_size': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.get_list_size(text),
+                'format': '^!get_list_size\s+\S+\s*$',
+                'help': '!get_list_size list_name'
+            },
             'add_list_item': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.add_list_item(text[:text.index(' ')],
@@ -333,14 +339,22 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         }
 
     def list_lists(self):
-        self.chat('Lists: {}'.format(', '.join([count['name'] for count in lists.list_lists()])))
+        all_lists = ', '.join([count['name'] for count in lists.list_lists()])
+        if all_lists:
+            self.chat('Lists: {}'.format(all_lists))
 
     def get_list_item(self, text):
         argv = text.split()
         list_name = argv[0]
         index = int(argv[1])-1 if len(argv) > 1 else None
         item, item_index = lists.get_list_item(list_name, index=index)
-        self.output_list_item(item_index+1, item)
+        if item:
+            self.output_list_item(item_index+1, item)
+
+    def get_list_size(self, list_name):
+        size = lists.get_list_size(list_name)
+        if size is not None:
+            self.chat('{} size: {}'.format(list_name, size))
 
     def add_list_item(self, list_name, item):
         index = len(lists.get_list(list_name)) + 1
@@ -349,14 +363,16 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def remove_list_item(self, list_name, index):
         item = lists.remove_from_list(list_name, int(index)-1)
-        self.chat('Removed {}. {}'.format(index, item))
+        if item:
+            self.chat('Removed {}. {}'.format(index, item))
 
     def remove_list(self, list_name):
         lists.remove_list(list_name)
         self.chat('Removed list {}'.format(list_name))
 
     def output_list_item(self, index, item):
-        self.chat('{}. {}'.format(index, item))
+        if item:
+            self.chat('{}. {}'.format(index, item))
 
     # Alerts
 
