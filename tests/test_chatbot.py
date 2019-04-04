@@ -257,7 +257,7 @@ def test_get_count_commands(chatbot):
 def test_count_commands(chatbot):
     badge_level = [models.Badges.CHAT]
     simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
-    expected_response = 'No counts'
+    expected_response = None
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
@@ -283,6 +283,11 @@ def test_count_commands(chatbot):
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!add_count test_count', badge_level)
     expected_response = 'test_count: 11'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!add_count test_count2', badge_level)
+    expected_response = 'test_count2: 1'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
@@ -313,6 +318,11 @@ def test_count_commands(chatbot):
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!reset_count test_count', badge_level)
     expected_response = 'test_count: 0'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!reset_count test_count3', badge_level)
+    expected_response = 'test_count3: 0'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]
@@ -347,7 +357,7 @@ def test_count_commands(chatbot):
 
     badge_level = [models.Badges.CHAT]
     simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
-    expected_response = 'Counts: test_count'
+    expected_response = 'Counts: test_count, test_count2, test_count3'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.MODERATOR]

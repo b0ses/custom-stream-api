@@ -286,8 +286,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         all_counts = ', '.join([count['name'] for count in counts.list_counts()])
         if all_counts:
             self.chat('Counts: {}'.format(all_counts))
-        else:
-            self.chat('No counts')
 
     def chat_count_output(self, count_name, count):
         if count is not None:
