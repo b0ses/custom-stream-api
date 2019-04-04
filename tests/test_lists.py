@@ -41,6 +41,7 @@ def test_get_list_item(import_lists):
     assert lists.get_list_item('list1', 1) == ('two', 1)
     assert lists.get_list_item('list1')[0] in ['one', 'two', 'three']
 
+
 def test_get_list_size(import_lists):
     assert lists.get_list_size('list1') == 3
 

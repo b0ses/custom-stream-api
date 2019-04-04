@@ -1,6 +1,5 @@
 import pytest
 import mock
-import time
 
 from custom_stream_api.chatbot import aliases, twitchbot, models
 from custom_stream_api.alerts import alerts
@@ -211,7 +210,8 @@ def test_get_aliases(import_aliases, chatbot):
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, sub_test_alias'
+    expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, ' \
+                        'sub_test_alias'
     assert chatbot.response == expected_response
 
 
@@ -390,7 +390,8 @@ def test_get_list_commands(chatbot):
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
-    expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list, remove_list_item'
+    expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list, ' \
+                        'remove_list_item'
     assert chatbot.response == expected_response
 
 
@@ -500,8 +501,8 @@ def test_list_commands(chatbot):
     expected_response = 'Removed list test_list'
     assert chatbot.response == expected_response
 
-# ALERTS
 
+# ALERTS
 def test_get_alert_commands(chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_alert_commands', badge_level)
