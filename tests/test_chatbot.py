@@ -255,6 +255,11 @@ def test_get_count_commands(chatbot):
 
 
 def test_count_commands(chatbot):
+    badge_level = [models.Badges.CHAT]
+    simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
+    expected_response = 'No counts'
+    assert chatbot.response == expected_response
+
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!set_count test_count 10', badge_level)
     expected_response = 'test_count: 10'
