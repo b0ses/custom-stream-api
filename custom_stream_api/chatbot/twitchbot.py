@@ -229,7 +229,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             # Remember to *bind* when looping and making lambdas!
             self.aliases[alias['alias']] = {
                 'badge': self.get_badge(alias['badge']),
-                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command, user, badges,
+                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command + ' ' + text,
+                                                                                                 user, badges,
                                                                                                  ignore_badges=True),
                 'format': '!{}'.format(alias['alias']),
                 'help': '!{}'.format(alias['alias'])
