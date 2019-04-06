@@ -27,12 +27,12 @@ IMPORT_ALIASES = [
     },
     {
         "alias": "test_alias_args",
-        "badge": "moderator",
+        "badge": "vip",
         "command": "!set_count test_count"
     },
     {
         "alias": "mod_test_alias",
-        "badge": "moderator",
+        "badge": "vip",
         "command": "!set_count test_count 10"
     },
     {
@@ -61,7 +61,7 @@ def import_groups(import_alerts):
 def fake_alert_api(cls, user, badges, alert):
     if user in lists.get_list('banned_users'):
         return
-    elif not cls._badge_check(badges, models.Badges.MODERATOR) and cls.spamming(user):
+    elif not cls._badge_check(badges, models.Badges.VIP) and cls.spamming(user):
         cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
         return
 
@@ -75,7 +75,7 @@ def fake_alert_api(cls, user, badges, alert):
 def fake_group_alert_api(cls, user, badges, group_alert):
     if user in lists.get_list('banned_users'):
         return
-    elif not cls._badge_check(badges, models.Badges.MODERATOR) and cls.spamming(user):
+    elif not cls._badge_check(badges, models.Badges.VIP) and cls.spamming(user):
         cls.chat('No spamming {}. Wait another {} seconds.'.format(user, cls.timeout))
         return
 
@@ -121,7 +121,7 @@ def test_id(chatbot):
 
 
 def test_echo(chatbot):
-    simulate_chat(chatbot, 'test_user', '!echo test test 1 2 3', [models.Badges.MODERATOR])
+    simulate_chat(chatbot, 'test_user', '!echo test test 1 2 3', [models.Badges.VIP])
     expected_response = None
     assert chatbot.response == expected_response
 
@@ -146,7 +146,7 @@ def test_get_commands(chatbot):
     expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, spongebob'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
                         'get_list_commands, spongebob'
@@ -208,7 +208,7 @@ def test_get_aliases(import_aliases, chatbot):
     expected_response = 'Commands include: chat_alert, chat_test_alias, sub_test_alias'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
     expected_response = 'Commands include: chat_alert, chat_test_alias, mod_test_alias, sub_test_alias, test_alias_args'
     assert chatbot.response == expected_response
@@ -228,17 +228,17 @@ def test_aliases(import_aliases, import_groups, chatbot):
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
     expected_response = 'test_count: 10'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!test_alias_args 14', badge_level)
     expected_response = 'test_count: 14'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!test_alias_args blah', badge_level)
     expected_response = 'Format: !test_alias_args number'
     assert chatbot.response == expected_response
@@ -262,7 +262,7 @@ def test_get_count_commands(chatbot):
     expected_response = 'Commands include: get_count, list_counts'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
     expected_response = 'Commands include: add_count, get_count, list_counts, remove_count, reset_count, set_count, ' \
                         'subtract_count'
@@ -275,77 +275,77 @@ def test_count_commands(chatbot):
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!set_count test_count 10', badge_level)
     expected_response = 'test_count: 10'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!set_count', badge_level)
     expected_response = 'Format: !set_count count_name number'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!set_count test count 10', badge_level)
     expected_response = 'Format: !set_count count_name number'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!set_count test_count blah', badge_level)
     expected_response = 'Format: !set_count count_name number'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_count test_count', badge_level)
     expected_response = 'test_count: 11'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_count test_count2', badge_level)
     expected_response = 'test_count2: 1'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_count', badge_level)
     expected_response = 'Format: !add_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_count test_count 30', badge_level)
     expected_response = 'Format: !add_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!subtract_count test_count', badge_level)
     expected_response = 'test_count: 10'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!subtract_count', badge_level)
     expected_response = 'Format: !subtract_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!subtract_count test_count 30', badge_level)
     expected_response = 'Format: !subtract_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!reset_count test_count', badge_level)
     expected_response = 'test_count: 0'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!reset_count test_count3', badge_level)
     expected_response = 'test_count3: 0'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!reset_count ', badge_level)
     expected_response = 'Format: !reset_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!reset_count test_count 30', badge_level)
     expected_response = 'Format: !reset_count count_name'
     assert chatbot.response == expected_response
@@ -360,7 +360,7 @@ def test_count_commands(chatbot):
     expected_response = 'Format: !get_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_count non_existent_count', badge_level)
     expected_response = None
     assert chatbot.response == expected_response
@@ -375,17 +375,17 @@ def test_count_commands(chatbot):
     expected_response = 'Counts: test_count, test_count2, test_count3'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_count test_count', badge_level)
     expected_response = 'test_count removed'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_count ', badge_level)
     expected_response = 'Format: !remove_count count_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_count test_count 30', badge_level)
     expected_response = 'Format: !remove_count count_name'
     assert chatbot.response == expected_response
@@ -398,7 +398,7 @@ def test_get_list_commands(chatbot):
     expected_response = 'Commands include: get_list_item, get_list_size, list_lists'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
     expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list_item'
     assert chatbot.response == expected_response
@@ -416,17 +416,17 @@ def test_list_commands(chatbot):
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_list_item test_list item_one', badge_level)
     expected_response = '1. item_one'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_list_item test_list item_two', badge_level)
     expected_response = '2. item_two'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!add_list_item', badge_level)
     expected_response = 'Format: !add_list_item list_name item to include in list'
     assert chatbot.response == expected_response
@@ -481,22 +481,22 @@ def test_list_commands(chatbot):
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_list_item test_list 1', badge_level)
     expected_response = 'Removed 1. item_one'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_list_item non_existent_list 1', badge_level)
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_list_item', badge_level)
     expected_response = 'Format: !remove_list_item list_name index'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_list_item test_list test', badge_level)
     expected_response = 'Format: !remove_list_item list_name index'
     assert chatbot.response == expected_response
@@ -524,7 +524,7 @@ def test_get_alert_commands(chatbot):
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_alert_commands', badge_level)
     expected_response = 'Commands include: alert, ban, group_alert, unban'
     assert chatbot.response == expected_response
@@ -533,74 +533,74 @@ def test_get_alert_commands(chatbot):
 @mock.patch.object(twitchbot.TwitchBot, 'alert_api', new=fake_alert_api)
 @mock.patch.object(twitchbot.TwitchBot, 'group_alert_api', new=fake_group_alert_api)
 def test_alert_commands(chatbot, import_groups):
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!alert test_text_1', badge_level)
     expected_response = '/me Test Text 1'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!alert', badge_level)
     expected_response = 'Format: !alert alert_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!alert test_text_1 blah', badge_level)
     expected_response = 'Format: !alert alert_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
     expected_response = ['/me Test Text 1', '/me Test Text 2']
     assert chatbot.response in expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!group_alert', badge_level)
     expected_response = 'Format: !group_alert group_alert_name'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!group_alert first_two blah', badge_level)
     expected_response = 'Format: !group_alert group_alert_name'
     assert chatbot.response == expected_response
 
     # banning
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!ban test_user2', badge_level)
     expected_response = 'Banned test_user2'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!ban', badge_level)
     expected_response = 'Format: !ban chatter'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!ban test_user2 for real', badge_level)
     expected_response = 'Format: !ban chatter'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user2', '!alert test_text_1', badge_level)
     expected_response = None
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user2', '!unban test_user2', badge_level)
     expected_response = 'Unbanned test_user2'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user2', '!unban', badge_level)
     expected_response = 'Format: !unban banned_chatter'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user2', '!unban test_user2 for real', badge_level)
     expected_response = 'Format: !unban banned_chatter'
     assert chatbot.response == expected_response
 
-    badge_level = [models.Badges.MODERATOR]
+    badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user2', '!alert test_text_1', badge_level)
     expected_response = '/me Test Text 1'
     assert chatbot.response == expected_response

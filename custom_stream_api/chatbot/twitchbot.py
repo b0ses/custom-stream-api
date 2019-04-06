@@ -296,7 +296,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!get_count count_name'
             },
             'set_count': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.chat_count_output(text.split()[0],
                                                                               counts.set_count(text.split()[0],
                                                                                                text.split()[1])),
@@ -304,25 +304,25 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!set_count count_name number'
             },
             'reset_count': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.chat_count_output(text, counts.reset_count(text)),
                 'format': '^!reset_count\s+\S+$',
                 'help': '!reset_count count_name'
             },
             'remove_count': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.remove_count_output(text),
                 'format': '^!remove_count\s+\S+$',
                 'help': '!remove_count count_name'
             },
             'add_count': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.chat_count_output(text, counts.add_to_count(text)),
                 'format': '^!add_count\s+\S+$',
                 'help': '!add_count count_name'
             },
             'subtract_count': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.chat_count_output(text, counts.subtract_from_count(text)),
                 'format': '^!subtract_count\s+\S+$',
                 'help': '!subtract_count count_name'
@@ -365,14 +365,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!get_list_size list_name'
             },
             'add_list_item': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.add_list_item(text[:text.index(' ')],
                                                                           text[text.index(' ')+1:]),
                 'format': '^!add_list_item\s+\S+\s+.+$',
                 'help': '!add_list_item list_name item to include in list'
             },
             'remove_list_item': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.remove_list_item(text.split()[0], text.split()[1]),
                 'format': '^!remove_list_item\s+\S+\s+\d+$',
                 'help': '!remove_list_item list_name index'
@@ -426,25 +426,25 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def set_alert_commands(self):
         self.alert_commands = {
             'alert': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.alert_api(user, badges, text),
                 'format': '^!alert\s+\S+$',
                 'help': '!alert alert_name'
             },
             'group_alert': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.group_alert_api(user, badges, text),
                 'format': '^!group_alert\s+\S+$',
                 'help': '!group_alert group_alert_name'
             },
             'ban': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.ban(text),
                 'format': '^!ban\s+\S+$',
                 'help': '!ban chatter'
             },
             'unban': {
-                'badge': Badges.MODERATOR,
+                'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.unban(text),
                 'format': '^!unban\s+\S+$',
                 'help': '!unban banned_chatter'
@@ -454,7 +454,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def alert_api(self, user, badges, alert):
         if user in lists.get_list('banned_users'):
             return
-        elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
+        elif not self._badge_check(badges, Badges.VIP) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
@@ -467,7 +467,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def group_alert_api(self, user, badges, group_alert):
         if user in lists.get_list('banned_users'):
             return
-        elif not self._badge_check(badges, Badges.MODERATOR) and self.spamming(user):
+        elif not self._badge_check(badges, Badges.VIP) and self.spamming(user):
             self.chat('No spamming {}. Wait another {} seconds.'.format(user, self.timeout))
             return
 
