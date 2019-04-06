@@ -238,7 +238,6 @@ def test_aliases(import_aliases, import_groups, chatbot):
     expected_response = 'test_count: 14'
     assert chatbot.response == expected_response
 
-
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!test_alias_args blah', badge_level)
     expected_response = 'Format: !test_alias_args number'
