@@ -26,6 +26,11 @@ IMPORT_ALIASES = [
         "command": "!get_count test_count"
     },
     {
+        "alias": "test_alias_args",
+        "badge": "moderator",
+        "command": "!set_count test_count"
+    },
+    {
         "alias": "mod_test_alias",
         "badge": "moderator",
         "command": "!set_count test_count 10"
@@ -205,13 +210,13 @@ def test_get_aliases(import_aliases, chatbot):
 
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
-    expected_response = 'Commands include: chat_alert, chat_test_alias, mod_test_alias, sub_test_alias'
+    expected_response = 'Commands include: chat_alert, chat_test_alias, mod_test_alias, sub_test_alias, test_alias_args'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
     expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, ' \
-                        'sub_test_alias'
+                        'sub_test_alias, test_alias_args'
     assert chatbot.response == expected_response
 
 
@@ -226,6 +231,17 @@ def test_aliases(import_aliases, import_groups, chatbot):
     badge_level = [models.Badges.MODERATOR]
     simulate_chat(chatbot, 'test_user', '!mod_test_alias', badge_level)
     expected_response = 'test_count: 10'
+    assert chatbot.response == expected_response
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!test_alias_args 14', badge_level)
+    expected_response = 'test_count: 14'
+    assert chatbot.response == expected_response
+
+
+    badge_level = [models.Badges.MODERATOR]
+    simulate_chat(chatbot, 'test_user', '!test_alias_args blah', badge_level)
+    expected_response = 'Format: !test_alias_args number'
     assert chatbot.response == expected_response
 
     badge_level = []

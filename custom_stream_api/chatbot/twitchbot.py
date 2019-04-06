@@ -8,6 +8,7 @@ import threading
 import time
 import uuid
 import re
+from functools import partial
 
 import irc.bot
 import requests
@@ -116,7 +117,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return max_user_badge >= self.badge_levels.index(badge_level)
 
     def do_command(self, text, user, badges, ignore_badges=False):
-        argv = text.split(' ')
+        strip_text = text.strip()
+        argv = strip_text.split(' ')
         command_name = argv[0][1:]
         command_text = ' '.join(argv[1:])
 
@@ -127,7 +129,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if (not ignore_badges) and not self._badge_check(badges, found_command['badge']):
             return
 
-        if not re.match(found_command['format'], text):
+        if not re.match(found_command['format'], strip_text):
             self.chat('Format: {}'.format(found_command['help']))
             return
 
@@ -152,15 +154,15 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.main_commands = {
             'id': {
                 'badge': Badges.BROADCASTER,
-                'callback': lambda text, user, badges: self.get_chatbot_id(),
                 'format': '^!id$',
-                'help': '^!id$'
+                'help': '!id',
+                'callback': lambda text, user, badges: self.get_chatbot_id()
             },
             'echo': {
                 'badge': Badges.BROADCASTER,
-                'callback': lambda text, user, badges: self.chat(text),
                 'format': '^!echo\s+.*$',
-                'help': '^!echo message$'
+                'help': '!echo message',
+                'callback': lambda text, user, badges: self.chat(text)
             },
             'get_commands': {
                 'badge': Badges.CHAT,
@@ -226,15 +228,33 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def set_aliases(self):
         self.aliases = {}
         for alias in aliases.list_aliases():
-            # Remember to *bind* when looping and making lambdas!
+            strip_text = alias['command'].strip()
+            argv = strip_text.split(' ')
+            command_name = argv[0][1:]
+            found_command = self.commands.get(command_name, None)
+            if not found_command:
+                continue
+
+            num_of_spaces = len(argv) - 1
+            num_of_expected_spaces = len(found_command['help'].split()) - 1
+            rest_of_format = ''
+            rest_of_help = ''
+            if num_of_spaces < num_of_expected_spaces:
+                rest_of_format = '\s+' + '\s+'.join(found_command['format'].split('\s+')[num_of_spaces+1:])[:-1]
+                rest_of_help = ' ' + ' '.join(found_command['help'].split()[num_of_spaces+1:])
+
+            alias_format = '^!{}{}$'.format(alias['alias'], rest_of_format)
+            alias_help = '!{}{}'.format(alias['alias'], rest_of_help)
+
             self.aliases[alias['alias']] = {
                 'badge': self.get_badge(alias['badge']),
-                'callback': lambda text, user, badges, command=alias['command']: self.do_command(command + ' ' + text,
-                                                                                                 user, badges,
-                                                                                                 ignore_badges=True),
-                'format': '!{}'.format(alias['alias']),
-                'help': '!{}'.format(alias['alias'])
+                'callback': partial(self.alias_redirect, strip_text),
+                'format': alias_format,
+                'help': alias_help
             }
+
+    def alias_redirect(self, command, text, user, badges):
+        self.do_command(command + ' ' + text, user, badges, ignore_badges=True)
 
     # Counts
 
@@ -243,7 +263,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'list_counts': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.list_counts(),
-                'format': '^!list_counts\s*$',
+                'format': '^!list_counts$',
                 'help': '!list_counts'
             },
             'get_count': {
@@ -257,7 +277,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'callback': lambda text, user, badges: self.chat_count_output(text.split()[0],
                                                                               counts.set_count(text.split()[0],
                                                                                                text.split()[1])),
-                'format': '^!set_count\s+\S+\s\d+$',
+                'format': '^!set_count\s+\S+\s+\d+$',
                 'help': '!set_count count_name number'
             },
             'reset_count': {
@@ -306,19 +326,19 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'list_lists': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.list_lists(),
-                'format': '^!list_lists\s*$',
+                'format': '^!list_lists$',
                 'help': '!list_lists'
             },
             'get_list_item': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.get_list_item(text),
-                'format': '^!get_list_item\s+\S+\s*(\s+\d+)?$',
+                'format': '^!get_list_item\s+\S+(\s+\d+)?$',
                 'help': '!get_list_item list_name [index]'
             },
             'get_list_size': {
                 'badge': Badges.CHAT,
                 'callback': lambda text, user, badges: self.get_list_size(text),
-                'format': '^!get_list_size\s+\S+\s*$',
+                'format': '^!get_list_size\s+\S+$',
                 'help': '!get_list_size list_name'
             },
             'add_list_item': {
@@ -331,13 +351,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'remove_list_item': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.remove_list_item(text.split()[0], text.split()[1]),
-                'format': '^!remove_list_item\s+\S+\s+\d+\s*$',
+                'format': '^!remove_list_item\s+\S+\s+\d+$',
                 'help': '!remove_list_item list_name index'
             },
             'remove_list': {
                 'badge': Badges.BROADCASTER,
                 'callback': lambda text, user, badges: self.remove_list(text),
-                'format': '^!remove_list\s+\S+\s*$',
+                'format': '^!remove_list\s+\S+$',
                 'help': '!remove_list list_name'
             }
         }
@@ -385,25 +405,25 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'alert': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.alert_api(user, badges, text),
-                'format': '^!alert\s+\S+\s*$',
+                'format': '^!alert\s+\S+$',
                 'help': '!alert alert_name'
             },
             'group_alert': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.group_alert_api(user, badges, text),
-                'format': '^!group_alert\s+\S+\s*$',
+                'format': '^!group_alert\s+\S+$',
                 'help': '!group_alert group_alert_name'
             },
             'ban': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.ban(text),
-                'format': '^!ban\s+\S+\s*$',
+                'format': '^!ban\s+\S+$',
                 'help': '!ban chatter'
             },
             'unban': {
                 'badge': Badges.MODERATOR,
                 'callback': lambda text, user, badges: self.unban(text),
-                'format': '^!unban\s+\S+\s*$',
+                'format': '^!unban\s+\S+$',
                 'help': '!unban banned_chatter'
             }
         }
