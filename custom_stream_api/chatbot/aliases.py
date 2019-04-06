@@ -11,7 +11,7 @@ def import_aliases(aliases):
         add_alias(**alias_dict, save=False)
     db.session.commit()
     if 'chatbot' in g:
-        g['chatbot'].set_aliases()
+        g['chatbot'].update_commands()
 
 
 def add_alias(alias, command, badge, save=True):
@@ -27,7 +27,7 @@ def add_alias(alias, command, badge, save=True):
     if save:
         db.session.commit()
         if 'chatbot' in g:
-            g['chatbot'].set_aliases()
+            g['chatbot'].update_commands()
     return alias
 
 
@@ -37,5 +37,5 @@ def remove_alias(alias):
         found_alias.delete()
         db.session.commit()
         if 'chatbot' in g:
-            g['chatbot'].set_aliases()
+            g['chatbot'].update_commands()
         return alias
