@@ -246,7 +246,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 logger.info('not adding {}'.format(alias['alias']))
                 continue
 
-            alias_format = self._get_alias_format(found_command['format'], alias['command'])
+            alias_format = self._get_alias_format(found_command['format'], alias)
             if not alias_format:
                 logger.info('not adding {} due to formatting'.format(alias['alias']))
 
@@ -254,14 +254,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'badge': self.get_badge(alias['badge']),
                 'callback': partial(self.alias_redirect, strip_text),
                 'format': alias_format,
-                'help': self._get_alias_help()
+                'help': self._get_alias_help(found_command['help'], alias)
             }
 
     def _get_alias_format(self, original_format, alias):
         match = None
         index = 1
         while not match and index < len(original_format):
-            match = re.match('^{}$'.format(original_format[1:index]), alias['commmand'])
+            match = re.match('^{}$'.format(original_format[1:index]), alias['command'])
             if not match:
                 index += 1
         if not match:
@@ -269,7 +269,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return '^!{}{}$'.format(alias['alias'], original_format[index:-1])
 
     def _get_alias_help(self, original_help, alias):
-        num_of_spaces = len(alias['command'].strip().split(' ')) - 1
+        num_of_spaces = len(alias['command'].strip().split()) - 1
         num_of_expected_spaces = len(original_help.split()) - 1
         rest_of_help = ''
         if num_of_spaces < num_of_expected_spaces:
