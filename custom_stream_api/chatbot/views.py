@@ -20,7 +20,7 @@ def start_post():
             'client_id': data.get('client_id', ''),
             'chat_token': data.get('chat_token', ''),
             'channel': data.get('channel', ''),
-            'timeout': data.get('timeout', 30)
+            'timeout': data.get('timeout', 15)
         }
         try:
             bot_id = twitchbot.setup_chatbot(**twitchbot_data)

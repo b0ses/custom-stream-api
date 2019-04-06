@@ -63,6 +63,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         connection.cap('REQ', ':twitch.tv/tags')
         connection.cap('REQ', ':twitch.tv/commands')
         connection.join(self.channel)
+        self.chat('Hey 👋')
 
     def chat(self, message):
         c = self.connection
@@ -138,16 +139,20 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     # COMMANDS
 
     def update_commands(self):
-        # Order is important, just make sure main commands is last
+        # Order is important!
         self.set_count_commands()
         self.commands.update(self.count_commands)
         self.set_list_commands()
         self.commands.update(self.list_commands)
         self.set_alert_commands()
         self.commands.update(self.alert_commands)
+        self.set_main_commands()
+        self.commands.update(self.main_commands)
+        # has to be second to last
         self.set_aliases()
         self.commands.update(self.aliases)
-        self.set_main_commands()
+        # has to be last
+        self.set_get_commands()
         self.commands.update(self.main_commands)
 
     def set_main_commands(self):
@@ -164,6 +169,16 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!echo message',
                 'callback': lambda text, user, badges: self.chat(text)
             },
+            'spongebob': {
+                'badge': Badges.SUBSCRIBER,
+                'format': '^!spongebob\s+.+$',
+                'help': '!spongebob message',
+                'callback': lambda text, user, badges: self.spongebob(text)
+            }
+        }
+
+    def set_get_commands(self):
+        self.get_commands = {
             'get_commands': {
                 'badge': Badges.CHAT,
                 'format': '^!get_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
@@ -193,14 +208,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!get_aliases\s*({})?$'.format('|'.join(BADGE_NAMES)),
                 'help': '!get_aliases [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.aliases, text, badges)
-            },
-            'spongebob': {
-                'badge': Badges.SUBSCRIBER,
-                'format': '^!spongebob\s+.+$',
-                'help': '!spongebob message',
-                'callback': lambda text, user, badges: self.spongebob(text)
             }
         }
+        self.main_commands.update(self.get_commands)
 
     def display_commands(self, commands, badge_level, user_badges=None):
         if not badge_level:
@@ -233,25 +243,38 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             command_name = argv[0][1:]
             found_command = self.commands.get(command_name, None)
             if not found_command:
+                logger.info('not adding {}'.format(alias['alias']))
                 continue
 
-            num_of_spaces = len(argv) - 1
-            num_of_expected_spaces = len(found_command['help'].split()) - 1
-            rest_of_format = ''
-            rest_of_help = ''
-            if num_of_spaces < num_of_expected_spaces:
-                rest_of_format = '\s+' + '\s+'.join(found_command['format'].split('\s+')[num_of_spaces+1:])[:-1]
-                rest_of_help = ' ' + ' '.join(found_command['help'].split()[num_of_spaces+1:])
-
-            alias_format = '^!{}{}$'.format(alias['alias'], rest_of_format)
-            alias_help = '!{}{}'.format(alias['alias'], rest_of_help)
+            alias_format = self._get_alias_format(found_command['format'], alias)
+            if not alias_format:
+                logger.info('not adding {} due to formatting'.format(alias['alias']))
 
             self.aliases[alias['alias']] = {
                 'badge': self.get_badge(alias['badge']),
                 'callback': partial(self.alias_redirect, strip_text),
                 'format': alias_format,
-                'help': alias_help
+                'help': self._get_alias_help(found_command['help'], alias)
             }
+
+    def _get_alias_format(self, original_format, alias):
+        match = None
+        index = 1
+        while not match and index < len(original_format):
+            match = re.match('^{}$'.format(original_format[1:index]), alias['command'])
+            if not match:
+                index += 1
+        if not match:
+            return
+        return '^!{}{}$'.format(alias['alias'], original_format[index:-1])
+
+    def _get_alias_help(self, original_help, alias):
+        num_of_spaces = len(alias['command'].strip().split()) - 1
+        num_of_expected_spaces = len(original_help.split()) - 1
+        rest_of_help = ''
+        if num_of_spaces < num_of_expected_spaces:
+            rest_of_help = ' ' + ' '.join(original_help.split()[num_of_spaces + 1:])
+        return '!{}{}'.format(alias['alias'], rest_of_help)
 
     def alias_redirect(self, command, text, user, badges):
         self.do_command(command + ' ' + text, user, badges, ignore_badges=True)
@@ -518,7 +541,10 @@ def verify_chatbot_id(chatbot_id):
 
 def stop_chatbot(chatbot_id):
     chatbot = verify_chatbot_id(chatbot_id)
+    chatbot.chat('Cya 👋')
     chatbot.disconnect()
+    while chatbot.connection.is_connected():
+        time.sleep(1)
     del g['chatbot']
 
 
