@@ -10,4 +10,4 @@ SECRET = ''
 
 
 # Chatbot Settings
-TIMEOUT = 30  # seconds between spamming sounds
+TIMEOUT = 15  # seconds between spamming sounds
