@@ -47,3 +47,11 @@ class Alias(db.Model):
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class Timer(db.Model):
+    command = db.Column(db.String(128), primary_key=True, nullable=False)
+    interval = db.Column(db.Integer(), nullable=False)
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
