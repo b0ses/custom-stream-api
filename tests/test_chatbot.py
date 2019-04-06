@@ -1,7 +1,8 @@
 import pytest
 import mock
+import time
 
-from custom_stream_api.chatbot import aliases, twitchbot, models
+from custom_stream_api.chatbot import aliases, twitchbot, models, timers
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
 from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
@@ -42,10 +43,26 @@ IMPORT_ALIASES = [
     }
 ]
 
+IMPORT_TIMERS = [
+    {
+        "command": "!echo test command",
+        "interval": 2
+    },
+    {
+        "command": "!echo test command 2",
+        "interval": 3
+    }
+]
+
 
 @pytest.fixture
 def import_aliases(app):
     aliases.import_aliases(IMPORT_ALIASES)
+
+
+@pytest.fixture
+def import_timers(app):
+    timers.import_timers(IMPORT_TIMERS)
 
 
 @pytest.fixture
@@ -84,6 +101,12 @@ def fake_group_alert_api(cls, user, badges, group_alert):
         cls.chat('/me {}'.format(message))
     except Exception as e:
         pass
+
+
+def fake_run_timer(cls, command, interval):
+    while cls.run_timers:
+        time.sleep(interval*0.5)
+        cls.do_command(command, cls.bot_name, [], ignore_badges=True)
 
 
 @pytest.fixture
@@ -155,13 +178,13 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, id, spongebob'
+                        'get_list_commands, get_timer_commands, id, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, id, spongebob'
+                        'get_list_commands, get_timer_commands, id, spongebob'
     assert chatbot.response == expected_response
 
 
@@ -191,7 +214,7 @@ def test_import_export_aliases(import_aliases):
     assert aliases.list_aliases() == IMPORT_ALIASES
 
 
-def test_remove_alert(import_aliases):
+def test_remove_alias(import_aliases):
     aliases.remove_alias('chat_test_alias')
     all_aliases = [alias['alias'] for alias in aliases.list_aliases()]
     assert 'chat_test_alias' not in all_aliases
@@ -252,6 +275,30 @@ def test_aliases(import_aliases, import_groups, chatbot):
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!chat_alert', badge_level)
     expected_response = 'No spamming {}. Wait another {} seconds.'.format('test_user', chatbot.timeout)
+    assert chatbot.response == expected_response
+
+
+# TIMERS
+def test_import_export_timers(import_timers):
+    assert timers.list_timers() == IMPORT_TIMERS
+
+
+def test_remove_timer(import_aliases):
+    timers.remove_timer('!echo test command')
+    all_timers = [timer['command'] for timer in timers.list_timers()]
+    assert '!echo test command' not in all_timers
+
+
+# TODO: Figure out passing the mock chat function to lower threads...
+@pytest.mark.skip
+@mock.patch.object(twitchbot.TwitchBot, 'run_timer', new=fake_run_timer)
+def test_timers(import_timers, chatbot):
+    chatbot.restart_timers()
+    expected_response = 'test command'
+    time.sleep(1)
+    assert chatbot.response == expected_response
+    expected_response = 'test command 2'
+    time.sleep(3)
     assert chatbot.response == expected_response
 
 
