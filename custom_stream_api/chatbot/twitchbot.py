@@ -63,6 +63,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         connection.cap('REQ', ':twitch.tv/tags')
         connection.cap('REQ', ':twitch.tv/commands')
         connection.join(self.channel)
+        self.chat('Hey 👋')
 
     def chat(self, message):
         c = self.connection
@@ -518,8 +519,8 @@ def verify_chatbot_id(chatbot_id):
 
 def stop_chatbot(chatbot_id):
     chatbot = verify_chatbot_id(chatbot_id)
-    chatbot.chat('Disconnecting')
-    while chatbot.connection:
+    chatbot.chat('Cya 👋')
+    while chatbot.connection.is_connected():
         chatbot.disconnect()
         time.sleep(1)
     del g['chatbot']
