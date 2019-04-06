@@ -518,7 +518,10 @@ def verify_chatbot_id(chatbot_id):
 
 def stop_chatbot(chatbot_id):
     chatbot = verify_chatbot_id(chatbot_id)
-    chatbot.disconnect()
+    chatbot.chat('Disconnecting')
+    while chatbot.connection:
+        chatbot.disconnect()
+        time.sleep(1)
     del g['chatbot']
 
 
