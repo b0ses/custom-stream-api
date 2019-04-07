@@ -73,6 +73,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         c = self.connection
         c.privmsg(self.channel, message)
 
+    def disconnect(self):
+        self.chat('Cya 👋')
+        self.stop_timers()
+        super().disconnect()
+        while self.connection.is_connected():
+            time.sleep(1)
+
     # PARSE MESSAGES
 
     def on_pubmsg(self, connection, event):
@@ -168,6 +175,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!id$',
                 'help': '!id',
                 'callback': lambda text, user, badges: self.get_chatbot_id()
+            },
+            'disconnect': {
+                'badge': Badges.BROADCASTER,
+                'format': '^!disconnect$',
+                'help': '!disconnect',
+                'callback': lambda text, user, badges: self.disconnect()
             },
             'echo': {
                 'badge': Badges.BROADCASTER,
@@ -296,13 +309,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.timer_commands = {
             'restart_timers': {
                 'badge': Badges.BROADCASTER,
-                'callback': lambda text, user, badges: self.stop_timers(),
+                'callback': lambda text, user, badges: self.restart_timers(),
                 'format': '^!restart_timers$',
                 'help': '!restart_timers'
             },
             'stop_timers': {
                 'badge': Badges.BROADCASTER,
-                'callback': lambda text, user, badges: self.restart_timers(),
+                'callback': lambda text, user, badges: self.stop_timers(),
                 'format': '^!stop_timers$',
                 'help': '!stop_timers'
             }
@@ -595,11 +608,7 @@ def verify_chatbot_id(chatbot_id):
 
 def stop_chatbot(chatbot_id):
     chatbot = verify_chatbot_id(chatbot_id)
-    chatbot.chat('Cya 👋')
     chatbot.disconnect()
-    while chatbot.connection.is_connected():
-        time.sleep(1)
-    del g['chatbot']
 
 
 def main():
