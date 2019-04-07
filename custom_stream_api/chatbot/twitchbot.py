@@ -80,6 +80,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         super().disconnect()
         while self.connection.is_connected():
             time.sleep(1)
+        exit()
 
     # PARSE MESSAGES
 
@@ -589,12 +590,18 @@ def start_chatbot_with_app(app, chatbot):
         try:
             chatbot.start()
         except OSError:
-            logger.info('Disconnected')
+            exit()
 
 
 def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=15):
     if 'chatbot' in g:
-        raise Exception('Chatbot already setup')
+        chatbot = g['chatbot']['object']
+        if chatbot.connection.is_connected():
+            raise Exception('Chatbot already setup')
+        else:
+            g['chatbot']['thread'].join()
+            del g['chatbot']
+
     chatbot_id = uuid.uuid4()
     try:
         chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
@@ -606,21 +613,22 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=15):
         logger.exception(e)
         raise Exception('Unable to start chatbot with the provided settings')
 
-    g['chatbot'] = chatbot
+    g['chatbot'] = {
+        'object': chatbot,
+        'thread': chatbot_thread
+    }
     return chatbot_id
 
 
 def verify_chatbot_id(chatbot_id):
     chatbot = g.get('chatbot', None)
-    if chatbot and chatbot.chatbot_id == uuid.UUID(chatbot_id):
-        return chatbot
-    else:
-        raise Exception('Chatbot ID not found')
-
-
-def stop_chatbot(chatbot_id):
-    chatbot = verify_chatbot_id(chatbot_id)
-    chatbot.disconnect()
+    try:
+        chatbot_id = uuid.UUID(chatbot_id)
+        if chatbot and chatbot['object'].chatbot_id == chatbot_id:
+            return chatbot['object']
+    except Exception:
+        pass
+    raise Exception('Chatbot ID not found')
 
 
 def main():
