@@ -172,20 +172,34 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, spongebob'
+                        'get_list_commands, random, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
-                        'get_count_commands, get_list_commands, get_timer_commands, id, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, id, random, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
-                        'get_count_commands, get_list_commands, get_timer_commands, id, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, id, random, spongebob'
     assert chatbot.response == expected_response
+
+
+def test_random(chatbot):
+    simulate_chat(chatbot, 'test_user', '!random a b c', [models.Badges.SUBSCRIBER])
+    expected_response = None
+    assert chatbot.response == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!random a', [models.Badges.VIP])
+    expected_response = 'Format: !random option1 option2 [option3 ...]'
+    assert chatbot.response == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!random a b c', [models.Badges.VIP])
+    expected_responses = ['Random choice: a', 'Random choice: b', 'Random choice: c']
+    assert chatbot.response in expected_responses
 
 
 def test_spongebob(chatbot):
