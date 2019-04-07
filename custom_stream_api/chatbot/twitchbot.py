@@ -15,7 +15,7 @@ import requests
 
 from custom_stream_api.shared import app, g
 from custom_stream_api.chatbot.models import Badges, BADGE_LEVELS, BADGE_NAMES
-from custom_stream_api.chatbot import aliases
+from custom_stream_api.chatbot import aliases, timers
 from custom_stream_api.counts import counts
 from custom_stream_api.lists import lists
 from custom_stream_api.alerts import alerts
@@ -33,6 +33,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         self.badge_levels = BADGE_LEVELS
 
+        self.timers = []
         self.timeout = timeout  # in seconds
         self.timeouts = {}
 
@@ -63,11 +64,21 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         connection.cap('REQ', ':twitch.tv/tags')
         connection.cap('REQ', ':twitch.tv/commands')
         connection.join(self.channel)
+        while not connection.is_connected():
+            time.sleep(0.5)
         self.chat('Hey 👋')
+        self.restart_timers()
 
     def chat(self, message):
         c = self.connection
         c.privmsg(self.channel, message)
+
+    def disconnect(self):
+        self.chat('Cya 👋')
+        self.stop_timers()
+        super().disconnect()
+        while self.connection.is_connected():
+            time.sleep(1)
 
     # PARSE MESSAGES
 
@@ -146,6 +157,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.commands.update(self.list_commands)
         self.set_alert_commands()
         self.commands.update(self.alert_commands)
+        self.set_timer_commands()
+        self.commands.update(self.timer_commands)
         self.set_main_commands()
         self.commands.update(self.main_commands)
         # has to be second to last
@@ -162,6 +175,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!id$',
                 'help': '!id',
                 'callback': lambda text, user, badges: self.get_chatbot_id()
+            },
+            'disconnect': {
+                'badge': Badges.BROADCASTER,
+                'format': '^!disconnect$',
+                'help': '!disconnect',
+                'callback': lambda text, user, badges: self.disconnect()
             },
             'echo': {
                 'badge': Badges.BROADCASTER,
@@ -202,6 +221,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!get_alert_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
                 'help': '!get_alert_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.alert_commands, text, badges)
+            },
+            'get_timer_commands': {
+                'badge': self.get_min_badge([command['badge'] for command in self.timer_commands.values()]),
+                'format': '^!get_timer_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
+                'help': '!get_timer_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
+                'callback': lambda text, user, badges: self.display_commands(self.timer_commands, text, badges)
             },
             'get_aliases': {
                 'badge': self.get_min_badge([command['badge'] for command in self.aliases.values()]),
@@ -278,6 +303,48 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def alias_redirect(self, command, text, user, badges):
         self.do_command(command + ' ' + text, user, badges, ignore_badges=True)
+
+    # Timers
+    def set_timer_commands(self):
+        self.timer_commands = {
+            'restart_timers': {
+                'badge': Badges.BROADCASTER,
+                'callback': lambda text, user, badges: self.restart_timers(),
+                'format': '^!restart_timers$',
+                'help': '!restart_timers'
+            },
+            'stop_timers': {
+                'badge': Badges.BROADCASTER,
+                'callback': lambda text, user, badges: self.stop_timers(),
+                'format': '^!stop_timers$',
+                'help': '!stop_timers'
+            }
+        }
+
+    def stop_timers(self):
+        # kill the previous timers
+        self.run_timers = False
+        for timer_thread in self.timers:
+            timer_thread.join()
+        self.timers = []
+
+    def restart_timers(self):
+        self.stop_timers()
+
+        self.run_timers = True
+        for timer_dict in timers.list_timers():
+            timer_thread = threading.Thread(target=self.run_timer, args=(timer_dict['command'], timer_dict['interval']))
+            timer_thread.start()
+            self.timers.append(timer_thread)
+
+    def run_timer(self, command, interval=30):
+        counting_seconds = 0
+        while self.run_timers:
+            if counting_seconds == interval * 60:
+                self.do_command(command, self.bot_name, [], ignore_badges=True)
+                counting_seconds = 0
+            time.sleep(1)
+            counting_seconds += 1
 
     # Counts
 
@@ -541,11 +608,7 @@ def verify_chatbot_id(chatbot_id):
 
 def stop_chatbot(chatbot_id):
     chatbot = verify_chatbot_id(chatbot_id)
-    chatbot.chat('Cya 👋')
     chatbot.disconnect()
-    while chatbot.connection.is_connected():
-        time.sleep(1)
-    del g['chatbot']
 
 
 def main():

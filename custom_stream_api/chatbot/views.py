@@ -4,7 +4,7 @@ import logging
 
 from custom_stream_api.chatbot import twitchbot
 from custom_stream_api.shared import InvalidUsage
-from custom_stream_api.chatbot import aliases
+from custom_stream_api.chatbot import aliases, timers
 
 chatbot_endpoints = Blueprint('chatbot', __name__)
 
@@ -85,5 +85,50 @@ def remove_alias_post():
     try:
         aliases.remove_alias(**alias_data)
         return jsonify({'message': 'Alias removed'})
+    except Exception as e:
+        raise InvalidUsage(str(e))
+
+
+@chatbot_endpoints.route('/timers', methods=['GET', 'POST'])
+def list_timers_get():
+    if request.method == 'GET':
+        try:
+            all_timers = timers.list_timers()
+        except Exception as e:
+            logger.exception(e)
+            raise InvalidUsage(str(e))
+        return jsonify(all_timers)
+    else:
+        data = request.get_json()
+        try:
+            timers.import_timers(data)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify({'message': 'Timers imported'})
+
+
+@chatbot_endpoints.route('/add_timer', methods=['POST'])
+def add_timer_post():
+    data = request.get_json()
+    timer_data = {
+        'command': data.get('command', ''),
+        'interval': data.get('interval', 30)
+    }
+    try:
+        timers.add_timer(**timer_data)
+        return jsonify({'message': 'Timer added'})
+    except Exception as e:
+        raise InvalidUsage(str(e))
+
+
+@chatbot_endpoints.route('/remove_timer', methods=['POST'])
+def remove_timer_post():
+    data = request.get_json()
+    timer_data = {
+        'command': data.get('command', '')
+    }
+    try:
+        timers.remove_timer(**timer_data)
+        return jsonify({'message': 'Timer removed'})
     except Exception as e:
         raise InvalidUsage(str(e))
