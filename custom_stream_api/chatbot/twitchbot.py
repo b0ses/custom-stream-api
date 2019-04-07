@@ -8,6 +8,7 @@ import threading
 import time
 import uuid
 import re
+import random
 from functools import partial
 
 import irc.bot
@@ -187,6 +188,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!echo\s+.*$',
                 'help': '!echo message',
                 'callback': lambda text, user, badges: self.chat(text)
+            },
+            'random': {
+                'badge': Badges.VIP,
+                'format': '^!random(\s+\S+){2,}$',
+                'help': '!random option1 option2 [option3 ...]',
+                'callback': lambda text, user, badges: self.random(text)
             },
             'spongebob': {
                 'badge': Badges.SUBSCRIBER,
@@ -558,6 +565,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return unban_user
 
     # Extra commands
+
+    def random(self, text):
+        options = text.split()
+        choice = random.choice(options)
+        self.chat('Random choice: {}'.format(choice))
 
     def spongebob(self, text):
         spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(text)])
