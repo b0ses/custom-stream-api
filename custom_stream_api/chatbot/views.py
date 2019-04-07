@@ -11,7 +11,7 @@ chatbot_endpoints = Blueprint('chatbot', __name__)
 logger = logging.getLogger()
 
 
-@chatbot_endpoints.route('/start', methods=['POST'])
+@chatbot_endpoints.route('/restart', methods=['POST'])
 def start_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -25,20 +25,6 @@ def start_post():
         try:
             bot_id = twitchbot.setup_chatbot(**twitchbot_data)
             return jsonify({'message': 'started chatbot: {}'.format(bot_id)})
-        except Exception as e:
-            raise InvalidUsage(str(e))
-
-
-@chatbot_endpoints.route('/stop', methods=['POST'])
-def stop_post():
-    if request.method == 'POST':
-        data = request.get_json()
-        twitchbot_data = {
-            'chatbot_id': data.get('chatbot_id', '')
-        }
-        try:
-            twitchbot.stop_chatbot(**twitchbot_data)
-            return jsonify({'message': 'stopped chatbot'})
         except Exception as e:
             raise InvalidUsage(str(e))
 
