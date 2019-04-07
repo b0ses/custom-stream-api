@@ -177,14 +177,14 @@ def test_get_commands(chatbot):
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
-    expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, get_timer_commands, id, spongebob'
+    expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
+                        'get_count_commands, get_list_commands, get_timer_commands, id, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
-    expected_response = 'Commands include: echo, get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, get_timer_commands, id, spongebob'
+    expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
+                        'get_count_commands, get_list_commands, get_timer_commands, id, spongebob'
     assert chatbot.response == expected_response
 
 
