@@ -181,25 +181,25 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.SUBSCRIBER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help, '\
-                          'spongebob'
+                        'spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, '\
-                          'get_list_commands, help, random, spongebob'
+                        'get_list_commands, help, random, spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
-                          'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
-                          'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -268,7 +268,7 @@ def test_get_aliases(import_aliases, chatbot):
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
     expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, '\
-                          'sub_test_alias, test_alias_args'
+                        'sub_test_alias, test_alias_args'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -341,7 +341,7 @@ def test_get_count_commands(chatbot):
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
     expected_response = 'Commands include: add_count, get_count, list_counts, remove_count, reset_count, set_count, '\
-                          'subtract_count'
+                        'subtract_count'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -482,7 +482,7 @@ def test_get_list_commands(chatbot):
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_list_commands', badge_level)
     expected_response = 'Commands include: add_list_item, get_list_item, get_list_size, list_lists, remove_list, '\
-                          'remove_list_item'
+                        'remove_list_item'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -685,7 +685,7 @@ def test_alert_commands(chatbot, import_groups):
 def test_stress(chatbot):
     badge_level = [models.Badges.BROADCASTER]
     expected_responses = []
-    for i in range(0,1000):
+    for i in range(0, 1000):
         message = 'Message {}'.format(i)
         simulate_chat(chatbot, 'test_user2', '!echo {}'.format(message), badge_level)
         expected_responses.append(message)
