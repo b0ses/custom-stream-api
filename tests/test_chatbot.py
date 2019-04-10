@@ -161,30 +161,31 @@ def test_get_commands(chatbot):
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
-    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands'
+    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.SUBSCRIBER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
-    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, spongebob'
+    expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help, ' \
+                        'spongebob'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, ' \
-                        'get_list_commands, random, spongebob'
+                        'get_list_commands, help, random, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
-                        'get_count_commands, get_list_commands, get_timer_commands, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
     assert chatbot.response == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, ' \
-                        'get_count_commands, get_list_commands, get_timer_commands, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
     assert chatbot.response == expected_response
 
 

@@ -190,6 +190,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!echo message',
                 'callback': lambda text, user, badges: self.chat(text)
             },
+            'help': {
+                'badge': Badges.CHAT,
+                'format': '^!help$',
+                'help': '!help',
+                'callback': lambda text, user, badges: self.help(badges)
+            },
             'random': {
                 'badge': Badges.VIP,
                 'format': '^!random(\s+\S+){2,}$',
@@ -201,7 +207,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!spongebob\s+.+$',
                 'help': '!spongebob message',
                 'callback': lambda text, user, badges: self.spongebob(text)
-            }
+            },
         }
 
     def set_get_commands(self):
@@ -576,6 +582,19 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         spongebob_message = ''.join([k.upper() if index % 2 else k.lower() for index, k in enumerate(text)])
         spongebob_url = 'https://dannypage.github.io/assets/images/mocking-spongebob.jpg'
         self.chat('{} - {}'.format(spongebob_message, spongebob_url))
+
+    def help(self, badges):
+        lyrics = [
+            'Help! I need somebody!',
+            'Help! Not just anybody!',
+            'Help! You know I need someone!',
+            'HEELLPP!',
+            'Alright here are your commands'
+        ]
+        for lyric in lyrics:
+            time.sleep(3)
+            self.chat(lyric)
+        self.display_commands(self.main_commands, None, badges)
 
     # Helper commands
 
