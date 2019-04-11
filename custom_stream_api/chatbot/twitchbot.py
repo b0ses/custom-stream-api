@@ -10,7 +10,6 @@ import uuid
 import re
 import random
 from functools import partial
-from collections import deque
 
 import irc.bot
 import requests
@@ -39,7 +38,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.timeout = timeout  # in seconds
         self.timeouts = {}
 
-        self.queue = deque()
         self.commands = {}
         self.update_commands()
 
@@ -71,8 +69,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             time.sleep(0.5)
         self.chat('Hey 👋')
         self.restart_timers()
-        self.message_thread = threading.Thread(target=self.process_messages)
-        self.message_thread.start()
 
     def chat(self, message):
         c = self.connection
@@ -97,17 +93,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if command[:1] == '!':
             logger.info('{} (badges:{}) commanded: {}'.format(user, badges, command))
             try:
-                self.queue.appendleft({'command': command, 'user': user, 'badges': badges})
+                self.do_command(command, user, badges)
             except Exception as e:
                 logger.exception(e)
-
-    def process_messages(self):
-        while self.connection.is_connected():
-            if len(self.queue):
-                message = self.queue.pop()
-                self.do_command(message['command'], message['user'], message['badges'])
-            time.sleep(0.1)
-        exit()
 
     def get_user_badges(self, tags):
         badges = [Badges.CHAT]  # baseline
