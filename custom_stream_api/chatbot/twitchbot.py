@@ -108,7 +108,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 if len(self.queue):
                     message = self.queue.pop()
                     self.do_command(message['command'], message['user'], message['badges'])
-                time.sleep(0.1)
+                time.sleep(0.5)
 
         if self.app:
             with self.app.app_context():
