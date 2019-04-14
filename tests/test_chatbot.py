@@ -117,11 +117,24 @@ def chatbot(app):
     def store_chat(cls, message):
         cls.responses.append(message)
 
+    def fake_on_pubmsg(cls, connection, event):
+        # If a chat message starts with an exclamation point, try to run it as a command
+        tags = {tag['key']: tag['value'] for tag in event.tags}
+        user = tags['display-name']
+        badges = cls.get_user_badges(tags)
+        command = event.arguments[0]
+        if command[:1] == '!':
+            try:
+                cls.do_command(command, user, badges)
+            except Exception as e:
+                pass
+
     with mock.patch.object(twitchbot.TwitchBot, 'chat', new=store_chat):
-        bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
-                                  timeout=0.1)
-        bot.responses = []
-        yield bot
+        with mock.patch.object(twitchbot.TwitchBot, 'on_pubmsg', new=fake_on_pubmsg):
+            bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
+                                      timeout=0.1)
+            bot.responses = []
+            yield bot
 
 
 def simulate_chat(bot, user_name, message, badges):
@@ -690,4 +703,3 @@ def test_queue_messages(chatbot):
         'fast message'
     ]
     assert chatbot.responses == expected_responses
-
