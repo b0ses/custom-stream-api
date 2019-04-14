@@ -26,12 +26,13 @@ logger = logging.getLogger()
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
-    def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=15):
+    def __init__(self, chatbot_id, bot_name, client_id, token, channel, timeout=15, app=None):
         self.chatbot_id = chatbot_id
         self.bot_name = bot_name
         self.client_id = client_id
         self.token = token
         self.channel = '#' + channel
+        self.app = app
 
         self.badge_levels = BADGE_LEVELS
 
@@ -102,11 +103,18 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 logger.exception(e)
 
     def process_messages(self):
-        while self.connection.is_connected():
-            if len(self.queue):
-                message = self.queue.pop()
-                self.do_command(message['command'], message['user'], message['badges'])
-            time.sleep(0.1)
+        def go():
+            while self.connection.is_connected():
+                if len(self.queue):
+                    message = self.queue.pop()
+                    self.do_command(message['command'], message['user'], message['badges'])
+                time.sleep(0.1)
+
+        if self.app:
+            with self.app.app_context():
+                go()
+        else:
+            go()
         exit()
 
     def get_user_badges(self, tags):
@@ -636,7 +644,7 @@ def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=15):
     chatbot_id = uuid.uuid4()
     try:
         chatbot = TwitchBot(chatbot_id=chatbot_id, bot_name=bot_name, client_id=client_id, token=chat_token,
-                            channel=channel, timeout=timeout)
+                            channel=channel, timeout=timeout, app=app)
         chatbot.connect_to_channel()
         chatbot_thread = threading.Thread(target=start_chatbot_with_app, args=(app, chatbot,))
         chatbot_thread.start()
