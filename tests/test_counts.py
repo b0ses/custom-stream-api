@@ -5,15 +5,18 @@ from custom_stream_api.counts import counts
 COUNTS_IMPORT = [
     {
         'name': 'count1',
-        'count': -10
+        'count': -10,
+        'group_name': None
     },
     {
         'name': 'count2',
-        'count': 20
+        'count': 20,
+        'group_name': None
     },
     {
         'name': 'count3',
-        'count': 90
+        'count': 90,
+        'group_name': None
     }
 ]
 

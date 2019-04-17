@@ -2,6 +2,7 @@ import re
 import random
 
 from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssociation
+from custom_stream_api.counts import counts
 from custom_stream_api.shared import db, socketio
 
 VALID_SOUNDS = ['wav', 'mp3', 'ogg']
@@ -231,6 +232,10 @@ def group_alert(group_name, random_choice=True, hit_socket=True):
         chosen_alert = group_alerts[group_alert.current_index]
         group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
         db.session.commit()
+
+    # add to counts
+    for count in group_alert.counts:
+        counts.add_to_count(count.name)
 
     return alert(chosen_alert, hit_socket=hit_socket)
 
