@@ -19,6 +19,7 @@ class GroupAlert(db.Model):
     alerts = db.relationship('GroupAlertAssociation', cascade='all,delete', backref='group_alert')
     thumbnail = db.Column(db.String(128))
     current_index = db.Column(db.Integer, default=0)
+    counts = db.relationship('Count', backref='group_alert')
 
     def as_dict(self):
         name = getattr(self, 'group_name')
