@@ -62,3 +62,10 @@ def create_app(init_db=True):
         return response
 
     return app, socketio, db, migrate, g
+
+
+def get_chatbot():
+    if 'chatbot' in g:
+        chatbot = g['chatbot']['object']
+        if chatbot.connection.is_connected():
+            return chatbot
