@@ -581,7 +581,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         try:
-            test = alerts.group_alert(group_name=group_alert, chat=True)
+            alerts.group_alert(group_name=group_alert, chat=True)
         except Exception:
             pass
 

@@ -143,7 +143,7 @@ def chatbot(app):
                 bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
                                           timeout=0.1)
                 bot.responses = []
-                g['chatbot']= {'object': bot}
+                g['chatbot'] = {'object': bot}
                 yield bot
 
 

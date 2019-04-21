@@ -1,5 +1,5 @@
 from custom_stream_api.chatbot.models import Timer
-from custom_stream_api.shared import db, g, get_chatbot
+from custom_stream_api.shared import db, get_chatbot
 
 
 def list_timers():
