@@ -1,10 +1,12 @@
 import pytest
 import mock
 import time
+import re
 
 from custom_stream_api.chatbot import aliases, twitchbot, models, timers
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
+from custom_stream_api.counts import counts
 from custom_stream_api.shared import g
 from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
 from collections import namedtuple
@@ -114,6 +116,10 @@ def chatbot(app):
     # just to respond the way we want it to
 
     def store_chat(cls, message):
+        for count in re.findall('{(.*?)}', message):
+            found_count = counts.get_count(count)
+            if found_count is not None:
+                message = message.replace('{{{}}}'.format(count), str(found_count))
         cls.responses.append(message)
 
     def fake_on_pubmsg(cls, connection, event):
@@ -453,6 +459,11 @@ def test_count_commands(chatbot):
     badge_level = [models.Badges.CHAT]
     simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
     expected_response = 'Counts: test_count, test_count2, test_count3'
+    assert chatbot.responses[-1] == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!echo Custom message {test_count}!{test_count2}', badge_level)
+    expected_response = 'Custom message 0!1'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]

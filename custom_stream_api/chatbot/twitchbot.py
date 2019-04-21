@@ -79,6 +79,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         return (hasattr(self, 'connection') and self.connection.is_connected())
 
     def chat(self, message):
+        # edit message to replace {count_name} with count number
+        for count in re.findall('{(.*?)}', message):
+            found_count = counts.get_count(count)
+            if found_count is not None:
+                message = message.replace('{{{}}}'.format(count), str(found_count))
+
         c = self.connection
         c.privmsg(self.channel, message)
 
