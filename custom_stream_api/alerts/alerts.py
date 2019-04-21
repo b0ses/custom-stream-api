@@ -173,7 +173,7 @@ def set_group(group_name, alert_names, thumbnail='', always_chat=False, chat_mes
     group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
     if group_alert:
         group_alert.thumbnail = thumbnail
-        group_alert.always_chat = always_chat,
+        group_alert.always_chat = always_chat
         group_alert.chat_message = chat_message
         for alert in group_alert.alerts:
             db.session.delete(alert)
