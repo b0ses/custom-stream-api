@@ -1,5 +1,5 @@
 from custom_stream_api.chatbot.models import Timer
-from custom_stream_api.shared import db, g
+from custom_stream_api.shared import db, get_chatbot
 
 
 def list_timers():
@@ -10,8 +10,9 @@ def import_timers(timers):
     for timer_dict in timers:
         add_timer(**timer_dict, save=False)
     db.session.commit()
-    if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-        g['chatbot']['object'].restart_timers()
+    chatbot = get_chatbot()
+    if chatbot:
+        chatbot.restart_timers()
 
 
 def add_timer(command, interval=30, save=True):
@@ -24,8 +25,9 @@ def add_timer(command, interval=30, save=True):
         db.session.add(new_timer)
     if save:
         db.session.commit()
-        if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-            g['chatbot']['object'].restart_timers()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.restart_timers()
     return command
 
 
@@ -34,6 +36,7 @@ def remove_timer(command):
     if found_timer.count():
         found_timer.delete()
         db.session.commit()
-        if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-            g['chatbot']['object'].restart_timers()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.restart_timers()
         return command

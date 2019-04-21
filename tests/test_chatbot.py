@@ -1,10 +1,13 @@
 import pytest
 import mock
 import time
+import re
 
 from custom_stream_api.chatbot import aliases, twitchbot, models, timers
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
+from custom_stream_api.counts import counts
+from custom_stream_api.shared import g
 from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
 from collections import namedtuple
 
@@ -83,8 +86,7 @@ def fake_alert_api(cls, user, badges, alert):
         return
 
     try:
-        message = alerts.alert(name=alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
+        alerts.alert(name=alert, hit_socket=False, chat=True)
     except Exception as e:
         pass
 
@@ -97,8 +99,7 @@ def fake_group_alert_api(cls, user, badges, group_alert):
         return
 
     try:
-        message = alerts.group_alert(group_name=group_alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
+        alerts.group_alert(group_name=group_alert, hit_socket=False, chat=True)
     except Exception as e:
         pass
 
@@ -115,6 +116,10 @@ def chatbot(app):
     # just to respond the way we want it to
 
     def store_chat(cls, message):
+        for count in re.findall('{(.*?)}', message):
+            found_count = counts.get_count(count)
+            if found_count is not None:
+                message = message.replace('{{{}}}'.format(count), str(found_count))
         cls.responses.append(message)
 
     def fake_on_pubmsg(cls, connection, event):
@@ -129,12 +134,17 @@ def chatbot(app):
             except Exception as e:
                 pass
 
+    def fake_running(cls):
+        return True
+
     with mock.patch.object(twitchbot.TwitchBot, 'chat', new=store_chat):
         with mock.patch.object(twitchbot.TwitchBot, 'on_pubmsg', new=fake_on_pubmsg):
-            bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
-                                      timeout=0.1)
-            bot.responses = []
-            yield bot
+            with mock.patch.object(twitchbot.TwitchBot, 'running', new=fake_running):
+                bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
+                                          timeout=0.1)
+                bot.responses = []
+                g['chatbot'] = {'object': bot}
+                yield bot
 
 
 def simulate_chat(bot, user_name, message, badges):
@@ -451,6 +461,11 @@ def test_count_commands(chatbot):
     expected_response = 'Counts: test_count, test_count2, test_count3'
     assert chatbot.responses[-1] == expected_response
 
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!echo Custom message {test_count}!{test_count2}', badge_level)
+    expected_response = 'Custom message 0!1'
+    assert chatbot.responses[-1] == expected_response
+
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_count test_count', badge_level)
     expected_response = 'test_count removed'
@@ -628,6 +643,11 @@ def test_alert_commands(chatbot, import_groups):
     simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
     expected_responses = ['/me Test Text 1', '/me Test Text 2']
     assert chatbot.responses[-1] in expected_responses
+
+    badge_level = [models.Badges.VIP]
+    simulate_chat(chatbot, 'test_user', '!group_alert last_two', badge_level)
+    expected_response = 'last two!'
+    assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!group_alert', badge_level)

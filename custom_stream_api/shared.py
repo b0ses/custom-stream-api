@@ -62,3 +62,8 @@ def create_app(init_db=True):
         return response
 
     return app, socketio, db, migrate, g
+
+
+def get_chatbot():
+    if g.get('chatbot') and g['chatbot'].get('object') and g['chatbot']['object'].running():
+        return g['chatbot']['object']

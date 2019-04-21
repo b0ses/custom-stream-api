@@ -1,6 +1,7 @@
 import pytest
 
 from custom_stream_api.alerts import alerts
+from custom_stream_api.counts import counts
 
 IMPORT_ALERTS = [
     {
@@ -39,7 +40,9 @@ IMPORT_GROUP_ALERTS = [
             'test_text_1',
             'test_text_2'
         ],
-        'thumbnail': None
+        'thumbnail': None,
+        'chat_message': None,
+        'always_chat': False
     },
     {
         'name': 'last_two',
@@ -47,9 +50,29 @@ IMPORT_GROUP_ALERTS = [
             'test_text_2',
             'test_text_3'
         ],
-        'thumbnail': None
+        'thumbnail': None,
+        'chat_message': 'last two!',
+        'always_chat': True
     }
 ]
+
+COUNTS_IMPORT = [
+    {
+        'name': 'count1',
+        'count': 37,
+        'group_alert': 'first_two',
+    },
+    {
+        'name': 'count2',
+        'count': 2,
+        'group_alert': 'first_two',
+    }
+]
+
+
+@pytest.fixture
+def import_counts(app):
+    counts.import_counts(COUNTS_IMPORT)
 
 
 @pytest.fixture
@@ -196,9 +219,21 @@ def test_alert(import_alerts):
     assert alerts.alert('test_text_1', hit_socket=False) == expected
 
 
-def test_group_alert(import_groups):
+def test_group_alert(import_groups, import_counts):
     expected = ['Test Text 2', 'Test Text 3']
     assert alerts.group_alert('last_two', hit_socket=False) in expected
+
+    expected = ['Test Text 1', 'Test Text 2']
+    assert alerts.group_alert('first_two', hit_socket=False) in expected
+
+    expected = ['Test Text 1', 'Test Text 2']
+    assert alerts.group_alert('first_two', hit_socket=False) in expected
+
+    count = counts.get_count('count1')
+    assert count == 39
+
+    count = counts.get_count('count2')
+    assert count == 4
 
 
 def test_remove_from_group(import_groups):

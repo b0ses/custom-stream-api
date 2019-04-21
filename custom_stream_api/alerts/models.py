@@ -19,6 +19,9 @@ class GroupAlert(db.Model):
     alerts = db.relationship('GroupAlertAssociation', cascade='all,delete', backref='group_alert')
     thumbnail = db.Column(db.String(128))
     current_index = db.Column(db.Integer, default=0)
+    counts = db.relationship('Count', backref='group_alert')
+    always_chat = db.Column(db.Boolean, default=False, nullable=False, server_default='f')
+    chat_message = db.Column(db.String(128))
 
     def as_dict(self):
         name = getattr(self, 'group_name')
@@ -26,7 +29,10 @@ class GroupAlert(db.Model):
             .order_by(GroupAlertAssociation.index)
         alerts = [result[0] for result in alerts_query]
         thumbnail = getattr(self, 'thumbnail')
-        return {'name': name, 'alerts': alerts, 'thumbnail': thumbnail}
+        always_chat = getattr(self, 'always_chat')
+        chat_message = getattr(self, 'chat_message')
+        return {'name': name, 'alerts': alerts, 'thumbnail': thumbnail, 'always_chat': always_chat,
+                'chat_message': chat_message}
 
 
 class GroupAlertAssociation(db.Model):

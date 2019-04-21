@@ -1,5 +1,5 @@
 from custom_stream_api.chatbot.models import Alias, BADGE_NAMES
-from custom_stream_api.shared import db, g
+from custom_stream_api.shared import db, get_chatbot
 
 
 def list_aliases():
@@ -10,8 +10,9 @@ def import_aliases(aliases):
     for alias_dict in aliases:
         add_alias(**alias_dict, save=False)
     db.session.commit()
-    if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-        g['chatbot']['object'].update_commands()
+    chatbot = get_chatbot()
+    if chatbot:
+        chatbot.update_commands()
 
 
 def add_alias(alias, command, badge, save=True):
@@ -26,8 +27,9 @@ def add_alias(alias, command, badge, save=True):
         db.session.add(new_alias)
     if save:
         db.session.commit()
-        if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-            g['chatbot']['object'].update_commands()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.update_commands()
     return alias
 
 
@@ -36,6 +38,7 @@ def remove_alias(alias):
     if found_alias.count():
         found_alias.delete()
         db.session.commit()
-        if 'chatbot' in g and g['chatbot']['object'].connection.is_connected():
-            g['chatbot']['object'].update_commands()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.update_commands()
         return alias
