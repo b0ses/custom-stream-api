@@ -162,21 +162,24 @@ def import_groups(groups):
         alerts = group_data['alerts']
         name = group_data['name']
         thumbnail = group_data.get('thumbnail', '')
+        always_chat = group_data.get('always_chat', False)
         chat_message = group_data.get('chat_message', None)
-        set_group(name, alerts, thumbnail=thumbnail, chat_message=chat_message, save=False)
+        set_group(name, alerts, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message, save=False)
     db.session.commit()
 
 
-def set_group(group_name, alert_names, thumbnail='', chat_message=None, save=True):
+def set_group(group_name, alert_names, thumbnail='', always_chat=False, chat_message=None, save=True):
     thumbnail = validate_thumbnail(thumbnail)
     group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
     if group_alert:
         group_alert.thumbnail = thumbnail
+        group_alert.always_chat = always_chat,
         group_alert.chat_message = chat_message
         for alert in group_alert.alerts:
             db.session.delete(alert)
     else:
-        group_alert = GroupAlert(group_name=group_name, thumbnail=thumbnail, chat_message=chat_message)
+        group_alert = GroupAlert(group_name=group_name, thumbnail=thumbnail, always_chat=always_chat,
+                                 chat_message=chat_message)
         db.session.add(group_alert)
 
     if save:
@@ -221,6 +224,7 @@ def list_groups():
             'name': group_alert.group_name,
             'alerts': alerts,
             'thumbnail': group_alert.thumbnail,
+            'always_chat': group_alert.always_chat,
             'chat_message': group_alert.chat_message
         }
     listed_groups = list(groups.values())
@@ -246,13 +250,9 @@ def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
     alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=False)
 
     chatbot = get_chatbot()
-    if chatbot:
-        if group_alert.chat_message:
-            message = group_alert.chat_message
-            chatbot.chat(message)
-        elif chat and not group_alert.chat_message:
-            message = '/me {}'.format(alert_message)
-            chatbot.chat(message)
+    if chatbot and (chat or group_alert.always_chat):
+        message = group_alert.chat_message if group_alert.chat_message else '/me {}'.format(alert_message)
+        chatbot.chat(message)
 
     return alert_message
 

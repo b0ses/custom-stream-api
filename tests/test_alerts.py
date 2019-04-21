@@ -41,7 +41,8 @@ IMPORT_GROUP_ALERTS = [
             'test_text_2'
         ],
         'thumbnail': None,
-        'chat_message': None
+        'chat_message': None,
+        'always_chat': False
     },
     {
         'name': 'last_two',
@@ -50,7 +51,8 @@ IMPORT_GROUP_ALERTS = [
             'test_text_3'
         ],
         'thumbnail': None,
-        'chat_message': 'last two!'
+        'chat_message': 'last two!',
+        'always_chat': True
     }
 ]
 
