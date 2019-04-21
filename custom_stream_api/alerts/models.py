@@ -20,7 +20,7 @@ class GroupAlert(db.Model):
     thumbnail = db.Column(db.String(128))
     current_index = db.Column(db.Integer, default=0)
     counts = db.relationship('Count', backref='group_alert')
-    always_chat = db.Column(db.Boolean, default=False, server_default='f')
+    always_chat = db.Column(db.Boolean, default=False, nullable=False, server_default='f')
     chat_message = db.Column(db.String(128))
 
     def as_dict(self):
