@@ -3,7 +3,7 @@ import random
 
 from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssociation
 from custom_stream_api.counts import counts
-from custom_stream_api.shared import db, socketio
+from custom_stream_api.shared import db, socketio, get_chatbot
 
 VALID_SOUNDS = ['wav', 'mp3', 'ogg']
 VALID_IMAGES = ['jpg', 'png', 'tif', 'gif']
@@ -119,7 +119,7 @@ def list_alerts():
     return [alert.as_dict() for alert in db.session.query(Alert).order_by(Alert.name.asc()).all()]
 
 
-def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True):
+def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True, chat=False):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
@@ -139,6 +139,9 @@ def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_so
         }
     if hit_socket:
         socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
+    chatbot = get_chatbot()
+    if chat and chatbot:
+        chatbot.chat('/me {}'.format(socket_data['text']))
     return socket_data['text']
 
 
@@ -159,19 +162,21 @@ def import_groups(groups):
         alerts = group_data['alerts']
         name = group_data['name']
         thumbnail = group_data.get('thumbnail', '')
-        set_group(name, alerts, thumbnail=thumbnail, save=False)
+        chat_message = group_data.get('chat_message', None)
+        set_group(name, alerts, thumbnail=thumbnail, chat_message=chat_message, save=False)
     db.session.commit()
 
 
-def set_group(group_name, alert_names, thumbnail='', save=True):
+def set_group(group_name, alert_names, thumbnail='', chat_message=None, save=True):
     thumbnail = validate_thumbnail(thumbnail)
     group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
     if group_alert:
         group_alert.thumbnail = thumbnail
+        group_alert.chat_message = chat_message
         for alert in group_alert.alerts:
             db.session.delete(alert)
     else:
-        group_alert = GroupAlert(group_name=group_name, thumbnail=thumbnail)
+        group_alert = GroupAlert(group_name=group_name, thumbnail=thumbnail, chat_message=chat_message)
         db.session.add(group_alert)
 
     if save:
@@ -215,13 +220,14 @@ def list_groups():
         groups[group_alert.group_name] = {
             'name': group_alert.group_name,
             'alerts': alerts,
-            'thumbnail': group_alert.thumbnail
+            'thumbnail': group_alert.thumbnail,
+            'chat_message': group_alert.chat_message
         }
     listed_groups = list(groups.values())
     return sorted(listed_groups, key=lambda group: group['name'])
 
 
-def group_alert(group_name, random_choice=True, hit_socket=True):
+def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
     group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if not group_alert:
         raise Exception('Group not found: {}'.format(group_name))
@@ -237,7 +243,18 @@ def group_alert(group_name, random_choice=True, hit_socket=True):
     for count in group_alert.counts:
         counts.add_to_count(count.name)
 
-    return alert(chosen_alert, hit_socket=hit_socket)
+    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=False)
+
+    chatbot = get_chatbot()
+    if chatbot:
+        if group_alert.chat_message:
+            message = group_alert.chat_message
+            chatbot.chat(message)
+        elif chat and not group_alert.chat_message:
+            message = '/me {}'.format(alert_message)
+            chatbot.chat(message)
+
+    return alert_message
 
 
 def remove_from_group(group_name, alert_names):

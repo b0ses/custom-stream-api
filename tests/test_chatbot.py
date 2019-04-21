@@ -5,6 +5,7 @@ import time
 from custom_stream_api.chatbot import aliases, twitchbot, models, timers
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
+from custom_stream_api.shared import g
 from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
 from collections import namedtuple
 
@@ -83,8 +84,7 @@ def fake_alert_api(cls, user, badges, alert):
         return
 
     try:
-        message = alerts.alert(name=alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
+        alerts.alert(name=alert, hit_socket=False, chat=True)
     except Exception as e:
         pass
 
@@ -97,8 +97,7 @@ def fake_group_alert_api(cls, user, badges, group_alert):
         return
 
     try:
-        message = alerts.group_alert(group_name=group_alert, hit_socket=False)
-        cls.chat('/me {}'.format(message))
+        alerts.group_alert(group_name=group_alert, hit_socket=False, chat=True)
     except Exception as e:
         pass
 
@@ -129,12 +128,17 @@ def chatbot(app):
             except Exception as e:
                 pass
 
+    def fake_running(cls):
+        return True
+
     with mock.patch.object(twitchbot.TwitchBot, 'chat', new=store_chat):
         with mock.patch.object(twitchbot.TwitchBot, 'on_pubmsg', new=fake_on_pubmsg):
-            bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
-                                      timeout=0.1)
-            bot.responses = []
-            yield bot
+            with mock.patch.object(twitchbot.TwitchBot, 'running', new=fake_running):
+                bot = twitchbot.TwitchBot('test_id', 'test_botname', 'test_client_id', 'test_token', 'test_channel',
+                                          timeout=0.1)
+                bot.responses = []
+                g['chatbot']= {'object': bot}
+                yield bot
 
 
 def simulate_chat(bot, user_name, message, badges):
@@ -628,6 +632,11 @@ def test_alert_commands(chatbot, import_groups):
     simulate_chat(chatbot, 'test_user', '!group_alert first_two', badge_level)
     expected_responses = ['/me Test Text 1', '/me Test Text 2']
     assert chatbot.responses[-1] in expected_responses
+
+    badge_level = [models.Badges.VIP]
+    simulate_chat(chatbot, 'test_user', '!group_alert last_two', badge_level)
+    expected_response = 'last two!'
+    assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!group_alert', badge_level)

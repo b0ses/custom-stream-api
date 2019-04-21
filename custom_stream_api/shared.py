@@ -65,7 +65,5 @@ def create_app(init_db=True):
 
 
 def get_chatbot():
-    if 'chatbot' in g:
-        chatbot = g['chatbot']['object']
-        if chatbot.connection.is_connected():
-            return chatbot
+    if g.get('chatbot') and g['chatbot'].get('object') and g['chatbot']['object'].running():
+        return g['chatbot']['object']

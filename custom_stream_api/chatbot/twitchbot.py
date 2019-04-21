@@ -75,6 +75,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.message_thread = threading.Thread(target=self.process_messages)
         self.message_thread.start()
 
+    def running(self):
+        return (hasattr(self, 'connection') and self.connection.is_connected())
+
     def chat(self, message):
         c = self.connection
         c.privmsg(self.channel, message)
@@ -83,7 +86,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.chat('Cya 👋')
         self.stop_timers()
         super().disconnect()
-        while self.connection.is_connected():
+        while self.running():
             time.sleep(1)
         exit()
 
@@ -104,7 +107,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def process_messages(self):
         def go():
-            while self.connection.is_connected():
+            while self.running():
                 if len(self.queue):
                     message = self.queue.pop()
                     self.do_command(message['command'], message['user'], message['badges'])
@@ -560,8 +563,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         try:
-            message = alerts.alert(name=alert)
-            self.chat('/me {}'.format(message))
+            alerts.alert(name=alert, chat=True)
         except Exception as e:
             pass
 
@@ -573,8 +575,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         try:
-            message = alerts.group_alert(group_name=group_alert)
-            self.chat('/me {}'.format(message))
+            test = alerts.group_alert(group_name=group_alert, chat=True)
         except Exception:
             pass
 
@@ -635,7 +636,7 @@ def start_chatbot_with_app(app, chatbot):
 def setup_chatbot(bot_name, client_id, chat_token, channel, timeout=15):
     if 'chatbot' in g:
         chatbot = g['chatbot']['object']
-        if chatbot.connection.is_connected():
+        if chatbot.running():
             raise Exception('Chatbot already setup')
         else:
             g['chatbot']['thread'].join()
