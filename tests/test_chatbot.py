@@ -1,12 +1,10 @@
 import pytest
 import mock
 import time
-import re
 
 from custom_stream_api.chatbot import aliases, twitchbot, models, timers
 from custom_stream_api.alerts import alerts
 from custom_stream_api.lists import lists
-from custom_stream_api.counts import counts
 from custom_stream_api.shared import g
 from tests.test_alerts import IMPORT_GROUP_ALERTS, IMPORT_ALERTS
 from collections import namedtuple
@@ -172,6 +170,7 @@ def test_echo(chatbot):
     simulate_chat(chatbot, 'test_user', '!echo test test 1 2 3', [models.Badges.BROADCASTER])
     expected_response = 'test test 1 2 3'
     assert chatbot.responses[-1] == expected_response
+
 
 def test_chatbot(chatbot):
     simulate_chat(chatbot, 'test_user', '!shoutout test_user', [models.Badges.SUBSCRIBER])
