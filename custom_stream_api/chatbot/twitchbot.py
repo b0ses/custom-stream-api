@@ -231,12 +231,18 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!random option1 option2 [option3 ...]',
                 'callback': lambda text, user, badges: self.random(text)
             },
+            'shoutout': {
+                'badge': Badges.VIP,
+                'format': '^!shoutout\s+\S+$',
+                'help': '!shoutout user',
+                'callback': lambda text, user, badges: self.shoutout(text)
+            },
             'spongebob': {
                 'badge': Badges.SUBSCRIBER,
                 'format': '^!spongebob\s+.+$',
                 'help': '!spongebob message',
                 'callback': lambda text, user, badges: self.spongebob(text)
-            },
+            }
         }
 
     def set_get_commands(self):
@@ -622,6 +628,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             time.sleep(3)
             self.chat(lyric)
         self.display_commands(self.main_commands, None, badges)
+
+    def shoutout(self, text):
+        self.chat('Hey I know {}! You should check\'em out and drop a follow '
+                  '- https://www.twitch.tv/{}'.format(text, text))
 
     # Helper commands
 

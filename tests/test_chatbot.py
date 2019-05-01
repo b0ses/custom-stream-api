@@ -176,6 +176,16 @@ def test_echo(chatbot):
     expected_response = 'test test 1 2 3'
     assert chatbot.responses[-1] == expected_response
 
+def test_chatbot(chatbot):
+    simulate_chat(chatbot, 'test_user', '!shoutout test_user', [models.Badges.SUBSCRIBER])
+    expected_responses = []
+    assert chatbot.responses == expected_responses
+
+    simulate_chat(chatbot, 'test_user', '!shoutout test_user', [models.Badges.VIP])
+    expected_response = 'Hey I know test_user! You should check\'em out and drop a follow ' \
+                        '- https://www.twitch.tv/test_user'
+    assert chatbot.responses[-1] == expected_response
+
 
 def test_get_commands(chatbot):
     badge_level = []
@@ -197,19 +207,21 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, '\
-                        'get_list_commands, help, random, spongebob'
+                        'get_list_commands, help, random, shoutout, spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
-                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, shoutout, ' \
+                        'spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
-                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, spongebob'
+                        'get_count_commands, get_list_commands, get_timer_commands, help, id, random, shoutout, ' \
+                        'spongebob'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -575,6 +587,16 @@ def test_list_commands(chatbot):
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!remove_list_item test_list 1', badge_level)
     expected_response = 'Removed 1. item_one'
+    assert chatbot.responses[-1] == expected_response
+
+    badge_level = [models.Badges.VIP]
+    simulate_chat(chatbot, 'test_user', '!remove_list_item test_list 1', badge_level)
+    expected_response = 'Removed 1. item_two'
+    assert chatbot.responses[-1] == expected_response
+
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_item test_list', badge_level)
+    # unchanged
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
