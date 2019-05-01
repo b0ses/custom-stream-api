@@ -116,10 +116,7 @@ def chatbot(app):
     # just to respond the way we want it to
 
     def store_chat(cls, message):
-        for count in re.findall('{(.*?)}', message):
-            found_count = counts.get_count(count)
-            if found_count is not None:
-                message = message.replace('{{{}}}'.format(count), str(found_count))
+        message = cls._substitute_vars(message)
         cls.responses.append(message)
 
     def fake_on_pubmsg(cls, connection, event):
@@ -538,6 +535,16 @@ def test_list_commands(chatbot):
     simulate_chat(chatbot, 'test_user', '!get_list_item test_list 2', badge_level)
     expected_response = '2. item_two'
     assert chatbot.responses[-1] == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!echo 1.{test_list 1} 2.{test_list 2}', badge_level)
+    expected_response = '1.item_one 2.item_two'
+    assert chatbot.responses[-1] == expected_response
+
+    badge_level = [models.Badges.BROADCASTER]
+    simulate_chat(chatbot, 'test_user', '!echo random.{test_list}', badge_level)
+    expected_responses = ['random.item_one', 'random.item_two']
+    assert chatbot.responses[-1] in expected_responses
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_list_item test_list', badge_level)
