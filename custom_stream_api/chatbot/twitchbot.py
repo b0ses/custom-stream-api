@@ -78,13 +78,41 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def running(self):
         return (hasattr(self, 'connection') and self.connection.is_connected())
 
-    def chat(self, message):
+    def _substitute_vars(self, message):
         # edit message to replace {count_name} with count number
-        for count in re.findall('{(.*?)}', message):
-            found_count = counts.get_count(count)
-            if found_count is not None:
-                message = message.replace('{{{}}}'.format(count), str(found_count))
+        for variable in re.findall('{(.*?)}', message):
+            variable = variable.strip()
 
+            # if it's a count name, return the count
+            found_count = counts.get_count(variable)
+            if found_count is not None:
+                message = message.replace('{{{}}}'.format(variable), str(found_count))
+                continue
+
+            # if it's a list, return a random one or use the index
+            list_params = variable.split()
+            list_name = list_params[0]
+            if list_name not in [list_dict['name'] for list_dict in lists.list_lists()]:
+                continue
+
+            index = None
+            try:
+                # accounting for negative indexes
+                pulled_index = int(list_params[1])-1
+                if pulled_index < lists.get_list_size(name=list_name):
+                    index = pulled_index
+            except (ValueError, IndexError):
+                pass
+
+            found_item, index = lists.get_list_item(name=list_name, index=index)
+            if found_item is not None:
+                message = message.replace('{{{}}}'.format(variable), found_item)
+                continue
+
+        return message
+
+    def chat(self, message):
+        message = self._substitute_vars(message)
         c = self.connection
         c.privmsg(self.channel, message)
 
@@ -231,12 +259,18 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!random option1 option2 [option3 ...]',
                 'callback': lambda text, user, badges: self.random(text)
             },
+            'shoutout': {
+                'badge': Badges.VIP,
+                'format': '^!shoutout\s+\S+$',
+                'help': '!shoutout user',
+                'callback': lambda text, user, badges: self.shoutout(text)
+            },
             'spongebob': {
                 'badge': Badges.SUBSCRIBER,
                 'format': '^!spongebob\s+.+$',
                 'help': '!spongebob message',
                 'callback': lambda text, user, badges: self.spongebob(text)
-            },
+            }
         }
 
     def set_get_commands(self):
@@ -622,6 +656,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             time.sleep(3)
             self.chat(lyric)
         self.display_commands(self.main_commands, None, badges)
+
+    def shoutout(self, text):
+        self.chat('Hey I know {}! You should check\'em out and drop a follow '
+                  '- https://www.twitch.tv/{}'.format(text, text))
 
     # Helper commands
 

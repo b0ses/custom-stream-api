@@ -60,7 +60,7 @@ def get_list_item(name, index=None):
     if not found_list:
         return None, None
     items = found_list.items
-    if not index:
+    if index is None:
         index = random.choice(range(0, len(items)))
     else:
         if not isinstance(index, int):
