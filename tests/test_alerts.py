@@ -60,12 +60,12 @@ COUNTS_IMPORT = [
     {
         'name': 'count1',
         'count': 37,
-        'group_alert': 'first_two',
+        'group_name': 'first_two',
     },
     {
         'name': 'count2',
         'count': 2,
-        'group_alert': 'first_two',
+        'group_name': 'first_two',
     }
 ]
 

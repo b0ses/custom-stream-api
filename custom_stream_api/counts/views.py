@@ -87,7 +87,7 @@ def set_count_post():
         count_data = {
             'name': data.get('name', ''),
             'count': data.get('count', ''),
-            'group_alert': data.get('group_alert', '')
+            'group_name': data.get('group_name', '')
         }
         try:
             count = counts.set_count(**count_data)
