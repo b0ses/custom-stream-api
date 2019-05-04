@@ -449,9 +449,9 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             },
             'reset_count': {
                 'badge': Badges.VIP,
-                'callback': lambda text, user, badges: self.chat_count_output(text, counts.reset_count(text)),
-                'format': '^!reset_count\s+\S+$',
-                'help': '!reset_count count_name'
+                'callback': lambda text, user, badges: self.reset_count(text),
+                'format': '^!reset_count(\s+\S+)+$',
+                'help': '!reset_count count_name1 count_name2 ...'
             },
             'remove_count': {
                 'badge': Badges.VIP,
@@ -481,6 +481,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def chat_count_output(self, count_name, count):
         if count is not None:
             self.chat('{}: {}'.format(count_name, count))
+
+    def reset_count(self, text):
+        for count_name in text.split():
+            self.chat_count_output(count_name, counts.reset_count(count_name))
 
     def remove_count_output(self, count_name):
         counts.remove_count(count_name)
