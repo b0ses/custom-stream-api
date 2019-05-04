@@ -425,23 +425,15 @@ def test_count_commands(chatbot):
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
-    simulate_chat(chatbot, 'test_user', '!reset_count test_count', badge_level)
-    expected_response = 'test_count: 0'
-    assert chatbot.responses[-1] == expected_response
-
-    badge_level = [models.Badges.VIP]
-    simulate_chat(chatbot, 'test_user', '!reset_count test_count3', badge_level)
-    expected_response = 'test_count3: 0'
-    assert chatbot.responses[-1] == expected_response
+    simulate_chat(chatbot, 'test_user', '!reset_count test_count test_count3', badge_level)
+    expected_response1 = 'test_count: 0'
+    expected_response2 = 'test_count3: 0'
+    assert chatbot.responses[-2] == expected_response1
+    assert chatbot.responses[-1] == expected_response2
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!reset_count ', badge_level)
-    expected_response = 'Format: !reset_count count_name'
-    assert chatbot.responses[-1] == expected_response
-
-    badge_level = [models.Badges.VIP]
-    simulate_chat(chatbot, 'test_user', '!reset_count test_count 30', badge_level)
-    expected_response = 'Format: !reset_count count_name'
+    expected_response = 'Format: !reset_count count_name1 count_name2 ...'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = []
