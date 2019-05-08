@@ -67,6 +67,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         connection.cap('REQ', ':twitch.tv/membership')
         connection.cap('REQ', ':twitch.tv/tags')
         connection.cap('REQ', ':twitch.tv/commands')
+        connection.add_global_handler('USERNOTICE', self.on_usernotice, 90)
         connection.join(self.channel)
         while not connection.is_connected():
             time.sleep(0.5)
@@ -123,6 +124,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         while self.running():
             time.sleep(1)
         exit()
+
+    # NOTIFICATIONS
+
+    def on_usernotice(self, connection, event):
+        logger.warning('USERNOTICE:{}'.format(event))
 
     # PARSE MESSAGES
 

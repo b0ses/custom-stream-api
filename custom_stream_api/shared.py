@@ -50,10 +50,12 @@ def create_app(init_db=True):
     from custom_stream_api.lists.views import lists_endpoints
     from custom_stream_api.counts.views import counts_endpoints
     from custom_stream_api.chatbot.views import chatbot_endpoints
+    from custom_stream_api.notifier.views import notifier_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
     app.register_blueprint(lists_endpoints, url_prefix='/lists')
     app.register_blueprint(counts_endpoints, url_prefix='/counts')
     app.register_blueprint(chatbot_endpoints, url_prefix='/chatbot')
+    app.register_blueprint(notifier_endpoints, url_prefix='/notifier')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
