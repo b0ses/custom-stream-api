@@ -149,7 +149,12 @@ def remove_alert(name):
     alert = db.session.query(Alert).filter_by(name=name)
     if alert.count():
         alert_name = alert.one_or_none().name
+
+        for group in list_groups():
+            if alert_name in group['alerts']:
+                remove_from_group(group['name'], [alert_name])
         alert.delete()
+        
         db.session.commit()
         return alert_name
     else:
@@ -214,7 +219,6 @@ def add_to_group(group_name, alert_names, save=True):
 
 
 def list_groups():
-    # {'group_name': ['alert_name1', 'alert_name2', ...]}
     groups = {}
     group_alerts = list(db.session.query(GroupAlert).all())
     for group_alert in group_alerts:
