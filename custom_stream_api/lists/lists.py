@@ -67,7 +67,7 @@ def get_list_item(name, index=None):
             if not index.isdigit():
                 return None, None
             index = int(index)
-        if index > len(items):
+        if index >= len(items):
             return None, None
     return items[index].item, items[index].index
 

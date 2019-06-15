@@ -527,6 +527,11 @@ def test_list_commands(chatbot):
     expected_response = '2. item_two'
     assert chatbot.responses[-1] == expected_response
 
+    badge_level = []
+    simulate_chat(chatbot, 'test_user', '!get_list_item test_list 4', badge_level)
+    # unchanged
+    assert chatbot.responses[-1] == expected_response
+
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!echo 1.{test_list 1} 2.{test_list 2}', badge_level)
     expected_response = '1.item_one 2.item_two'
