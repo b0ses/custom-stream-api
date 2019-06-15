@@ -13,22 +13,28 @@ logger = logging.getLogger()
 #     raise NotImplementedError
 
 
-@notifier_endpoints.route('/stream_changed', methods=['POST'])
+@notifier_endpoints.route('/stream_changed', methods=['GET', 'POST'])
 def stream_changed():
-    data = request.get_json()
-    chatbot = get_chatbot()
-    if chatbot:
-        chatbot.chat('Stream changed: {}'.format(str(data)))
-    return jsonify({'message': 'Stream changed message received'})
+    if request.method == 'GET':
+        pass
+    else:
+        data = request.get_json()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.chat('Stream changed: {}'.format(str(data)))
+        return jsonify({'message': 'Stream changed message received'})
 
 
-@notifier_endpoints.route('/followed', methods=['POST'])
+@notifier_endpoints.route('/followed', methods=['GET', 'POST'])
 def followed():
-    data = request.get_json()
-    chatbot = get_chatbot()
-    if chatbot:
-        chatbot.chat('Followed: {}'.format(str(data)))
-    return jsonify({'message': 'Followed message received'})
+    if request.method == 'GET':
+        pass
+    else:
+        data = request.get_json()
+        chatbot = get_chatbot()
+        if chatbot:
+            chatbot.chat('Followed: {}'.format(str(data)))
+        return jsonify({'message': 'Followed message received'})
 
 
 # @notifier_endpoints.route('/subscribed', methods=['POST'])
