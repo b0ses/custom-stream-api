@@ -28,6 +28,11 @@ IMPORT_ALIASES = [
         "command": "!get_count test_count"
     },
     {
+        "alias": "reset_session",
+        "badge": "broadcaster",
+        "command": "!reset_count test_count test_count_2"
+    },
+    {
         "alias": "test_alias_args",
         "badge": "vip",
         "command": "!set_count test_count"
@@ -286,7 +291,7 @@ def test_get_aliases(import_aliases, chatbot):
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_aliases', badge_level)
     expected_response = 'Commands include: broadcaster_test_alias, chat_alert, chat_test_alias, mod_test_alias, '\
-                        'sub_test_alias, test_alias_args'
+                        'reset_session, sub_test_alias, test_alias_args'
     assert chatbot.responses[-1] == expected_response
 
 
