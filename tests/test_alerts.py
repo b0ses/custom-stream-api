@@ -204,10 +204,13 @@ def test_import_export_alerts(import_alerts):
     assert alerts.list_alerts() == IMPORT_ALERTS
 
 
-def test_remove_alert(import_alerts):
+def test_remove_alert(import_groups):
     alerts.remove_alert('test_text_2')
     all_alerts = [alert['name'] for alert in alerts.list_alerts()]
     assert 'test_text_2' not in all_alerts
+
+    first_two_group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
+    assert 'test_text_2' not in first_two_group_alerts
 
 
 def test_import_export_groups(import_groups):
