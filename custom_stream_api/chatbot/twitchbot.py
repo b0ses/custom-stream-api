@@ -11,6 +11,7 @@ import re
 import random
 from functools import partial
 from collections import deque
+import sre_constants
 
 import irc.bot
 import requests
@@ -369,7 +370,10 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         match = None
         index = 1
         while not match and index < len(original_format):
-            match = re.match('^{}$'.format(original_format[1:index]), alias['command'])
+            try:
+                match = re.match('^{}$'.format(original_format[1:index]), alias['command'])
+            except sre_constants.error:
+                match = False
             if not match:
                 index += 1
         if not match:
