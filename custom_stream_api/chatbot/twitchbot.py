@@ -434,7 +434,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def remind(self, text):
         alert, minutes = tuple(text.split(' ')[:2])
         message = text[text.index(minutes)+len(minutes)+1:]
-        echo_cmd = '!echo {}'.format(message)
+        echo_cmd = '!echo Reminder: {}'.format(message)
         alert_cmd = '!alert {}'.format(alert)
         alert_thread = threading.Thread(target=self.run_timer, args=(alert_cmd, int(minutes)))
         echo_thread = threading.Thread(target=self.run_timer, args=(echo_cmd, int(minutes)))
