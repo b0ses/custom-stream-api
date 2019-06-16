@@ -50,6 +50,11 @@ def test_set_count(import_counts):
     assert counts.set_count('count3', 943) == 943
 
 
+def test_copy_count(import_counts):
+    assert counts.copy_count('count3', 'count2') == 90
+    assert counts.get_count('count2') == 90
+
+
 def test_remove_count(import_counts):
     counts.remove_count('count1')
     assert 'count1' not in counts.list_counts()

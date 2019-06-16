@@ -363,8 +363,8 @@ def test_get_count_commands(chatbot):
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_count_commands', badge_level)
-    expected_response = 'Commands include: add_count, get_count, list_counts, remove_count, reset_count, set_count, '\
-                        'subtract_count'
+    expected_response = 'Commands include: add_count, copy_count, get_count, list_counts, remove_count, reset_count, ' \
+                        'set_count, subtract_count'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -461,9 +461,19 @@ def test_count_commands(chatbot):
     expected_response = 'Format: !get_count count_name'
     assert chatbot.responses[-1] == expected_response
 
+    badge_level = [models.Badges.VIP]
+    simulate_chat(chatbot, 'test_user', '!copy_count test_count test_count5', badge_level)
+    expected_response = 'test_count5: 0'
+    assert chatbot.responses[-1] == expected_response
+
+    badge_level = [models.Badges.VIP]
+    simulate_chat(chatbot, 'test_user', '!copy_count test_count6 test_count3', badge_level)
+    expected_response = 'test_count6 doesn\'t exist.'
+    assert chatbot.responses[-1] == expected_response
+
     badge_level = [models.Badges.CHAT]
     simulate_chat(chatbot, 'test_user', '!list_counts', badge_level)
-    expected_response = 'Counts: test_count, test_count2, test_count3'
+    expected_response = 'Counts: test_count, test_count2, test_count3, test_count5'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
