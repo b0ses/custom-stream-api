@@ -208,7 +208,7 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, '\
-                        'get_list_commands, help, random, shoutout, spongebob'
+                        'get_list_commands, get_timer_commands, help, random, shoutout, spongebob'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.BROADCASTER]

@@ -405,6 +405,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'callback': lambda text, user, badges: self.stop_timers(),
                 'format': '^!stop_timers$',
                 'help': '!stop_timers'
+            },
+            'remind': {
+                'badge': Badges.VIP,
+                'callback': lambda text, user, badges: self.remind(text),
+                'format': '^!remind\s+\S+\s+\d+\s+.+',
+                'help': '!remind [alert] [minutes] message'
             }
         }
 
@@ -420,15 +426,28 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
         self.run_timers = True
         for timer_dict in timers.list_timers():
-            timer_thread = threading.Thread(target=self.run_timer, args=(timer_dict['command'], timer_dict['interval']))
+            timer_thread = threading.Thread(target=self.run_timer, args=(timer_dict['command'], timer_dict['interval'],
+                                                                         True))
             timer_thread.start()
             self.timers.append(timer_thread)
 
-    def run_timer(self, command, interval=30):
+    def remind(self, text):
+        alert, minutes = tuple(text.split(' ')[:2])
+        message = text[text.index(minutes)+len(minutes)+1:]
+        echo_cmd = '!echo {}'.format(message)
+        alert_cmd = '!alert {}'.format(alert)
+        alert_thread = threading.Thread(target=self.run_timer, args=(alert_cmd, int(minutes)))
+        echo_thread = threading.Thread(target=self.run_timer, args=(echo_cmd, int(minutes)))
+        alert_thread.start()
+        echo_thread.start()
+
+    def run_timer(self, command, interval=30, loop=False):
         counting_seconds = 0
         while self.run_timers:
             if counting_seconds == interval * 60:
                 self.do_command(command, self.bot_name, [], ignore_badges=True)
+                if not loop:
+                    break
                 counting_seconds = 0
             time.sleep(1)
             counting_seconds += 1
