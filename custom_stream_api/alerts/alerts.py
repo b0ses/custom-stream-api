@@ -154,7 +154,7 @@ def remove_alert(name):
             if alert_name in group['alerts']:
                 remove_from_group(group['name'], [alert_name])
         alert.delete()
-        
+
         db.session.commit()
         return alert_name
     else:
