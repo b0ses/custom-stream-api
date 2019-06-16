@@ -440,17 +440,19 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         echo_thread = threading.Thread(target=self.run_timer, args=(echo_cmd, int(minutes)))
         alert_thread.start()
         echo_thread.start()
+        self.chat('Setup reminder \"{}\" in {} minutes'.format(message, str(minutes)))
 
     def run_timer(self, command, interval=30, loop=False):
-        counting_seconds = 0
-        while self.run_timers:
-            if counting_seconds == interval * 60:
-                self.do_command(command, self.bot_name, [], ignore_badges=True)
-                if not loop:
-                    break
-                counting_seconds = 0
-            time.sleep(1)
-            counting_seconds += 1
+        with self.app.app_context():
+            counting_seconds = 0
+            while self.run_timers:
+                if counting_seconds == interval * 60:
+                    self.do_command(command, self.bot_name, [], ignore_badges=True)
+                    if not loop:
+                        break
+                    counting_seconds = 0
+                time.sleep(1)
+                counting_seconds += 1
 
     # Counts
 
