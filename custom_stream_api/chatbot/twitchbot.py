@@ -439,6 +439,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         alert_thread = threading.Thread(target=self.run_timer, args=(alert_cmd, int(minutes)))
         echo_thread = threading.Thread(target=self.run_timer, args=(echo_cmd, int(minutes)))
         alert_thread.start()
+        # adding partial sleep to ensure it gets printed in the same order
+        time.sleep(0.5)
         echo_thread.start()
         self.chat('Setup reminder \"{}\" in {} minutes'.format(message, str(minutes)))
 
