@@ -480,6 +480,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!set_count\s+\S+\s+\d+$',
                 'help': '!set_count count_name number'
             },
+            'copy_count': {
+                'badge': Badges.VIP,
+                'callback': lambda text, user, badges: self.copy_count(text),
+                'format': '^!copy_count\s+\S+\s+\S+$',
+                'help': '!copy_count count_from count_to'
+            },
             'reset_count': {
                 'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.reset_count(text),
@@ -514,6 +520,14 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def chat_count_output(self, count_name, count):
         if count is not None:
             self.chat('{}: {}'.format(count_name, count))
+
+    def copy_count(self, text):
+        count1, count2 = tuple(text.split())
+        print(count1, count2)
+        try:
+            self.chat_count_output(count2, counts.copy_count(count1, count2))
+        except Exception:
+            self.chat('{} doesn\'t exist.'.format(count1))
 
     def reset_count(self, text):
         for count_name in text.split():

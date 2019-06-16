@@ -59,6 +59,14 @@ def set_count(name, count, group_name='', save=True):
     return count_obj.count
 
 
+def copy_count(count1, count2):
+    count1_count = get_count(count1)
+    if count1_count is not None:
+        return set_count(count2, count1_count)
+    else:
+        raise Exception('{} doesn\'t exist.'.format(count1))
+
+
 def remove_count(name):
     found_count = db.session.query(Count).filter_by(name=name)
     if found_count.count():
