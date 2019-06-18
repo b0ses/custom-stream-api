@@ -202,27 +202,27 @@ def test_get_commands(chatbot):
     badge_level = [models.Badges.SUBSCRIBER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help, '\
-                        'spongebob'
+                        'spongebob, taco'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.VIP]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, '\
-                        'get_list_commands, get_timer_commands, help, random, shoutout, spongebob'
+                        'get_list_commands, get_timer_commands, help, random, shoutout, spongebob, taco'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [models.Badges.BROADCASTER]
     simulate_chat(chatbot, 'test_user', '!get_commands', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
                         'get_count_commands, get_list_commands, get_timer_commands, help, id, random, shoutout, ' \
-                        'spongebob'
+                        'spongebob, taco'
     assert chatbot.responses[-1] == expected_response
 
     badge_level = []
     simulate_chat(chatbot, 'test_user', '!get_commands broadcaster', badge_level)
     expected_response = 'Commands include: disconnect, echo, get_alert_commands, get_aliases, get_commands, '\
                         'get_count_commands, get_list_commands, get_timer_commands, help, id, random, shoutout, ' \
-                        'spongebob'
+                        'spongebob, taco'
     assert chatbot.responses[-1] == expected_response
 
 
@@ -251,6 +251,21 @@ def test_spongebob(chatbot):
 
     simulate_chat(chatbot, 'test_user', '!spongebob stop mimicking me please', [])
     # unchanged
+    assert chatbot.responses[-1] == expected_response
+
+
+def test_taco(chatbot):
+    simulate_chat(chatbot, 'test_user', '!taco test_user2', [models.Badges.CHAT])
+    expected_response = []
+    assert chatbot.responses == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!taco test_user2', [models.Badges.SUBSCRIBER])
+    expected_response = ['/me test_user aggressively hurls a :taco: at test_user2',
+                         'test_user2_tacos: 1']
+    assert chatbot.responses == expected_response
+
+    simulate_chat(chatbot, 'test_user', '!taco  ', [models.Badges.SUBSCRIBER])
+    expected_response = 'Format: !taco [to_user]'
     assert chatbot.responses[-1] == expected_response
 
 
