@@ -409,7 +409,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             'reminder': {
                 'badge': Badges.VIP,
                 'callback': lambda text, user, badges: self.remind(text),
-                'format': '^!reminder\s+\S+\s+\d+\s+.+',
+                'format': '^!reminder\s+\S+\s+\d+\s+.+$',
                 'help': '!reminder [alert] [minutes] message'
             }
         }
