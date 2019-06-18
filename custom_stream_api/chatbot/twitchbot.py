@@ -277,6 +277,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!spongebob\s+.+$',
                 'help': '!spongebob message',
                 'callback': lambda text, user, badges: self.spongebob(text)
+            },
+            'taco': {
+                'badge': Badges.SUBSCRIBER,
+                'format': '^!taco\s+\S+$',
+                'help': '!taco [to_user]',
+                'callback': lambda text, user, badges: self.taco(user, text)
             }
         }
 
@@ -707,6 +713,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             time.sleep(3)
             self.chat(lyric)
         self.display_commands(self.main_commands, None, badges)
+
+    def taco(self, from_user, to_user):
+        self.chat('/me {} aggressively hurls a :taco: at {}'.format(from_user, to_user))
+        taco_user_count = '{}_tacos'.format(to_user)
+        self.chat_count_output(taco_user_count, counts.add_to_count(taco_user_count)),
 
     def shoutout(self, text):
         self.chat('Hey I know {}! You should check\'em out and drop a follow '
