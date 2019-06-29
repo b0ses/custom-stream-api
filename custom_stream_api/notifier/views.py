@@ -15,7 +15,7 @@ def setup_webhook_post():
     data = request.get_json()
     webhook_data = {
         'token': data.get('token', None),
-        'callback_url': data.get('callback_uri', None),
+        'callback_url': data.get('callback_url', None),
         'mode': data.get('items', None),
         'topic': data.get('topic', None)
     }

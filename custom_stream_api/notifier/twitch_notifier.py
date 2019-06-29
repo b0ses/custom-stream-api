@@ -85,7 +85,7 @@ def _renew_subscription(subscription_data):
         lease_timer += 1
 
 
-def setup_webhook(callback_url, mode, topic, token):
+def setup_webhook(callback_url=None, mode=None, topic=None, token=None):
     if not (callback_url and mode and topic and token):
         raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None')
     if mode not in ['subscribe', 'unsubscribe']:
