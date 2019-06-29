@@ -8,8 +8,9 @@ TOKEN_URL = 'https://id.twitch.tv/oauth2/'
 HELIX_URL = 'https://api.twitch.tv/helix'
 WEBHOOKS_URL = '{}/webhooks'.format(HELIX_URL)
 WEBHOOK_SECRET = settings.WEBHOOK_SECRET
-WEBHOOK_LEASE = 60 * 60 * 24 # 24 hours, daily
-WEBHOOK_RENEW = WEBHOOK_LEASE - (60 * 60) # 23 hours so that it renews before expiring
+WEBHOOK_LEASE = 60 * 60 * 24  # 24 hours, daily
+WEBHOOK_RENEW = WEBHOOK_LEASE - (60 * 60)  # 23 hours so that it renews before expiring
+
 
 def get_user_data(token, username):
     params = {

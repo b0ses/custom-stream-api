@@ -9,8 +9,9 @@ notifier_endpoints = Blueprint('notifier', __name__)
 
 logger = logging.getLogger()
 
+
 @notifier_endpoints.route('/setup_webhook', methods=['POST'])
-def setup_webhook():
+def setup_webhook_post():
     data = request.get_json()
     webhook_data = {
         'token': data.get('token', None),
