@@ -87,7 +87,7 @@ def _renew_subscription(subscription_data):
 
 def setup_webhook(callback_url=None, mode=None, topic=None, token=None):
     if not (callback_url and mode and topic and token):
-        raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None')
+        raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None)')
     if mode not in ['subscribe', 'unsubscribe']:
         raise Exception('Mode must be subscribe or unsubscribe')
     if topic not in ['User Follows', 'Stream Changed']:
