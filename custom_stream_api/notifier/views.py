@@ -27,7 +27,8 @@ def setup_webhook():
 @notifier_endpoints.route('/stream_changed', methods=['GET', 'POST'])
 def stream_changed():
     if request.method == 'GET':
-        pass
+        challenge = request.args.get('hub.challenge')
+        return challenge
     else:
         data = request.get_json()
         chatbot = get_chatbot()
@@ -39,7 +40,8 @@ def stream_changed():
 @notifier_endpoints.route('/followed', methods=['GET', 'POST'])
 def followed():
     if request.method == 'GET':
-        pass
+        challenge = request.args.get('hub.challenge')
+        return challenge
     else:
         data = request.get_json()
         chatbot = get_chatbot()
