@@ -50,7 +50,7 @@ def followed():
         chatbot = get_chatbot()
         if chatbot and data:
             followed_user = data['data'][0]['from_name']
-            chatbot.chat('Thanks for following {}!'.format(followed_user))
+            chatbot.chat('Thanks for following, {}!'.format(followed_user))
         return jsonify({'message': 'Followed message received'})
 
 
