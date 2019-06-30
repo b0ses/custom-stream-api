@@ -76,12 +76,12 @@ def _subscribe_webhook(data, token):
     return requests.post('{}/hub'.format(WEBHOOKS_URL), headers=get_headers(client_id=token), data=data)
 
 
-def _renew_subscription(subscription_data):
+def _renew_subscription(subscription_data, token):
     lease_timer = 0
     # TODO: trigger/flag to kill renew_subscription threads
     while True:
         if lease_timer == WEBHOOK_RENEW:
-            _subscribe_webhook(subscription_data)
+            _subscribe_webhook(subscription_data, token)
             lease_timer = 0
         time.sleep(1)
         lease_timer += 1
@@ -105,9 +105,7 @@ def setup_webhook(callback_url=None, mode=None, topic=None, token=None):
         raise('WEBHOOK_SECRET setting not setup. Please just fill it in to continue.')
 
     response = _subscribe_webhook(data, token)
-    if response.status_code == 200:
-        renew_thread = threading.Thread(target=_renew_subscription, args=(data, token))
-        renew_thread.start()
-        return json.loads(response.content.decode())
-    else:
+    if response.status_code != 202:
         raise Exception('Failed to setup hook')
+    renew_thread = threading.Thread(target=_renew_subscription, args=(data, token))
+    renew_thread.start()
