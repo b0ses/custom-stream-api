@@ -23,6 +23,7 @@ def setup_webhook_post():
         setup_webhook(**webhook_data)
     except Exception as e:
         raise InvalidUsage(str(e))
+    return jsonify({'message': 'Webhook setup'})
 
 
 @notifier_endpoints.route('/stream_changed', methods=['GET', 'POST'])
@@ -49,7 +50,7 @@ def followed():
         chatbot = get_chatbot()
         if chatbot and data:
             followed_user = data['data'][0]['from_name']
-            chatbot.chat('{} just followed!'.format(followed_user))
+            chatbot.chat('Thanks for following {}!'.format(followed_user))
         return jsonify({'message': 'Followed message received'})
 
 
