@@ -16,7 +16,7 @@ def setup_webhook_post():
     webhook_data = {
         'token': data.get('token', None),
         'callback_url': data.get('callback_url', None),
-        'mode': data.get('items', None),
+        'mode': data.get('mode', None),
         'topic': data.get('topic', None)
     }
     try:
@@ -32,9 +32,10 @@ def stream_changed():
         return challenge
     else:
         data = request.get_json()
-        chatbot = get_chatbot()
-        if chatbot:
-            chatbot.chat('Stream changed: {}'.format(str(data)))
+        logger.info(data)
+        # chatbot = get_chatbot()
+        # if chatbot:
+        #     chatbot.chat('Stream changed: {}'.format(str(data)))
         return jsonify({'message': 'Stream changed message received'})
 
 
@@ -46,8 +47,9 @@ def followed():
     else:
         data = request.get_json()
         chatbot = get_chatbot()
-        if chatbot:
-            chatbot.chat('Followed: {}'.format(str(data)))
+        if chatbot and data:
+            followed_user = data['data'][0]['from_name']
+            chatbot.chat('{} just followed!'.format(followed_user))
         return jsonify({'message': 'Followed message received'})
 
 

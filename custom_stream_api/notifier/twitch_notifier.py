@@ -48,10 +48,12 @@ def revoke_token(client_id, token):
         return json.loads(response.content.decode())
 
 
-def get_headers(auth_token=None):
+def get_headers(auth_token=None, client_id=None):
     headers = {}
     if auth_token:
         headers['Authorization'] = 'Bearer {}'.format(auth_token)
+    if client_id:
+        headers['Client-ID'] = client_id
     return headers
 
 
@@ -71,7 +73,7 @@ def setup_stream_changed_webhook(token, user_id):
 
 
 def _subscribe_webhook(data, token):
-    return requests.post('{}/hub'.format(WEBHOOKS_URL), headers=get_headers(token), data=data)
+    return requests.post('{}/hub'.format(WEBHOOKS_URL), headers=get_headers(client_id=token), data=data)
 
 
 def _renew_subscription(subscription_data):
@@ -87,11 +89,9 @@ def _renew_subscription(subscription_data):
 
 def setup_webhook(callback_url=None, mode=None, topic=None, token=None):
     if not (callback_url and mode and topic and token):
-        raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None')
+        raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None)')
     if mode not in ['subscribe', 'unsubscribe']:
         raise Exception('Mode must be subscribe or unsubscribe')
-    if topic not in ['User Follows', 'Stream Changed']:
-        raise Exception('Topic must be \'User Follows\' or \'Stream Changed\'')
     data = {
         'hub.callback': callback_url,
         'hub.mode': mode,
