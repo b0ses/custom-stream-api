@@ -1,6 +1,3 @@
-from gevent import monkey
-monkey.patch_all()
-
 import logging
 
 from custom_stream_api import settings
