@@ -1,6 +1,5 @@
 flask==1.0.2
 flask-socketio==4.1.0
-eventlet==0.25.0
 gevent==1.4.0
 uwsgi==2.0.18
 flake8==3.5.0
