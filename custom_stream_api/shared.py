@@ -47,7 +47,7 @@ def create_app(init_db=True):
         db.init_app(app)
     migrate = Migrate(app, db)
     migrate.directory = 'custom_stream_api/migrations'
-    socketio = SocketIO(app)
+    socketio = SocketIO(app, async_mode="gevent_uwsgi")
 
     from custom_stream_api.alerts.views import alert_endpoints
     from custom_stream_api.lists.views import lists_endpoints
