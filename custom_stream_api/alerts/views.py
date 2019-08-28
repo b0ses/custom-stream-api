@@ -2,11 +2,13 @@ from flask import Blueprint, request
 from flask import jsonify
 from custom_stream_api.alerts import alerts
 from custom_stream_api.shared import InvalidUsage
+from custom_stream_api.auth import auth
 
 alert_endpoints = Blueprint('alerts', __name__)
 
 
 @alert_endpoints.route('/', methods=['GET', 'POST'])
+@auth.login_required
 def list_alerts_get():
     if request.method == 'GET':
         return jsonify(alerts.list_alerts())
@@ -20,6 +22,7 @@ def list_alerts_get():
 
 
 @alert_endpoints.route('/add_alert', methods=['POST'])
+@auth.login_required
 def add_alert_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -40,6 +43,7 @@ def add_alert_post():
 
 
 @alert_endpoints.route('/alert', methods=['POST'])
+@auth.login_required
 def alert_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -61,6 +65,7 @@ def alert_post():
 
 
 @alert_endpoints.route('/remove_alert', methods=['POST'])
+@auth.login_required
 def remove_alert_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -75,6 +80,7 @@ def remove_alert_post():
 
 
 @alert_endpoints.route('/groups', methods=['GET', 'POST'])
+@auth.login_required
 def list_groups_get():
     if request.method == 'GET':
         return jsonify(alerts.list_groups())
@@ -88,6 +94,7 @@ def list_groups_get():
 
 
 @alert_endpoints.route('/save_group', methods=['POST'])
+@auth.login_required
 def save_group_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -104,6 +111,7 @@ def save_group_post():
 
 
 @alert_endpoints.route('/add_to_group', methods=['POST'])
+@auth.login_required
 def add_to_group_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -119,6 +127,7 @@ def add_to_group_post():
 
 
 @alert_endpoints.route('/group_alert', methods=['POST'])
+@auth.login_required
 def group_alert_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -136,6 +145,7 @@ def group_alert_post():
 
 
 @alert_endpoints.route('/remove_from_group', methods=['POST'])
+@auth.login_required
 def remove_from_group_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -151,6 +161,7 @@ def remove_from_group_post():
 
 
 @alert_endpoints.route('/remove_group', methods=['POST'])
+@auth.login_required
 def remove_group_post():
     if request.method == 'POST':
         data = request.get_json()
