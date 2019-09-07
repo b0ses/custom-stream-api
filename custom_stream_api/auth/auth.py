@@ -25,7 +25,7 @@ def login_required(func):
     @wraps(func)
     def check_token(*args, **kwargs):
         # Check to see if it's in their session
-        if not logged_in():
+        if LOGIN and not logged_in():
             # If it isn't return our access denied message (you can also return a redirect or render_template)
             return ("Access denied", 401)
 
