@@ -11,7 +11,14 @@ alert_endpoints = Blueprint('alerts', __name__)
 @auth.login_required
 def list_alerts_get():
     if request.method == 'GET':
-        return jsonify(alerts.list_alerts())
+        sort = request.args.get('sort')
+        page = request.args.get('page')
+        limit = request.args.get('limit')
+        try:
+            list_alerts = alerts.list_alerts(sort=sort, page=page, limit=limit)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify(list_alerts)
     else:
         data = request.get_json()
         try:

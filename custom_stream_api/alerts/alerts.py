@@ -115,8 +115,33 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
     return generated_name
 
 
-def list_alerts():
-    return [alert.as_dict() for alert in db.session.query(Alert).order_by(Alert.name.asc()).all()]
+def list_alerts(sort='name', page=1, limit=None):
+    # TODO: sort by age, popularity
+    if sort:
+        sort_options = {
+            'name': Alert.name
+        }
+        sort_options.update({'-{}'.format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
+        if sort not in sort_options:
+            raise ValueError('Invalid sort option: {}'.format(sort))
+        order_by = sort_options[sort].desc() if sort[0] == '-' else sort_options[sort].asc()
+
+    list_alert_query = db.session.query(Alert)
+    if sort:
+        list_alert_query = list_alert_query.order_by(order_by)
+    if page and limit:
+        page = int(page) - 1
+        limit = int(limit)
+        start = page * limit
+        end = start + limit
+        alerts = list_alert_query.slice(start, end)
+    elif limit:
+        limit = int(limit)
+        alerts = list_alert_query.limit(limit)
+    else:
+        alerts = list_alert_query.all()
+
+    return [alert.as_dict() for alert in alerts]
 
 
 def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True, chat=False):
