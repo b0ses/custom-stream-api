@@ -14,8 +14,9 @@ def list_alerts_get():
         sort = request.args.get('sort')
         page = request.args.get('page')
         limit = request.args.get('limit')
+        search = request.args.get('search')
         try:
-            list_alerts = alerts.list_alerts(sort=sort, page=page, limit=limit)
+            list_alerts = alerts.list_alerts(sort=sort, page=page, limit=limit, search=search)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify(list_alerts)

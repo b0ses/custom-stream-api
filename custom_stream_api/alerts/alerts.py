@@ -115,7 +115,7 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
     return generated_name
 
 
-def list_alerts(sort='name', page=1, limit=None):
+def list_alerts(sort='name', page=1, limit=None, search=None):
     # TODO: sort by age, popularity
     if sort:
         sort_options = {
@@ -127,6 +127,8 @@ def list_alerts(sort='name', page=1, limit=None):
         order_by = sort_options[sort].desc() if sort[0] == '-' else sort_options[sort].asc()
 
     list_alert_query = db.session.query(Alert)
+    if search and isinstance(search, str):
+        list_alert_query = list_alert_query.filter(Alert.name.contains(search))
     if sort:
         list_alert_query = list_alert_query.order_by(order_by)
     if page and limit:

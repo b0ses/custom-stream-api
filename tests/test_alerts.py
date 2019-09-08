@@ -211,6 +211,8 @@ def test_filter_alerts(import_alerts):
 
     assert alerts.list_alerts(sort='-name')[0] == IMPORT_ALERTS[2]
 
+    assert alerts.list_alerts(search='2')[0] == IMPORT_ALERTS[1]
+
 
 def test_remove_alert(import_groups):
     alerts.remove_alert('test_text_2')
