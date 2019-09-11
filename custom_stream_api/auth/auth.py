@@ -97,7 +97,7 @@ def login(code):
 
 def logged_in():
     try:
-       return ('access_token' in session)
+        return ('access_token' in session)
     except KeyError:
         return False
 
