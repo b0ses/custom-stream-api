@@ -1,5 +1,6 @@
 import re
 import random
+from collections import OrderedDict
 
 from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssociation
 from custom_stream_api.counts import counts
@@ -82,6 +83,32 @@ def generate_name(name='', text='', sound='', image=''):
     return generated_name.strip().lower().replace(' ', '_')
 
 
+def apply_filters(model, sort_options, search_attr, sort='name', page=1, limit=None, search=None):
+    if sort:
+        sort_options.update({'-{}'.format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
+        if sort not in sort_options:
+            raise ValueError('Invalid sort option: {}'.format(sort))
+        order_by = sort_options[sort].desc() if sort[0] == '-' else sort_options[sort].asc()
+
+    list_query = db.session.query(model)
+    if search and isinstance(search, str):
+        list_query = list_query.filter(getattr(model, search_attr).contains(search))
+    if sort:
+        list_query = list_query.order_by(order_by)
+    if page and limit:
+        page = int(page) - 1
+        limit = int(limit)
+        start = page * limit
+        end = start + limit
+        results = list_query.slice(start, end)
+    elif limit:
+        limit = int(limit)
+        results = list_query.limit(limit)
+    else:
+        results = list_query.all()
+    return results
+
+
 # ALERTS
 def import_alerts(alerts):
     for alert_data in alerts:
@@ -117,32 +144,10 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
 
 def list_alerts(sort='name', page=1, limit=None, search=None):
     # TODO: sort by age, popularity
-    if sort:
-        sort_options = {
-            'name': Alert.name
-        }
-        sort_options.update({'-{}'.format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
-        if sort not in sort_options:
-            raise ValueError('Invalid sort option: {}'.format(sort))
-        order_by = sort_options[sort].desc() if sort[0] == '-' else sort_options[sort].asc()
-
-    list_alert_query = db.session.query(Alert)
-    if search and isinstance(search, str):
-        list_alert_query = list_alert_query.filter(Alert.name.contains(search))
-    if sort:
-        list_alert_query = list_alert_query.order_by(order_by)
-    if page and limit:
-        page = int(page) - 1
-        limit = int(limit)
-        start = page * limit
-        end = start + limit
-        alerts = list_alert_query.slice(start, end)
-    elif limit:
-        limit = int(limit)
-        alerts = list_alert_query.limit(limit)
-    else:
-        alerts = list_alert_query.all()
-
+    sort_options = {
+        'name': Alert.name
+    }
+    alerts = apply_filters(Alert, sort_options, 'name', sort=sort, page=page, limit=limit, search=search)
     return [alert.as_dict() for alert in alerts]
 
 
@@ -245,9 +250,15 @@ def add_to_group(group_name, alert_names, save=True):
     return new_alerts
 
 
-def list_groups():
-    groups = {}
-    group_alerts = list(db.session.query(GroupAlert).all())
+def list_groups(sort='name', page=1, limit=None, search=None):
+    groups = OrderedDict()
+    # TODO: sort by age, popularity
+    sort_options = {
+        'name': GroupAlert.group_name
+    }
+    group_alerts = apply_filters(GroupAlert, sort_options, 'group_name', sort=sort, page=page, limit=limit,
+                                 search=search)
+
     for group_alert in group_alerts:
         alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
         alerts = [alert.alert_name for alert in alerts]
@@ -259,7 +270,7 @@ def list_groups():
             'chat_message': group_alert.chat_message
         }
     listed_groups = list(groups.values())
-    return sorted(listed_groups, key=lambda group: group['name'])
+    return listed_groups
 
 
 def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):

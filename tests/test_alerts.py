@@ -227,6 +227,16 @@ def test_import_export_groups(import_groups):
     assert alerts.list_groups() == IMPORT_GROUP_ALERTS
 
 
+def test_filter_group_alerts(import_alerts, import_groups):
+    assert alerts.list_groups(limit=1)[0] == IMPORT_GROUP_ALERTS[0]
+    assert alerts.list_groups(limit=1, page=2)[0] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(limit=2, page=1)[1] == IMPORT_GROUP_ALERTS[1]
+
+    assert alerts.list_groups(sort='-name')[0] == IMPORT_GROUP_ALERTS[1]
+
+    assert alerts.list_groups(search='last')[0] == IMPORT_GROUP_ALERTS[1]
+
+
 def test_alert(import_alerts):
     expected = 'Test Text 1'
     assert alerts.alert('test_text_1', hit_socket=False) == expected

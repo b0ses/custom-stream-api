@@ -91,7 +91,15 @@ def remove_alert_post():
 @auth.login_required
 def list_groups_get():
     if request.method == 'GET':
-        return jsonify(alerts.list_groups())
+        sort = request.args.get('sort')
+        page = request.args.get('page')
+        limit = request.args.get('limit')
+        search = request.args.get('search')
+        try:
+            list_groups = alerts.list_groups(sort=sort, page=page, limit=limit, search=search)
+        except Exception as e:
+            raise InvalidUsage(str(e))
+        return jsonify(list_groups)
     else:
         data = request.get_json()
         try:
