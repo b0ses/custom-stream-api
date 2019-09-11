@@ -96,10 +96,16 @@ def login(code):
 
 
 def logged_in():
-    return ('access_token' in session)
+    try:
+        return ('access_token' in session)
+    except KeyError:
+        return False
 
 
 def current_user():
+    if not logged_in():
+        return {}
+
     # Note: this can be extracted from the ID token but the signature may expire
     headers = {
         'Authorization': 'Bearer {}'.format(session['access_token'])

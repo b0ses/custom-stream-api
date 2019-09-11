@@ -204,6 +204,16 @@ def test_import_export_alerts(import_alerts):
     assert alerts.list_alerts() == IMPORT_ALERTS
 
 
+def test_filter_alerts(import_alerts):
+    assert alerts.list_alerts(limit=1)[0] == IMPORT_ALERTS[0]
+    assert alerts.list_alerts(limit=1, page=2)[0] == IMPORT_ALERTS[1]
+    assert alerts.list_alerts(limit=2, page=2)[0] == IMPORT_ALERTS[2]
+
+    assert alerts.list_alerts(sort='-name')[0] == IMPORT_ALERTS[2]
+
+    assert alerts.list_alerts(search='2')[0] == IMPORT_ALERTS[1]
+
+
 def test_remove_alert(import_groups):
     alerts.remove_alert('test_text_2')
     all_alerts = [alert['name'] for alert in alerts.list_alerts()]
@@ -215,6 +225,16 @@ def test_remove_alert(import_groups):
 
 def test_import_export_groups(import_groups):
     assert alerts.list_groups() == IMPORT_GROUP_ALERTS
+
+
+def test_filter_group_alerts(import_alerts, import_groups):
+    assert alerts.list_groups(limit=1)[0] == IMPORT_GROUP_ALERTS[0]
+    assert alerts.list_groups(limit=1, page=2)[0] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(limit=2, page=1)[1] == IMPORT_GROUP_ALERTS[1]
+
+    assert alerts.list_groups(sort='-name')[0] == IMPORT_GROUP_ALERTS[1]
+
+    assert alerts.list_groups(search='last')[0] == IMPORT_GROUP_ALERTS[1]
 
 
 def test_alert(import_alerts):
