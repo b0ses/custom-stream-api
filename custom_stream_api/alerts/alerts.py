@@ -96,9 +96,10 @@ def apply_filters(model, sort_options, search_attr, sort='name', page=1, limit=N
     if sort:
         list_query = list_query.order_by(order_by)
     if page and limit:
-        page = int(page) - 1
+        page = int(page)
+        index_0_page = page - 1
         limit = int(limit)
-        start = page * limit
+        start = index_0_page * limit
         end = start + limit
         results = list_query.slice(start, end)
     elif limit:
@@ -106,7 +107,15 @@ def apply_filters(model, sort_options, search_attr, sort='name', page=1, limit=N
         results = list_query.limit(limit)
     else:
         results = list_query.all()
-    return results
+
+    total = db.session.query(model).count()
+    page_metadata = {
+        'total': total,
+        'page': page or 1,
+        'limit': limit
+    }
+
+    return results, page_metadata
 
 
 # ALERTS
@@ -147,8 +156,8 @@ def list_alerts(sort='name', page=1, limit=None, search=None):
     sort_options = {
         'name': Alert.name
     }
-    alerts = apply_filters(Alert, sort_options, 'name', sort=sort, page=page, limit=limit, search=search)
-    return [alert.as_dict() for alert in alerts]
+    alerts, page_metadata = apply_filters(Alert, sort_options, 'name', sort=sort, page=page, limit=limit, search=search)
+    return [alert.as_dict() for alert in alerts], page_metadata
 
 
 def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True, chat=False):
@@ -182,7 +191,7 @@ def remove_alert(name):
     if alert.count():
         alert_name = alert.one_or_none().name
 
-        for group in list_groups():
+        for group in list_groups()[0]:
             if alert_name in group['alerts']:
                 remove_from_group(group['name'], [alert_name])
         alert.delete()
@@ -256,8 +265,8 @@ def list_groups(sort='name', page=1, limit=None, search=None):
     sort_options = {
         'name': GroupAlert.group_name
     }
-    group_alerts = apply_filters(GroupAlert, sort_options, 'group_name', sort=sort, page=page, limit=limit,
-                                 search=search)
+    group_alerts, page_metadata = apply_filters(GroupAlert, sort_options, 'group_name', sort=sort, page=page,
+                                                limit=limit, search=search)
 
     for group_alert in group_alerts:
         alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
@@ -270,7 +279,7 @@ def list_groups(sort='name', page=1, limit=None, search=None):
             'chat_message': group_alert.chat_message
         }
     listed_groups = list(groups.values())
-    return listed_groups
+    return listed_groups, page_metadata
 
 
 def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):

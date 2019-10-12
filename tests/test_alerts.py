@@ -201,40 +201,40 @@ def test_generate_name():
 
 
 def test_import_export_alerts(import_alerts):
-    assert alerts.list_alerts() == IMPORT_ALERTS
+    assert alerts.list_alerts()[0] == IMPORT_ALERTS
 
 
 def test_filter_alerts(import_alerts):
-    assert alerts.list_alerts(limit=1)[0] == IMPORT_ALERTS[0]
-    assert alerts.list_alerts(limit=1, page=2)[0] == IMPORT_ALERTS[1]
-    assert alerts.list_alerts(limit=2, page=2)[0] == IMPORT_ALERTS[2]
+    assert alerts.list_alerts(limit=1)[0][0] == IMPORT_ALERTS[0]
+    assert alerts.list_alerts(limit=1, page=2)[0][0] == IMPORT_ALERTS[1]
+    assert alerts.list_alerts(limit=2, page=2)[0][0] == IMPORT_ALERTS[2]
 
-    assert alerts.list_alerts(sort='-name')[0] == IMPORT_ALERTS[2]
+    assert alerts.list_alerts(sort='-name')[0][0] == IMPORT_ALERTS[2]
 
-    assert alerts.list_alerts(search='2')[0] == IMPORT_ALERTS[1]
+    assert alerts.list_alerts(search='2')[0][0] == IMPORT_ALERTS[1]
 
 
 def test_remove_alert(import_groups):
     alerts.remove_alert('test_text_2')
-    all_alerts = [alert['name'] for alert in alerts.list_alerts()]
+    all_alerts = [alert['name'] for alert in alerts.list_alerts()[0]]
     assert 'test_text_2' not in all_alerts
 
-    first_two_group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
+    first_two_group_alerts = [group for group in alerts.list_groups()[0] if group['name'] == 'first_two'][0]['alerts']
     assert 'test_text_2' not in first_two_group_alerts
 
 
 def test_import_export_groups(import_groups):
-    assert alerts.list_groups() == IMPORT_GROUP_ALERTS
+    assert alerts.list_groups()[0] == IMPORT_GROUP_ALERTS
 
 
 def test_filter_group_alerts(import_alerts, import_groups):
-    assert alerts.list_groups(limit=1)[0] == IMPORT_GROUP_ALERTS[0]
-    assert alerts.list_groups(limit=1, page=2)[0] == IMPORT_GROUP_ALERTS[1]
-    assert alerts.list_groups(limit=2, page=1)[1] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(limit=1)[0][0] == IMPORT_GROUP_ALERTS[0]
+    assert alerts.list_groups(limit=1, page=2)[0][0] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(limit=2, page=1)[0][1] == IMPORT_GROUP_ALERTS[1]
 
-    assert alerts.list_groups(sort='-name')[0] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(sort='-name')[0][0] == IMPORT_GROUP_ALERTS[1]
 
-    assert alerts.list_groups(search='last')[0] == IMPORT_GROUP_ALERTS[1]
+    assert alerts.list_groups(search='last')[0][0] == IMPORT_GROUP_ALERTS[1]
 
 
 def test_alert(import_alerts):
@@ -261,11 +261,11 @@ def test_group_alert(import_groups, import_counts):
 
 def test_remove_from_group(import_groups):
     alerts.remove_from_group('first_two', ['test_text_2'])
-    group_alerts = [group for group in alerts.list_groups() if group['name'] == 'first_two'][0]['alerts']
+    group_alerts = [group for group in alerts.list_groups()[0] if group['name'] == 'first_two'][0]['alerts']
     expected = ['test_text_1']
     assert expected == group_alerts
 
 
 def test_remove_group(import_groups):
     alerts.remove_group('last_two')
-    assert 'last_two' not in alerts.list_groups()
+    assert 'last_two' not in alerts.list_groups()[0]
