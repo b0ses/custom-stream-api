@@ -16,14 +16,17 @@ def list_alerts_get():
         limit = request.args.get('limit')
         search = request.args.get('search')
         try:
-            list_alerts = alerts.list_alerts(sort=sort, page=page, limit=limit, search=search)
+            list_alerts, page_metadata = alerts.list_alerts(sort=sort, page=page, limit=limit, search=search)
         except Exception as e:
             raise InvalidUsage(str(e))
-        return jsonify(list_alerts)
+        return jsonify({'alerts': list_alerts, 'page_metadata': page_metadata})
     else:
         data = request.get_json()
+        alert_data = {
+            'alerts': data.get('alerts', ''),
+        }
         try:
-            alerts.import_alerts(data)
+            alerts.import_alerts(**alert_data)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Alerts imported'})
@@ -96,14 +99,17 @@ def list_groups_get():
         limit = request.args.get('limit')
         search = request.args.get('search')
         try:
-            list_groups = alerts.list_groups(sort=sort, page=page, limit=limit, search=search)
+            list_groups, page_metadata = alerts.list_groups(sort=sort, page=page, limit=limit, search=search)
         except Exception as e:
             raise InvalidUsage(str(e))
-        return jsonify(list_groups)
+        return jsonify({'groups': list_groups, 'page_metadata': page_metadata})
     else:
         data = request.get_json()
+        group_data = {
+            'groups': data.get('groups', None),
+        }
         try:
-            alerts.import_groups(data)
+            alerts.import_groups(**group_data)
         except Exception as e:
             raise InvalidUsage(str(e))
         return jsonify({'message': 'Groups imported'})
