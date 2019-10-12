@@ -2,59 +2,43 @@ import requests
 import json
 import threading
 import time
-from custom_stream_api import settings
+from enum import Enum
+from collections import namedtuple
 
-TOKEN_URL = 'https://id.twitch.tv/oauth2/'
+from flask import session, request
+from custom_stream_api import settings
+from custom_stream_api.auth.auth import get_headers, current_user
+
+NOTIFIER_NAME = 'notifier'
+
 HELIX_URL = 'https://api.twitch.tv/helix'
 WEBHOOKS_URL = '{}/webhooks'.format(HELIX_URL)
+
 WEBHOOK_SECRET = settings.WEBHOOK_SECRET
 WEBHOOK_LEASE = 60 * 60 * 24  # 24 hours, daily
 WEBHOOK_RENEW = WEBHOOK_LEASE - (60 * 60)  # 23 hours so that it renews before expiring
 
 
-def get_user_data(token, username):
-    params = {
-        'login': username
-    }
-    response = requests.get('{}/users'.format(HELIX_URL), headers=get_headers(auth_token=token), params=params)
-    if response.status_code == 200:
-        return json.loads(response.content.decode())['data']
+class TopicName(Enum):
+    FOLLOWED = 'followed'
+    STREAM_CHANGED = 'stream_changed'
 
 
-def get_token(client_id, client_secret, grant_type=None, refresh_token=None):
-    if not refresh_token and not grant_type:
-        raise Exception('grant_type or refresh_token not provided')
-    elif refresh_token:
-        grant_type = 'refresh_token'
-    params = {
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'grant_type': grant_type
-    }
-    if refresh_token:
-        params['refresh_token'] = refresh_token
-    response = requests.post('{}/token'.format(TOKEN_URL), params=params)
-    if response.status_code == 200:
-        return json.loads(response.content.decode())
-
-
-def revoke_token(client_id, token):
-    params = {
-        'client_id': client_id,
-        'token': token
-    }
-    response = requests.post('{}/revoke'.format(TOKEN_URL), params=params)
-    if response.status_code == 200:
-        return json.loads(response.content.decode())
-
-
-def get_headers(auth_token=None, client_id=None):
-    headers = {}
-    if auth_token:
-        headers['Authorization'] = 'Bearer {}'.format(auth_token)
-    if client_id:
-        headers['Client-ID'] = client_id
-    return headers
+Topic = namedtuple('Topic', ['name', 'url', 'activated'])
+TOPICS = [
+    Topic(
+        name=TopicName.FOLLOWED,
+        url='{helix_url}/users/follows?first=1&to_id={user_id}',
+        activated=settings.CHAT_FOLLOWS
+    ),
+    Topic(
+        name=TopicName.STREAM_CHANGED,
+        url='{helix_url}/users/streams?user_id={user_id}',
+        activated=settings.CHAT_STREAM_CHANGES
+    )
+]
+ACTIVATED_TOPICS = list(filter(lambda topic: topic.activated, TOPICS))
+renew_webhooks = False
 
 
 def get_webook_subscriptions(token):
@@ -63,49 +47,62 @@ def get_webook_subscriptions(token):
         return json.loads(response.content.decode())
 
 
-def setup_stream_changed_webhook(token, user_id):
-    params = {
-        'user_id': user_id
-    }
-    response = requests.get('{}/streams'.format(HELIX_URL), headers=get_headers(auth_token=token), params=params)
-    if response.status_code == 200:
-        return json.loads(response.content.decode())
-
-
-def _subscribe_webhook(data, token):
+def _hit_webhook_endpoint(data, token):
     return requests.post('{}/hub'.format(WEBHOOKS_URL), headers=get_headers(client_id=token), data=data)
 
 
 def _renew_subscription(subscription_data, token):
+    global renew_webhooks
+
     lease_timer = 0
-    # TODO: trigger/flag to kill renew_subscription threads
-    while True:
+    while renew_webhooks:
         if lease_timer == WEBHOOK_RENEW:
-            _subscribe_webhook(subscription_data, token)
+            _hit_webhook_endpoint(subscription_data, token)
             lease_timer = 0
         time.sleep(1)
         lease_timer += 1
 
 
-def setup_webhook(callback_url=None, mode=None, topic=None, token=None):
-    if not (callback_url and mode and topic and token):
-        raise Exception('Not enough arguments provided (callback_url, mode, topic, or token can\'t be None)')
-    if mode not in ['subscribe', 'unsubscribe']:
-        raise Exception('Mode must be subscribe or unsubscribe')
-    data = {
-        'hub.callback': callback_url,
-        'hub.mode': mode,
-        'hub.topic': topic,
-        'hub.lease_seconds': WEBHOOK_LEASE
-    }
-    secret = WEBHOOK_SECRET
-    if secret:
-        data['hub.secret'] = secret
-    else:
-        raise('WEBHOOK_SECRET setting not setup. Please just fill it in to continue.')
+def _update_webhook(topic, mode, user_id, token):
+    if topic not in ACTIVATED_TOPICS:
+        raise ValueError('Topic not activated.')
+    if mode not in ('subscribe', 'unsubscribe'):
+        raise ValueError('Mode must be subscribe or unsubscribe.')
+    if not WEBHOOK_SECRET:
+        raise ValueError('WEBHOOK_SECRET setting not setup. Please just fill it in and redo.')
+    if not (user_id and token):
+        raise ValueError('user_id or token not provided')
 
-    response = _subscribe_webhook(data, token)
+    data = {
+        'hub.callback': '{}/{}/{}'.format(request.host_url, NOTIFIER_NAME, topic.name),
+        'hub.mode': mode,
+        'hub.topic': topic.url.format(helix_url=HELIX_URL, user_id=user_id),
+        'hub.lease_seconds': WEBHOOK_LEASE,
+        'hub.secret': WEBHOOK_SECRET
+    }
+
+    response = _hit_webhook_endpoint(data, token)
+    print(response.status_code)
     if response.status_code != 202:
-        raise Exception('Failed to setup hook')
-    renew_thread = threading.Thread(target=_renew_subscription, args=(data, token))
-    renew_thread.start()
+        raise Exception('Failed to update hook')
+    if mode == 'subscribe':
+        renew_thread = threading.Thread(target=_renew_subscription, args=(data, token))
+        renew_thread.start()
+
+
+def start_webhooks():
+    global renew_webhooks
+    renew_webhooks = True
+    admin_user_id = current_user()['user_id']
+    token = session['access_token']
+    for topic in ACTIVATED_TOPICS:
+        _update_webhook(topic, 'subscribe', admin_user_id, token)
+
+
+def stop_webhooks():
+    global renew_webhooks
+    renew_webhooks = False
+    admin_user_id = current_user()['user_id']
+    token = session['access_token']
+    for topic in ACTIVATED_TOPICS:
+        _update_webhook(topic, 'unsubscribe', admin_user_id, token)

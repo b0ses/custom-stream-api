@@ -3,30 +3,36 @@ from flask import jsonify
 import logging
 from custom_stream_api.shared import get_chatbot
 from custom_stream_api.shared import InvalidUsage
-from custom_stream_api.notifier.twitch_notifier import setup_webhook
+from custom_stream_api.notifier.twitch_notifier import start_webhooks, stop_webhooks, NOTIFIER_NAME, TopicName
+from custom_stream_api.auth import auth
 
-notifier_endpoints = Blueprint('notifier', __name__)
+
+notifier_endpoints = Blueprint(NOTIFIER_NAME, __name__)
 
 logger = logging.getLogger()
 
 
-@notifier_endpoints.route('/setup_webhook', methods=['POST'])
+@auth.login_required
+@notifier_endpoints.route('/start_webhooks', methods=['POST'])
 def setup_webhook_post():
-    data = request.get_json()
-    webhook_data = {
-        'token': data.get('token', None),
-        'callback_url': data.get('callback_url', None),
-        'mode': data.get('mode', None),
-        'topic': data.get('topic', None)
-    }
     try:
-        setup_webhook(**webhook_data)
+        start_webhooks()
     except Exception as e:
         raise InvalidUsage(str(e))
-    return jsonify({'message': 'Webhook setup'})
+    return jsonify({'message': 'Webhooks started'})
 
 
-@notifier_endpoints.route('/stream_changed', methods=['GET', 'POST'])
+@auth.login_required
+@notifier_endpoints.route('/stop_webhooks', methods=['POST'])
+def stop_webhook_post():
+    try:
+        stop_webhooks()
+    except Exception as e:
+        raise InvalidUsage(str(e))
+    return jsonify({'message': 'Webhooks stopped'})
+
+
+@notifier_endpoints.route('/{}'.format(TopicName.STREAM_CHANGED), methods=['GET', 'POST'])
 def stream_changed():
     if request.method == 'GET':
         challenge = request.args.get('hub.challenge')
@@ -40,7 +46,7 @@ def stream_changed():
         return jsonify({'message': 'Stream changed message received'})
 
 
-@notifier_endpoints.route('/followed', methods=['GET', 'POST'])
+@notifier_endpoints.route('/{}'.format(TopicName.FOLLOWED), methods=['GET', 'POST'])
 def followed():
     if request.method == 'GET':
         challenge = request.args.get('hub.challenge')

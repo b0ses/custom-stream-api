@@ -21,6 +21,15 @@ TWITCH_JWT_KEYS = 'https://id.twitch.tv/oauth2/keys'
 logger = logging.getLogger()
 
 
+def get_headers(auth_token=None, client_id=None):
+    headers = {}
+    if auth_token:
+        headers['Authorization'] = 'Bearer {}'.format(auth_token)
+    if client_id:
+        headers['Client-ID'] = client_id
+    return headers
+
+
 def login_required(func):
     @wraps(func)
     def check_token(*args, **kwargs):
@@ -61,6 +70,16 @@ def refresh_access_token():
     else:
         session['access_token'] = response['access_token']
         session['refresh_token'] = response['refresh_token']
+
+
+def revoke_token(client_id, token):
+    params = {
+        'client_id': client_id,
+        'token': token
+    }
+    response = requests.post('{}/revoke'.format(TWITCH_TOKEN), params=params)
+    if response.status_code == 200:
+        return json.loads(response.content.decode())
 
 
 def login(code):
@@ -107,9 +126,7 @@ def current_user():
         return {}
 
     # Note: this can be extracted from the ID token but the signature may expire
-    headers = {
-        'Authorization': 'Bearer {}'.format(session['access_token'])
-    }
+    headers = get_headers(session['access_token'])
     r = requests.get(TWITCH_USERINFO, headers=headers)
     if r.status_code == 401:
         refresh_access_token()
