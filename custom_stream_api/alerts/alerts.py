@@ -7,7 +7,7 @@ from custom_stream_api.counts import counts
 from custom_stream_api.shared import db, socketio, get_chatbot
 
 VALID_SOUNDS = ['wav', 'mp3', 'ogg']
-VALID_IMAGES = ['jpg', 'png', 'tif', 'gif']
+VALID_IMAGES = ['jpg', 'png', 'tif', 'gif', 'jpeg']
 URL_REGEX = '^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$'
 SOUND_REGEX = URL_REGEX.format('|'.join(VALID_SOUNDS))
 IMAGE_REXEX = URL_REGEX.format('|'.join(VALID_IMAGES))
