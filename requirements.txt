@@ -9,4 +9,4 @@ irc
 requests
 mock
 pyjwt==1.7.1
-cryptography==2.7
+cryptography==3.2
