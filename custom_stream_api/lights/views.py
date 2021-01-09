@@ -30,6 +30,7 @@ def change_lights_hue_post():
         except Exception as e:
             raise InvalidUsage(str(e))
 
+
 @lights_endpoints.route('/change_lights_static', methods=['POST'])
 @auth.login_required
 def change_lights_static_post():

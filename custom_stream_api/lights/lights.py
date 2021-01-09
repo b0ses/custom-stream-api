@@ -28,9 +28,11 @@ BASIC_COLORS = {
     'rainbow': 'colorloop'
 }
 
+
 def request_light_api(url, method='get', data=None):
     return requests.request(method, 'http://{}/api/{}/{}'.format(settings.LIGHTS_IP, settings.LIGHTS_USER, url),
                             json=data)
+
 
 def change_lights_hue(on=True, saturation=0, brightness=254, hue=0, effect='none', xy=[]):
     """
@@ -51,6 +53,7 @@ def change_lights_hue(on=True, saturation=0, brightness=254, hue=0, effect='none
     response_dict = json.loads(resp.text)[0]
     if response_dict.get('error'):
         raise Exception(str(response_dict['error']['description']))
+
 
 def change_lights_static(color=None, brightness=None):
     effect = 'none'
@@ -94,12 +97,15 @@ def change_lights_static(color=None, brightness=None):
     if response_dict.get('error'):
         raise Exception(str(response_dict['error']['description']))
 
+
 def calulate_rgb_from_hex(hex):
     hex = hex.lstrip('#')
     return tuple(int(hex[i:i+2], 16) for i in (0, 2, 4))
 
+
 def calculate_brightness_from_rgb(red, green, blue):
     return int((0.2126 * red) + (0.7152 * green) + (0.0722 * blue))
+
 
 def calculate_xy_from_rgb(red, green, blue):
     if red > 0.04045:
