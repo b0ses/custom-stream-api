@@ -19,3 +19,8 @@ REDIRECT_URI = ''
 
 # Chatbot Settings
 TIMEOUT = 15  # seconds between spamming sounds
+
+# Hue Lights Settings
+LIGHTS_IP = None
+LIGHTS_USER = None
+GROUP_NUMBER = None
