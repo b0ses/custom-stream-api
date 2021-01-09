@@ -69,12 +69,14 @@ def create_app(init_db=True):
     from custom_stream_api.chatbot.views import chatbot_endpoints
     from custom_stream_api.notifier.views import notifier_endpoints
     from custom_stream_api.auth.views import auth_endpoints
+    from custom_stream_api.lights.views import lights_endpoints
     app.register_blueprint(alert_endpoints, url_prefix='/alerts')
     app.register_blueprint(lists_endpoints, url_prefix='/lists')
     app.register_blueprint(counts_endpoints, url_prefix='/counts')
     app.register_blueprint(chatbot_endpoints, url_prefix='/chatbot')
     app.register_blueprint(notifier_endpoints, url_prefix='/notifier')
     app.register_blueprint(auth_endpoints, url_prefix='/auth')
+    app.register_blueprint(lights_endpoints, url_prefix='/lights')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
