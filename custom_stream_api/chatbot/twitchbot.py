@@ -733,7 +733,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     def set_lights(self, text):
         values = text.split()
         color = values[0]
-        brightness = values[2] if len(values) > 1 else None
+        brightness = values[1] if len(values) > 1 else None
         lights.change_lights_static(color, brightness)
         brightness_ind = '' if not brightness else ', brightness: {}'.format(brightness)
         resp = 'Lights set to {}{}'.format(color, brightness_ind)
