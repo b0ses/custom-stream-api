@@ -5,7 +5,9 @@ import logging
 import json
 import math
 import re
+
 from custom_stream_api import settings
+from custom_stream_api.shared import g
 
 logger = logging.getLogger()
 
@@ -30,8 +32,15 @@ BASIC_COLORS = {
 
 
 def request_light_api(url, method='get', data=None):
-    return requests.request(method, 'http://{}/api/{}/{}'.format(settings.LIGHTS_IP, settings.LIGHTS_USER, url),
-                            json=data)
+    if settings.LIGHTS_LOCAL:
+        headers = {}
+        domain = 'http://{}/api'.format(settings.LIGHTS_LOCAL_IP)
+        user = settings.LIGHTS_LOCAL_USER
+    else:
+        headers = {'Authorization': 'Bearer {}'.format(g.get('hue_access_token'))}
+        domain = 'https://api.meethue.com/bridge'
+        user = g['hue_username']
+    return requests.request(method, '{}/{}/{}'.format(domain, user, url), headers=headers, json=data)
 
 
 def change_lights_hue(on=True, saturation=0, brightness=254, hue=0, effect='none', xy=[]):
@@ -49,7 +58,7 @@ def change_lights_hue(on=True, saturation=0, brightness=254, hue=0, effect='none
         'effect': effect,
         'xy': xy
     }
-    resp = request_light_api('groups/{}/action'.format(settings.GROUP_NUMBER), method='put', data=data)
+    resp = request_light_api('groups/{}/action'.format(settings.HUE_GROUP_NUMBER), method='put', data=data)
     response_dict = json.loads(resp.text)[0]
     if response_dict.get('error'):
         raise Exception(str(response_dict['error']['description']))
@@ -92,7 +101,7 @@ def change_lights_static(color=None, brightness=None):
         'bri': brightness,
         'effect': effect
     }
-    resp = request_light_api('groups/{}/action'.format(settings.GROUP_NUMBER), method='put', data=data)
+    resp = request_light_api('groups/{}/action'.format(settings.HUE_GROUP_NUMBER), method='put', data=data)
     response_dict = json.loads(resp.text)[0]
     if response_dict.get('error'):
         raise Exception(str(response_dict['error']['description']))
