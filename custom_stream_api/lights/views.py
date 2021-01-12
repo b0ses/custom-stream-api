@@ -45,3 +45,25 @@ def change_lights_static_post():
             return jsonify({'message': 'changed lights'})
         except Exception as e:
             raise InvalidUsage(str(e))
+
+
+@lights_endpoints.route('/lock', methods=['POST'])
+@twitch_auth.twitch_login_required
+def lock_post():
+    if request.method == 'POST':
+        try:
+            lights.lock()
+            return jsonify({'message': 'lights locked'})
+        except Exception as e:
+            raise InvalidUsage(str(e))
+
+
+@lights_endpoints.route('/unlock', methods=['POST'])
+@twitch_auth.twitch_login_required
+def unlock_post():
+    if request.method == 'POST':
+        try:
+            lights.unlock()
+            return jsonify({'message': 'lights unlocked'})
+        except Exception as e:
+            raise InvalidUsage(str(e))
