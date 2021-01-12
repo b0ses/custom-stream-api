@@ -5,7 +5,7 @@ import logging
 from custom_stream_api.chatbot import twitchbot
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.chatbot import aliases, timers
-from custom_stream_api.auth import auth
+from custom_stream_api.auth import twitch_auth
 
 chatbot_endpoints = Blueprint('chatbot', __name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 
 @chatbot_endpoints.route('/restart', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def start_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -32,7 +32,7 @@ def start_post():
 
 
 @chatbot_endpoints.route('/aliases', methods=['GET', 'POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def list_aliases_get():
     if request.method == 'GET':
         try:
@@ -51,7 +51,7 @@ def list_aliases_get():
 
 
 @chatbot_endpoints.route('/add_alias', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def add_alias_post():
     data = request.get_json()
     alias_data = {
@@ -67,7 +67,7 @@ def add_alias_post():
 
 
 @chatbot_endpoints.route('/remove_alias', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def remove_alias_post():
     data = request.get_json()
     alias_data = {
@@ -81,7 +81,7 @@ def remove_alias_post():
 
 
 @chatbot_endpoints.route('/timers', methods=['GET', 'POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def list_timers_get():
     if request.method == 'GET':
         try:
@@ -100,7 +100,7 @@ def list_timers_get():
 
 
 @chatbot_endpoints.route('/add_timer', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def add_timer_post():
     data = request.get_json()
     timer_data = {
@@ -115,7 +115,7 @@ def add_timer_post():
 
 
 @chatbot_endpoints.route('/remove_timer', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def remove_timer_post():
     data = request.get_json()
     timer_data = {

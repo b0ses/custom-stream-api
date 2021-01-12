@@ -9,10 +9,10 @@ from urllib.parse import urlencode, quote_plus
 
 from custom_stream_api import settings
 
-LOGIN = settings.LOGIN
-CLIENT_ID = settings.CLIENT_ID
-CLIENT_SECRET = settings.CLIENT_SECRET
-REDIRECT_URI = settings.REDIRECT_URI
+TWITCH_LOGIN = settings.TWITCH_LOGIN
+TWITCH_CLIENT_ID = settings.TWITCH_CLIENT_ID
+TWITCH_CLIENT_SECRET = settings.TWITCH_CLIENT_SECRET
+TWITCH_REDIRECT_URI = settings.TWITCH_REDIRECT_URI
 
 TWITCH_TOKEN = 'https://id.twitch.tv/oauth2/token'
 TWITCH_USERINFO = 'https://id.twitch.tv/oauth2/userinfo'
@@ -21,11 +21,11 @@ TWITCH_JWT_KEYS = 'https://id.twitch.tv/oauth2/keys'
 logger = logging.getLogger()
 
 
-def login_required(func):
+def twitch_login_required(func):
     @wraps(func)
     def check_token(*args, **kwargs):
         # Check to see if it's in their session
-        if LOGIN and not logged_in():
+        if TWITCH_LOGIN and not twitch_logged_in():
             # If it isn't return our access denied message (you can also return a redirect or render_template)
             return ("Access denied", 401)
 
@@ -41,7 +41,7 @@ def validate_jwt(jwt_token):
     jwt_key = json_jwt_key_r['keys'][0]
     public_key = RSAAlgorithm.from_jwk(json.dumps(jwt_key))
 
-    parsed_key = jwt.decode(jwt_token, public_key, algorithms=jwt_key['alg'], audience=CLIENT_ID)
+    parsed_key = jwt.decode(jwt_token, public_key, algorithms=jwt_key['alg'], audience=TWITCH_CLIENT_ID)
     return parsed_key
 
 
@@ -49,8 +49,8 @@ def refresh_access_token():
     refresh_token = session['refresh_token']
     params = {
         'grant_type': 'refresh_token',
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
+        'client_id': TWITCH_CLIENT_ID,
+        'client_secret': TWITCH_CLIENT_SECRET,
         'refresh_token': refresh_token
     }
     r = requests.post(TWITCH_TOKEN, params=urlencode(params, quote_via=quote_plus))
@@ -67,9 +67,9 @@ def login(code):
     params = {
         'code': code,
         'grant_type': 'authorization_code',
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
-        'redirect_uri': REDIRECT_URI
+        'client_id': TWITCH_CLIENT_ID,
+        'client_secret': TWITCH_CLIENT_SECRET,
+        'redirect_uri': TWITCH_REDIRECT_URI
     }
     # requests automatically encodes the params when passed as a dict, messing with the redirect uri
     param_string = '&'.join(['{}={}'.format(key, value) for key, value in params.items()])
@@ -78,7 +78,7 @@ def login(code):
     response = json.loads(r.content.decode())
 
     if r.status_code == 400:
-        raise Exception(response['message'])
+        raise Exception('Failed to confirm token: {}'.format(response['message']))
     else:
         access_token = response['access_token']
         id_token = response['id_token']
@@ -91,11 +91,10 @@ def login(code):
         email_verified = parsed_key['email_verified']
         if not email_verified:
             raise Exception('Gotta verify your Twitch email.')
-
     return response
 
 
-def logged_in():
+def twitch_logged_in():
     try:
         return ('access_token' in session)
     except KeyError:
@@ -103,7 +102,7 @@ def logged_in():
 
 
 def current_user():
-    if not logged_in():
+    if not twitch_logged_in():
         return {}
 
     # Note: this can be extracted from the ID token but the signature may expire

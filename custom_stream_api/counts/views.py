@@ -3,13 +3,13 @@ from flask import jsonify
 
 from custom_stream_api.counts import counts
 from custom_stream_api.shared import InvalidUsage
-from custom_stream_api.auth import auth
+from custom_stream_api.auth import twitch_auth
 
 counts_endpoints = Blueprint('counts', __name__)
 
 
 @counts_endpoints.route('/', methods=['GET', 'POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def list_counts_get():
     if request.method == 'GET':
         try:
@@ -27,7 +27,7 @@ def list_counts_get():
 
 
 @counts_endpoints.route('/count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def get_count_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -42,7 +42,7 @@ def get_count_post():
 
 
 @counts_endpoints.route('/add_to_count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def add_to_count_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -57,7 +57,7 @@ def add_to_count_post():
 
 
 @counts_endpoints.route('/subtract_from_count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def subtract_from_count_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -72,7 +72,7 @@ def subtract_from_count_post():
 
 
 @counts_endpoints.route('/reset_count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def reset_count_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -87,7 +87,7 @@ def reset_count_post():
 
 
 @counts_endpoints.route('/set_count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def set_count_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -104,7 +104,7 @@ def set_count_post():
 
 
 @counts_endpoints.route('/remove_count', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def remove_count_post():
     if request.method == 'POST':
         data = request.get_json()

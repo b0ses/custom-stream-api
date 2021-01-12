@@ -9,18 +9,23 @@ OVERLAY_PORT = None
 
 # Just fill these in with whatever. Adds security to your server.
 SECRET = ''
-WEBHOOK_SECRET = ''
 
 # Twitch Login
-LOGIN = False
-CLIENT_ID = ''
-CLIENT_SECRET = ''
-REDIRECT_URI = ''
+TWITCH_LOGIN = False
+TWITCH_CLIENT_ID = ''
+TWITCH_CLIENT_SECRET = ''
+TWITCH_REDIRECT_URI = ''
 
 # Chatbot Settings
 TIMEOUT = 15  # seconds between spamming sounds
 
 # Hue Lights Settings
-LIGHTS_IP = None
-LIGHTS_USER = None
-GROUP_NUMBER = None
+LIGHTS_LOCAL = True
+LIGHTS_LOCAL_IP = ''
+LIGHTS_LOCAL_USER = ''
+
+HUE_APP_NAME = ''
+HUE_CLIENT_ID = ''
+HUE_CLIENT_SECRET = ''
+HUE_REDIRECT_URI = ''
+HUE_GROUP_NUMBER = 1
