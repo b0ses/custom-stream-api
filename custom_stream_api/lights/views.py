@@ -4,7 +4,7 @@ import logging
 
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.lights import lights
-from custom_stream_api.auth import auth
+from custom_stream_api.auth import twitch_auth
 
 lights_endpoints = Blueprint('lights', __name__)
 
@@ -12,7 +12,7 @@ logger = logging.getLogger()
 
 
 @lights_endpoints.route('/change_lights_hue', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def change_lights_hue_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -32,7 +32,7 @@ def change_lights_hue_post():
 
 
 @lights_endpoints.route('/change_lights_static', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def change_lights_static_post():
     if request.method == 'POST':
         data = request.get_json()

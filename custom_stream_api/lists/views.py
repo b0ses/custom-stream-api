@@ -3,13 +3,13 @@ from flask import jsonify
 
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.lists import lists
-from custom_stream_api.auth import auth
+from custom_stream_api.auth import twitch_auth
 
 lists_endpoints = Blueprint('lists', __name__)
 
 
 @lists_endpoints.route('/', methods=['GET', 'POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def list_lists_get():
     if request.method == 'GET':
         try:
@@ -27,7 +27,7 @@ def list_lists_get():
 
 
 @lists_endpoints.route('/set_list', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def set_list_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -43,7 +43,7 @@ def set_list_post():
 
 
 @lists_endpoints.route('/add_to_list', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def add_to_list_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -59,7 +59,7 @@ def add_to_list_post():
 
 
 @lists_endpoints.route('/get_list', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def get_list():
     if request.method == 'POST':
         data = request.get_json()
@@ -74,7 +74,7 @@ def get_list():
 
 
 @lists_endpoints.route('/get_list_item', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def get_list_item_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -90,7 +90,7 @@ def get_list_item_post():
 
 
 @lists_endpoints.route('/remove_from_list', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def remove_from_list_post():
     if request.method == 'POST':
         data = request.get_json()
@@ -106,7 +106,7 @@ def remove_from_list_post():
 
 
 @lists_endpoints.route('/remove_list', methods=['POST'])
-@auth.login_required
+@twitch_auth.twitch_login_required
 def remove_list_post():
     if request.method == 'POST':
         data = request.get_json()
