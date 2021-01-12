@@ -14,7 +14,7 @@ SECRET = ''
 LOGIN = False
 TWITCH_CLIENT_ID = ''
 TWITCH_CLIENT_SECRET = ''
-TWITCH_REDIRECT_URI = 'http://localhost:8080/twitch_auth'
+TWITCH_REDIRECT_URI = ''
 
 # Chatbot Settings
 TIMEOUT = 15  # seconds between spamming sounds
@@ -27,5 +27,5 @@ LIGHTS_LOCAL_USER = ''
 HUE_APP_NAME = ''
 HUE_CLIENT_ID = ''
 HUE_CLIENT_SECRET = ''
-HUE_REDIRECT_URI = 'http://localhost:8080/hue_auth'
+HUE_REDIRECT_URI = ''
 HUE_GROUP_NUMBER = 1
