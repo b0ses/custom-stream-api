@@ -734,10 +734,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         values = text.split()
         color = values[0]
         brightness = int(values[1]) if len(values) > 1 else None
-        lights.change_lights_static(color, brightness)
-        brightness_ind = '' if not brightness else ', brightness: {}'.format(brightness)
-        resp = 'Lights set to {}{}'.format(color, brightness_ind)
-        self.chat(resp)
+        try:
+            lights.change_lights_static(color, brightness)
+            brightness_ind = '' if not brightness else ', brightness: {}'.format(brightness)
+            self.chat('Lights set to {}{}'.format(color, brightness_ind))
+        except Exception as e:
+            self.chat(str(e))
 
     def lock_lights(self):
         lights.lock()
