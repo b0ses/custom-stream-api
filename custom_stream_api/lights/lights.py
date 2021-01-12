@@ -32,7 +32,7 @@ BASIC_COLORS = {
 
 
 def request_light_api(url, method='get', data=None):
-    if g['lights_locked']:
+    if g.get('lights_locked') is True:
         raise Exception('lights are currently locked')
     if settings.LIGHTS_LOCAL:
         headers = {}
