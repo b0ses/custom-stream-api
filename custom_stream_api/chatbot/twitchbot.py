@@ -22,6 +22,7 @@ from custom_stream_api.chatbot import aliases, timers
 from custom_stream_api.counts import counts
 from custom_stream_api.lists import lists
 from custom_stream_api.alerts import alerts
+from custom_stream_api.lights import lights
 
 logger = logging.getLogger()
 
@@ -225,6 +226,8 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.commands.update(self.alert_commands)
         self.set_timer_commands()
         self.commands.update(self.timer_commands)
+        self.set_light_commands()
+        self.commands.update(self.light_commands)
         self.set_main_commands()
         self.commands.update(self.main_commands)
         # has to be second to last
@@ -317,6 +320,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'format': '^!get_timer_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
                 'help': '!get_timer_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
                 'callback': lambda text, user, badges: self.display_commands(self.timer_commands, text, badges)
+            },
+            'get_light_commands': {
+                'badge': self.get_min_badge([command['badge'] for command in self.light_commands.values()]),
+                'format': '^!get_light_commands\s*({})?$'.format('|'.join(BADGE_NAMES)),
+                'help': '!get_light_commands [{}]'.format(' | '.join(sorted(BADGE_NAMES))),
+                'callback': lambda text, user, badges: self.display_commands(self.light_commands, text, badges)
             },
             'get_aliases': {
                 'badge': self.get_min_badge([command['badge'] for command in self.aliases.values()]),
@@ -687,6 +696,56 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             lists.set_list('banned_users', [user for user in banned_users if user != unban_user])
             self.chat('Unbanned {}'.format(unban_user))
             return unban_user
+
+    # Lights
+
+    def set_light_commands(self):
+        self.light_commands = {
+            'get_lights': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.get_lights(),
+                'format': '^!get_lights$',
+                'help': '!get_lights'
+            },
+            'set_lights': {
+                'badge': Badges.CHAT,
+                'callback': lambda text, user, badges: self.set_lights(text),
+                'format': '^!set_lights\s+\S+(\s+\d+)?$',
+                'help': '!set_lights color/hex [brightness 0-10]'
+            },
+            'lock_lights': {
+                'badge': Badges.ADMINISTRATOR,
+                'callback': lambda text, user, badges: self.lock_lights(),
+                'format': '^!lock_lights$',
+                'help': '!lock_lights'
+            },
+            'unlock_lights': {
+                'badge': Badges.ADMINISTRATOR,
+                'callback': lambda text, user, badges: self.unlock_lights(),
+                'format': '^!unlock_lights$',
+                'help': '!unlock_lights'
+            }
+        }
+
+    def get_lights(self):
+        self.chat('Light options are: {}'.format(list(lights.BASIC_COLORS.keys())))
+
+    def set_lights(self, text):
+        values = text.split()
+        color = values[0]
+        brightness = values[2] if len(values) > 1 else None
+        lights.change_lights_static(color, brightness)
+        brightness_ind = '' if not brightness else ' (brightness: {})'.format(brightness)
+        resp = 'Lights set to {}{}'.format(color, brightness_ind)
+        self.chat(resp)
+
+    def lock_lights(self):
+        lights.lock()
+        self.chat('Lights locked')
+
+    def unlock_lights(self):
+        lights.unlock()
+        self.chat('Lights unlocked')
 
     # Extra commands
 
