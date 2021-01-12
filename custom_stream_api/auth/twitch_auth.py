@@ -9,7 +9,7 @@ from urllib.parse import urlencode, quote_plus
 
 from custom_stream_api import settings
 
-LOGIN = settings.LOGIN
+TWITCH_LOGIN = settings.TWITCH_LOGIN
 TWITCH_CLIENT_ID = settings.TWITCH_CLIENT_ID
 TWITCH_CLIENT_SECRET = settings.TWITCH_CLIENT_SECRET
 TWITCH_REDIRECT_URI = settings.TWITCH_REDIRECT_URI
@@ -25,7 +25,7 @@ def twitch_login_required(func):
     @wraps(func)
     def check_token(*args, **kwargs):
         # Check to see if it's in their session
-        if LOGIN and not twitch_logged_in():
+        if TWITCH_LOGIN and not twitch_logged_in():
             # If it isn't return our access denied message (you can also return a redirect or render_template)
             return ("Access denied", 401)
 

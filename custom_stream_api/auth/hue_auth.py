@@ -7,9 +7,11 @@ from functools import wraps
 from custom_stream_api.shared import g
 from custom_stream_api import settings
 
+LIGHTS_LOCAL = settings.LIGHTS_LOCAL
 HUE_CLIENT_ID = settings.HUE_CLIENT_ID
 HUE_CLIENT_SECRET = settings.HUE_CLIENT_SECRET
 HUE_REDIRECT_URI = settings.HUE_REDIRECT_URI
+HUE_APP_NAME = settings.HUE_APP_NAME
 
 logger = logging.getLogger()
 
@@ -34,8 +36,8 @@ def hue_login_required(func):
 
 def hue_logged_in():
     try:
-        logged_in = settings.LIGHTS_LOCAL or ('hue_username' in g)
-        if logged_in and not settings.LIGHTS_LOCAL:
+        logged_in = LIGHTS_LOCAL or ('hue_username' in g)
+        if logged_in and not LIGHTS_LOCAL:
             refresh_access_token(g['hue_refresh_token'])
         return logged_in
     except KeyError:
@@ -54,7 +56,7 @@ def get_hue_username(access_token):
 
     # Get the name
     params = {
-        "devicetype": settings.HUE_APP_NAME
+        "devicetype": HUE_APP_NAME
     }
     r = requests.post(HUE_BRIDGE, headers=headers, json=params)
     response = json.loads(r.content.decode())
