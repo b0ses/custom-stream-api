@@ -97,10 +97,7 @@ def refresh_access_token(refresh_token):
     headers = {
         'Authorization': 'Basic: {}'.format(bearer.decode('utf-8'))
     }
-    print(refresh_token)
     r = requests.post(HUE_REFRESH, headers=headers, data=params)
-    print(r)
-    print(r.content)
     response = json.loads(r.content.decode())
 
     if r.status_code == 400:

@@ -529,7 +529,6 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
     def copy_count(self, text):
         count1, count2 = tuple(text.split())
-        print(count1, count2)
         try:
             self.chat_count_output(count2, counts.copy_count(count1, count2))
         except Exception:
