@@ -714,13 +714,13 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 'help': '!set_lights color/hex [brightness 0-10]'
             },
             'lock_lights': {
-                'badge': Badges.ADMINISTRATOR,
+                'badge': Badges.BROADCASTER,
                 'callback': lambda text, user, badges: self.lock_lights(),
                 'format': '^!lock_lights$',
                 'help': '!lock_lights'
             },
             'unlock_lights': {
-                'badge': Badges.ADMINISTRATOR,
+                'badge': Badges.BROADCASTER,
                 'callback': lambda text, user, badges: self.unlock_lights(),
                 'format': '^!unlock_lights$',
                 'help': '!unlock_lights'
