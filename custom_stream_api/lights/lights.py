@@ -32,6 +32,8 @@ BASIC_COLORS = {
 
 
 def request_light_api(url, method='get', data=None):
+    if g['lights_locked']:
+        raise Exception('lights are currently locked')
     if settings.LIGHTS_LOCAL:
         headers = {}
         domain = 'http://{}/api'.format(settings.LIGHTS_LOCAL_IP)
@@ -139,3 +141,11 @@ def calculate_xy_from_rgb(red, green, blue):
     x = big_X / (big_X + big_Y + big_Z)
     y = big_Y / (big_X + big_Y + big_Z)
     return [x, y]
+
+
+def lock():
+    g['lights_locked'] = True
+
+
+def unlock():
+    g['lights_locked'] = False
