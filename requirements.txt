@@ -8,5 +8,5 @@ Flask-Migrate==2.2.1
 irc
 requests
 mock
-pyjwt==1.7.1
+pyjwt==2.4.0
 cryptography==2.7
