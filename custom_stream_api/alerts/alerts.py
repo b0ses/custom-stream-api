@@ -154,7 +154,8 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
 def list_alerts(sort='name', page=1, limit=None, search=None):
     # TODO: sort by age, popularity
     sort_options = {
-        'name': Alert.name
+        'name': Alert.name,
+        'created_at': Alert.created_at
     }
     alerts, page_metadata = apply_filters(Alert, sort_options, 'name', sort=sort, page=page, limit=limit, search=search)
     return [alert.as_dict() for alert in alerts], page_metadata
