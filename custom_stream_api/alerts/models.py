@@ -1,7 +1,9 @@
 from custom_stream_api.shared import db
+from sqlalchemy.sql import func
 
 
 class Alert(db.Model):
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     name = db.Column(db.String(128), primary_key=True, nullable=False)
     text = db.Column(db.String(128))
     sound = db.Column(db.String(128))
@@ -15,6 +17,7 @@ class Alert(db.Model):
 
 
 class GroupAlert(db.Model):
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     group_name = db.Column(db.String(128), primary_key=True, nullable=False)
     alerts = db.relationship('GroupAlertAssociation', cascade='all,delete', backref='group_alert')
     thumbnail = db.Column(db.String(128))

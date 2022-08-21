@@ -1,7 +1,9 @@
 from custom_stream_api.shared import db
+from sqlalchemy.sql import func
 
 
 class List(db.Model):
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     name = db.Column(db.String(128), primary_key=True, nullable=False)
     items = db.relationship('ListItem', cascade='all,delete', backref='group_alert')
     current_index = db.Column(db.Integer, default=0)
