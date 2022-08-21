@@ -1,5 +1,6 @@
 from custom_stream_api.shared import db
 from enum import Enum
+from sqlalchemy.sql import func
 
 
 class Badges(Enum):
@@ -41,6 +42,7 @@ BADGE_NAMES = [badge.value for badge in BADGE_LEVELS]
 
 
 class Alias(db.Model):
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     alias = db.Column(db.String(128), primary_key=True, nullable=False)
     command = db.Column(db.String(128), nullable=False)
     badge = db.Column(db.String(128), nullable=False)
@@ -50,6 +52,7 @@ class Alias(db.Model):
 
 
 class Timer(db.Model):
+    created_at = db.Column(db.DateTime(timezone=True), default=func.now(), nullable=False)
     command = db.Column(db.String(128), primary_key=True, nullable=False)
     interval = db.Column(db.Integer(), nullable=False)
 
