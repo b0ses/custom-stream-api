@@ -166,7 +166,14 @@ def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_so
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
             raise Exception('Alert not found: {}'.format(name))
-        socket_data = alert_obj.as_dict()
+        alert_data = alert_obj.as_dict()
+        socket_data = {
+            'text': alert_data['text'],
+            'sound': alert_data['sound'],
+            'effect': alert_data['effect'],
+            'image': alert_data['image'],
+            'duration': alert_data['duration']
+        }
     else:
         validate_sound(sound)
         effect = validate_effect(effect)
