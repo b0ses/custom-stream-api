@@ -57,7 +57,7 @@ def create_app(init_db=True):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     if init_db:
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+        app.config['SQLALCHEMY_DATABASE_URI'] = settings.DB_URI
         db.init_app(app)
     migrate = Migrate(app, db)
     migrate.directory = 'custom_stream_api/migrations'
