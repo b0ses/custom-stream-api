@@ -9,6 +9,10 @@ OVERLAY_PORT = None
 
 # Just fill these in with whatever. Adds security to your server.
 SECRET = ''
+WEBHOOK_SECRET = ''
+
+# DB
+DB_URI = ''
 
 # Twitch Login
 TWITCH_LOGIN = False

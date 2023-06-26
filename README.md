@@ -6,20 +6,23 @@ The logic behind everything. Takes in POSTs and does magic.
 
 ### Installing
 ```
-    # Install pip3
-    > apt-get install python3-pip
-    # Work in your virtual environment (however you want that setup)
-    > workon custom-stream-api
+    # Setup venv
+    # python3 -m venv .venvs/custom_stream_api
+    
+    # Add this to the activate
+    # export PYTHONPATH="[path to the cloned repo, absolute or $HOME]:$PYTHONPATH"
+    
+    # get on the vnev
+    > source .venvs/custom_stream_api/bin/activate
     # Install dependencies
-    > (custom-stream-overlay) pip3 install -r requirements.txt
-    # Add this directory to your virtual environment
-    add2virtualenv [path to this directory]
+    > (custom_stream_api) pip3 install -r ./requirements/app_requirements.txt
+    
 ```
 
 ### Setting up a new DB
 ```
-    # export FLASK_APP=custom_stream_api/server.py
-    # flask db upgrade head -d custom_stream_api/migrations
+    cd custom_stream_api
+    alembic upgrade head
 ```
 
 ### Settings
@@ -28,7 +31,7 @@ Fill in your [settings](custom_stream_api/settings.py).
 
 ### Running
 ```
-    (custom-stream-overlay) python3 custom_stream_api/server.py
+    (custom_stream_api) python3 custom_stream_api/server.py
 ```
 
 ### Documentation
