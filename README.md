@@ -21,7 +21,8 @@ The logic behind everything. Takes in POSTs and does magic.
 
 ### Setting up a new DB
 ```
-    # flask db upgrade head -d custom_stream_api/migrations
+    cd custom_stream_api
+    alembic upgrade head
 ```
 
 ### Settings

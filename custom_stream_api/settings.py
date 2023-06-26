@@ -12,7 +12,7 @@ SECRET = ''
 WEBHOOK_SECRET = ''
 
 # DB
-DB_URI = ''
+DB_URI = 'postgresql://localhost/stream_tools'
 
 # Twitch Login
 TWITCH_LOGIN = False
