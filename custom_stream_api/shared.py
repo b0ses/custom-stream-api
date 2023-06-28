@@ -61,7 +61,7 @@ def create_app(init_db=True):
         db.init_app(app)
     migrate = Migrate(app, db)
     migrate.directory = 'custom_stream_api/migrations'
-    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True)
+    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True, engineio_logger=True)
 
     from custom_stream_api.alerts.views import alert_endpoints
     from custom_stream_api.lists.views import lists_endpoints
