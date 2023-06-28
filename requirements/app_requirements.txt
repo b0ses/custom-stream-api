@@ -17,3 +17,4 @@ greenlet==2.0.1
 gevent-websocket==0.10.1
 python-socketio==5.7.2
 alembic==1.11.1
+Cython==3.11.4
