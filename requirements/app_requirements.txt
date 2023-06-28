@@ -13,6 +13,7 @@ cryptography==2.7
 psycopg2-binary==2.9.6
 uwsgi==2.0.21
 gevent==22.10.2
+greenlet==2.0.1
 gevent-websocket==0.10.1
 python-socketio==5.7.2
 alembic==1.11.1
