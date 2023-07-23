@@ -15,9 +15,9 @@ HUE_APP_NAME = settings.HUE_APP_NAME
 
 logger = logging.getLogger()
 
-HUE_TOKEN = 'https://api.meethue.com/oauth2/token'
-HUE_REFRESH = 'https://api.meethue.com/oauth2/refresh?grant_type=refresh_token'
-HUE_BRIDGE = 'https://api.meethue.com/bridge/'
+HUE_TOKEN = "https://api.meethue.com/oauth2/token"
+HUE_REFRESH = "https://api.meethue.com/oauth2/refresh?grant_type=refresh_token"
+HUE_BRIDGE = "https://api.meethue.com/bridge/"
 
 
 def hue_login_required(func):
@@ -36,9 +36,9 @@ def hue_login_required(func):
 
 def hue_logged_in():
     try:
-        logged_in = LIGHTS_LOCAL or ('hue_username' in g)
+        logged_in = LIGHTS_LOCAL or ("hue_username" in g)
         if logged_in and not LIGHTS_LOCAL:
-            refresh_access_token(g['hue_refresh_token'])
+            refresh_access_token(g["hue_refresh_token"])
         return logged_in
     except KeyError:
         return False
@@ -46,64 +46,52 @@ def hue_logged_in():
 
 def get_hue_username(access_token):
     # Push the button
-    headers = {
-        'Authorization': 'Bearer {}'.format(access_token)
-    }
-    params = {
-        "linkbutton": True
-    }
-    requests.put('{}0/config'.format(HUE_BRIDGE), headers=headers, json=params)
+    headers = {"Authorization": "Bearer {}".format(access_token)}
+    params = {"linkbutton": True}
+    requests.put("{}0/config".format(HUE_BRIDGE), headers=headers, json=params)
 
     # Get the name
-    params = {
-        "devicetype": HUE_APP_NAME
-    }
+    params = {"devicetype": HUE_APP_NAME}
     r = requests.post(HUE_BRIDGE, headers=headers, json=params)
     response = json.loads(r.content.decode())
-    return response[0]['success']['username']
+    return response[0]["success"]["username"]
 
 
 def login(code):
     if hue_logged_in():
         return True
     params = {
-        'code': code,
-        'grant_type': 'authorization_code',
+        "code": code,
+        "grant_type": "authorization_code",
     }
-    bearer_code = '{}:{}'.format(HUE_CLIENT_ID, HUE_CLIENT_SECRET)
-    bearer = base64.b64encode(bytes(bearer_code, 'utf-8'))
-    headers = {
-        'Authorization': 'Basic: {}'.format(bearer.decode('utf-8'))
-    }
+    bearer_code = "{}:{}".format(HUE_CLIENT_ID, HUE_CLIENT_SECRET)
+    bearer = base64.b64encode(bytes(bearer_code, "utf-8"))
+    headers = {"Authorization": "Basic: {}".format(bearer.decode("utf-8"))}
     r = requests.post(HUE_TOKEN, headers=headers, params=params)
     response = json.loads(r.content.decode())
 
     if r.status_code == 400:
-        raise Exception('Failed to confirm token: {}'.format(response['message']))
+        raise Exception("Failed to confirm token: {}".format(response["message"]))
     else:
-        access_token = response['access_token']
-        refresh_token = response['refresh_token']
-        g['hue_access_token'] = access_token
-        g['hue_refresh_token'] = refresh_token
-        g['hue_username'] = get_hue_username(access_token)
+        access_token = response["access_token"]
+        refresh_token = response["refresh_token"]
+        g["hue_access_token"] = access_token
+        g["hue_refresh_token"] = refresh_token
+        g["hue_username"] = get_hue_username(access_token)
 
     return True
 
 
 def refresh_access_token(refresh_token):
-    params = {
-        'refresh_token': refresh_token
-    }
-    bearer_code = '{}:{}'.format(HUE_CLIENT_ID, HUE_CLIENT_SECRET)
-    bearer = base64.b64encode(bytes(bearer_code, 'utf-8'))
-    headers = {
-        'Authorization': 'Basic: {}'.format(bearer.decode('utf-8'))
-    }
+    params = {"refresh_token": refresh_token}
+    bearer_code = "{}:{}".format(HUE_CLIENT_ID, HUE_CLIENT_SECRET)
+    bearer = base64.b64encode(bytes(bearer_code, "utf-8"))
+    headers = {"Authorization": "Basic: {}".format(bearer.decode("utf-8"))}
     r = requests.post(HUE_REFRESH, headers=headers, data=params)
     response = json.loads(r.content.decode())
 
     if r.status_code == 400:
-        raise Exception(response['message'])
+        raise Exception(response["message"])
     else:
-        g['hue_access_token'] = response['access_token']
-        g['hue_refresh_token'] = response['refresh_token']
+        g["hue_access_token"] = response["access_token"]
+        g["hue_refresh_token"] = response["refresh_token"]

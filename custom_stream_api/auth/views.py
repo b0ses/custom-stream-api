@@ -6,17 +6,15 @@ from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.auth import twitch_auth
 from custom_stream_api.auth import hue_auth
 
-auth_endpoints = Blueprint('auth', __name__)
+auth_endpoints = Blueprint("auth", __name__)
 
 logger = logging.getLogger()
 
 
-@auth_endpoints.route('/twitch_login', methods=['POST'])
+@auth_endpoints.route("/twitch_login", methods=["POST"])
 def login_post():
     data = request.get_json()
-    login_data = {
-        'code': data.get('code', None)
-    }
+    login_data = {"code": data.get("code", None)}
     try:
         response = twitch_auth.login(**login_data)
     except Exception as e:
@@ -24,16 +22,16 @@ def login_post():
     return jsonify(response)
 
 
-@auth_endpoints.route('/twitch_logged_in', methods=['GET'])
+@auth_endpoints.route("/twitch_logged_in", methods=["GET"])
 def twitch_logged_in_get():
     try:
-        response = {'logged_in': twitch_auth.twitch_logged_in()}
+        response = {"logged_in": twitch_auth.twitch_logged_in()}
     except Exception as e:
         raise InvalidUsage(str(e))
     return jsonify(response)
 
 
-@auth_endpoints.route('/current_user', methods=['GET'])
+@auth_endpoints.route("/current_user", methods=["GET"])
 @twitch_auth.twitch_login_required
 def current_user_get():
     try:
@@ -43,7 +41,7 @@ def current_user_get():
     return jsonify(response)
 
 
-@auth_endpoints.route('/logout', methods=['GET'])
+@auth_endpoints.route("/logout", methods=["GET"])
 @twitch_auth.twitch_login_required
 def logout_post():
     try:
@@ -53,12 +51,10 @@ def logout_post():
     return jsonify(response)
 
 
-@auth_endpoints.route('/hue_login', methods=['POST'])
+@auth_endpoints.route("/hue_login", methods=["POST"])
 def hue_login_post():
     data = request.get_json()
-    login_data = {
-        'code': data.get('code', None)
-    }
+    login_data = {"code": data.get("code", None)}
     try:
         response = hue_auth.login(**login_data)
     except Exception as e:
@@ -66,10 +62,10 @@ def hue_login_post():
     return jsonify(response)
 
 
-@auth_endpoints.route('/hue_logged_in', methods=['GET'])
+@auth_endpoints.route("/hue_logged_in", methods=["GET"])
 def hue_logged_in_get():
     try:
-        response = {'logged_in': hue_auth.hue_logged_in()}
+        response = {"logged_in": hue_auth.hue_logged_in()}
     except Exception as e:
         raise InvalidUsage(str(e))
     return jsonify(response)
