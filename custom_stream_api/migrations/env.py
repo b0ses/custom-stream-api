@@ -17,11 +17,15 @@ logger = logging.getLogger('alembic.env')
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from custom_stream_api.shared import create_app
+from custom_stream_api.shared import create_app, Base
+from custom_stream_api.alerts.models import *
+from custom_stream_api.chatbot.models import *
+from custom_stream_api.counts.models import *
+from custom_stream_api.lists.models import *
 app = create_app()[0]
 config.set_main_option('sqlalchemy.url',
                        app.config.get('SQLALCHEMY_DATABASE_URI'))
-target_metadata = app.extensions['migrate'].db.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -66,15 +70,24 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    engine = engine_from_config(config.get_section(config.config_ini_section),
+    # get the alembic section of the config file
+
+    ini_section = config.get_section(config.config_ini_section)
+
+    # if a database path was provided, override the one in alembic.ini
+    db_path = ini_section.get('test_db_url')
+    if db_path:
+        ini_section['sqlalchemy.url'] = db_path
+
+
+    engine = engine_from_config(ini_section,
                                 prefix='sqlalchemy.',
                                 poolclass=pool.NullPool)
 
     connection = engine.connect()
     context.configure(connection=connection,
                       target_metadata=target_metadata,
-                      process_revision_directives=process_revision_directives,
-                      **app.extensions['migrate'].configure_args)
+                      process_revision_directives=process_revision_directives)
 
     try:
         with context.begin_transaction():

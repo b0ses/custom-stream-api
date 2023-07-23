@@ -1,17 +1,22 @@
+import os
+from alembic.config import Config
+from alembic import command
 from flask import Flask
 from flask import jsonify
 from flask_cors import CORS
-from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import declarative_base
 
 from custom_stream_api import settings
 
 app = None
 socketio = None
 db = SQLAlchemy()
-migrate = None
 g = {}
+Base = declarative_base()
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class InvalidUsage(Exception):
@@ -26,41 +31,46 @@ class InvalidUsage(Exception):
 
     def to_dict(self):
         rv = dict(self.payload or ())
-        rv['message'] = self.message
+        rv["message"] = self.message
         return rv
 
 
-def create_app(init_db=True):
-    global app, socketio, db, migrate, g
+def run_migrations(dsn: str) -> None:
+    alembic_cfg = Config(os.path.join(APP_DIR, "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", os.path.join(APP_DIR, "migrations"))
+    alembic_cfg.set_main_option("test_db_url", dsn)
+    command.upgrade(alembic_cfg, "head")
+
+
+def create_app(**settings_override):
+    global app, socketio, db, g
 
     app = Flask(__name__)
-    hosts = [
-        'localhost',
-        '127.0.0.1',
-        settings.HOST
-    ]
-    ports = ['80', settings.DASHBOARD_PORT, settings.OVERLAY_PORT]
-    protocols = ['http', 'https']
+
+    for setting, value in settings_override.items():
+        app.config[setting] = value
+
+    hosts = ["localhost", "127.0.0.1", settings.HOST]
+    ports = ["80", settings.DASHBOARD_PORT, settings.OVERLAY_PORT]
+    protocols = ["http", "https"]
 
     origins = []
     for protocol in protocols:
         for host in hosts:
-            origins.append('{}://{}'.format(protocol, host))
+            origins.append("{}://{}".format(protocol, host))
             for port in [port for port in ports if port]:
-                origins.append('{}://{}:{}'.format(protocol, host, port))
+                origins.append("{}://{}:{}".format(protocol, host, port))
 
     # TODO: Use the commented lines below if flask_socketio supports regex origins
     # origins = ['https?:\/\/{}.*'.format(host) for host in hosts]
     CORS(app, origins=origins, supports_credentials=True)
 
-    app.config['SECRET_KEY'] = settings.SECRET
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config["SECRET_KEY"] = settings.SECRET
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    if init_db:
-        app.config['SQLALCHEMY_DATABASE_URI'] = settings.DB_URI
-        db.init_app(app)
-    migrate = Migrate(app, db)
-    migrate.directory = 'custom_stream_api/migrations'
+    if not app.config.get("SQLALCHEMY_DATABASE_URI", ""):
+        app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
+    db.init_app(app)
     socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True, engineio_logger=True)
 
     from custom_stream_api.alerts.views import alert_endpoints
@@ -69,14 +79,15 @@ def create_app(init_db=True):
     from custom_stream_api.chatbot.views import chatbot_endpoints
     from custom_stream_api.notifier.views import notifier_endpoints
     from custom_stream_api.auth.views import auth_endpoints
-    from custom_stream_api.lights.views import lights_endpoints
-    app.register_blueprint(alert_endpoints, url_prefix='/alerts')
-    app.register_blueprint(lists_endpoints, url_prefix='/lists')
-    app.register_blueprint(counts_endpoints, url_prefix='/counts')
-    app.register_blueprint(chatbot_endpoints, url_prefix='/chatbot')
-    app.register_blueprint(notifier_endpoints, url_prefix='/notifier')
-    app.register_blueprint(auth_endpoints, url_prefix='/auth')
-    app.register_blueprint(lights_endpoints, url_prefix='/lights')
+
+    # from custom_stream_api.lights.views import lights_endpoints
+    app.register_blueprint(alert_endpoints, url_prefix="/alerts")
+    app.register_blueprint(lists_endpoints, url_prefix="/lists")
+    app.register_blueprint(counts_endpoints, url_prefix="/counts")
+    app.register_blueprint(chatbot_endpoints, url_prefix="/chatbot")
+    app.register_blueprint(notifier_endpoints, url_prefix="/notifier")
+    app.register_blueprint(auth_endpoints, url_prefix="/auth")
+    # app.register_blueprint(lights_endpoints, url_prefix='/lights')
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
@@ -84,9 +95,9 @@ def create_app(init_db=True):
         response.status_code = error.status_code
         return response
 
-    return app, socketio, db, migrate, g
+    return app, socketio, db, g
 
 
 def get_chatbot():
-    if g.get('chatbot') and g['chatbot'].get('object') and g['chatbot']['object'].running():
-        return g['chatbot']['object']
+    if g.get("chatbot") and g["chatbot"].get("object") and g["chatbot"]["object"].running():
+        return g["chatbot"]["object"]
