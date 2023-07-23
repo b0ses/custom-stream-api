@@ -28,6 +28,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Setup PostgreSQL for Linux/macOS/Windows
+      uses: ikalnytskyi/action-setup-postgres@v4
+    - name: Update config for postgres
+      run: |
+        sed -i .bak -e '15 s/""/"postgresql:\/\/postgres:postgres@localhost\/postgres"/' custom_stream_api/settings.py
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
