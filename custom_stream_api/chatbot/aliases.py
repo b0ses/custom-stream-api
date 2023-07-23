@@ -22,7 +22,7 @@ def add_alias(alias, command, badge, save=True):
         found_alias.badge = badge
     else:
         if badge not in BADGE_NAMES:
-            raise Exception('Badge \'{}\' not available.'.format(badge))
+            raise Exception("Badge '{}' not available.".format(badge))
         new_alias = Alias(alias=alias, command=command, badge=badge)
         db.session.add(new_alias)
     if save:

@@ -6,45 +6,46 @@ from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssocia
 from custom_stream_api.counts import counts
 from custom_stream_api.shared import db, socketio, get_chatbot
 
-VALID_SOUNDS = ['wav', 'mp3', 'ogg']
-VALID_IMAGES = ['jpg', 'png', 'tif', 'gif', 'jpeg']
-URL_REGEX = '^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$'
-SOUND_REGEX = URL_REGEX.format('|'.join(VALID_SOUNDS))
-IMAGE_REXEX = URL_REGEX.format('|'.join(VALID_IMAGES))
-HEX_CODE_REGEX = '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'
-VALID_EFFECTS = ['', 'fade']
+VALID_SOUNDS = ["wav", "mp3", "ogg"]
+VALID_IMAGES = ["jpg", "png", "tif", "gif", "jpeg"]
+URL_REGEX = r"^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$"
+SOUND_REGEX = URL_REGEX.format("|".join(VALID_SOUNDS))
+IMAGE_REXEX = URL_REGEX.format("|".join(VALID_IMAGES))
+HEX_CODE_REGEX = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+VALID_EFFECTS = ["", "fade"]
 
 
 # HELPERS
 
-def validate_sound(sound=''):
+
+def validate_sound(sound=""):
     if sound:
         matches = re.findall(SOUND_REGEX, sound)
         if not matches:
-            raise Exception('Invalid sound url: {}'.format(sound))
+            raise Exception("Invalid sound url: {}".format(sound))
         else:
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
 
 def validate_effect(effect):
-    effect = effect or ''
+    effect = effect or ""
     if effect in VALID_EFFECTS:
         return effect
     else:
-        raise Exception('Invalid effect: {}'.format(effect))
+        raise Exception("Invalid effect: {}".format(effect))
 
 
 def validate_duration(duration):
     if not str(duration).isdigit():
-        raise Exception('Invalid duration: {}'.format(duration))
+        raise Exception("Invalid duration: {}".format(duration))
     return int(duration)
 
 
-def validate_image(image=''):
+def validate_image(image=""):
     if image:
         matches = re.findall(IMAGE_REXEX, image)
         if not matches:
-            raise Exception('Invalid image url: {}'.format(image))
+            raise Exception("Invalid image url: {}".format(image))
         else:
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
@@ -53,23 +54,23 @@ def validate_color_hex(color_hex):
     if color_hex:
         matches = re.findall(HEX_CODE_REGEX, color_hex)
         if not matches:
-            raise Exception('Invalid color hex: {}'.format(color_hex))
+            raise Exception("Invalid color hex: {}".format(color_hex))
         else:
             return color_hex
 
 
 def validate_thumbnail(thumbnail):
     if thumbnail:
-        if thumbnail[0] == '#':
+        if thumbnail[0] == "#":
             validate_color_hex(thumbnail)
-        elif thumbnail[:4] == 'http':
+        elif thumbnail[:4] == "http":
             validate_image(thumbnail)
         else:
-            raise Exception('Invalid thumbnail: {}'.format(thumbnail))
+            raise Exception("Invalid thumbnail: {}".format(thumbnail))
     return thumbnail
 
 
-def generate_name(name='', text='', sound='', image=''):
+def generate_name(name="", text="", sound="", image=""):
     generated_name = name
     if not generated_name and text:
         generated_name = text
@@ -78,17 +79,17 @@ def generate_name(name='', text='', sound='', image=''):
     elif not generated_name and image:
         generated_name = validate_image(image)
     elif not generated_name:
-        raise Exception('Can\'t generate blank alert name.')
+        raise Exception("Can't generate blank alert name.")
 
-    return generated_name.strip().lower().replace(' ', '_')
+    return generated_name.strip().lower().replace(" ", "_")
 
 
-def apply_filters(model, sort_options, search_attr, sort='name', page=1, limit=None, search=None):
+def apply_filters(model, sort_options, search_attr, sort="name", page=1, limit=None, search=None):
     if sort:
-        sort_options.update({'-{}'.format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
+        sort_options.update({"-{}".format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
         if sort not in sort_options:
-            raise ValueError('Invalid sort option: {}'.format(sort))
-        order_by = sort_options[sort].desc() if sort[0] == '-' else sort_options[sort].asc()
+            raise ValueError("Invalid sort option: {}".format(sort))
+        order_by = sort_options[sort].desc() if sort[0] == "-" else sort_options[sort].asc()
 
     list_query = db.session.query(model)
     if search and isinstance(search, str):
@@ -109,23 +110,13 @@ def apply_filters(model, sort_options, search_attr, sort='name', page=1, limit=N
         results = list_query.all()
 
     total = db.session.query(model).count()
-    page_metadata = {
-        'total': total,
-        'page': page or 1,
-        'limit': limit
-    }
+    page_metadata = {"total": total, "page": page or 1, "limit": limit}
 
     return results, page_metadata
 
 
 # ALERTS
-def import_alerts(alerts):
-    for alert_data in alerts:
-        add_alert(**alert_data, save=False)
-    db.session.commit()
-
-
-def add_alert(name='', text='', sound='', duration=3000, effect='', image='', thumbnail='', save=True):
+def add_alert(name="", text="", sound="", duration=3000, effect="", image="", thumbnail="", save=True):
     generated_name = generate_name(name, text, sound)
     validate_sound(sound)
     effect = validate_effect(effect)
@@ -143,55 +134,53 @@ def add_alert(name='', text='', sound='', duration=3000, effect='', image='', th
         found_alert.image = image
         found_alert.effect = effect
     else:
-        new_alert = Alert(name=generated_name, text=text, sound=sound, duration=duration, effect=effect, image=image,
-                          thumbnail=thumbnail)
+        new_alert = Alert(
+            name=generated_name,
+            text=text,
+            sound=sound,
+            duration=duration,
+            effect=effect,
+            image=image,
+            thumbnail=thumbnail,
+        )
         db.session.add(new_alert)
     if save:
         db.session.commit()
     return generated_name
 
 
-def list_alerts(sort='name', page=1, limit=None, search=None):
+def list_alerts(sort="name", page=1, limit=None, search=None):
     # TODO: sort by age, popularity
-    sort_options = {
-        'name': Alert.name,
-        'created_at': Alert.created_at
-    }
-    alerts, page_metadata = apply_filters(Alert, sort_options, 'name', sort=sort, page=page, limit=limit, search=search)
+    sort_options = {"name": Alert.name, "created_at": Alert.created_at}
+    alerts, page_metadata = apply_filters(Alert, sort_options, "name", sort=sort, page=page, limit=limit, search=search)
     return [alert.as_dict() for alert in alerts], page_metadata
 
 
-def alert(name='', text='', sound='', effect='', duration=3000, image='', hit_socket=True, chat=False):
+def alert(name="", text="", sound="", effect="", duration=3000, image="", hit_socket=True, chat=False):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
-            raise Exception('Alert not found: {}'.format(name))
+            raise Exception("Alert not found: {}".format(name))
         alert_data = alert_obj.as_dict()
         socket_data = {
-            'text': alert_data['text'],
-            'sound': alert_data['sound'],
-            'effect': alert_data['effect'],
-            'image': alert_data['image'],
-            'duration': alert_data['duration']
+            "text": alert_data["text"],
+            "sound": alert_data["sound"],
+            "effect": alert_data["effect"],
+            "image": alert_data["image"],
+            "duration": alert_data["duration"],
         }
     else:
         validate_sound(sound)
         effect = validate_effect(effect)
         duration = validate_duration(duration)
         validate_image(image)
-        socket_data = {
-            'text': text,
-            'sound': sound,
-            'effect': effect,
-            'image': image,
-            'duration': duration
-        }
+        socket_data = {"text": text, "sound": sound, "effect": effect, "image": image, "duration": duration}
     if hit_socket:
-        socketio.emit('FromAPI', socket_data, namespace='/', broadcast=True)
+        socketio.emit("FromAPI", socket_data, namespace="/", broadcast=True)
     chatbot = get_chatbot()
     if chat and chatbot:
-        chatbot.chat('/me {}'.format(socket_data['text']))
-    return socket_data['text']
+        chatbot.chat("/me {}".format(socket_data["text"]))
+    return socket_data["text"]
 
 
 def remove_alert(name):
@@ -200,31 +189,20 @@ def remove_alert(name):
         alert_name = alert.one_or_none().name
 
         for group in list_groups()[0]:
-            if alert_name in group['alerts']:
-                remove_from_group(group['name'], [alert_name])
+            if alert_name in group["alerts"]:
+                remove_from_group(group["name"], [alert_name])
         alert.delete()
 
         db.session.commit()
         return alert_name
     else:
-        raise Exception('Alert not found: {}'.format(name))
+        raise Exception("Alert not found: {}".format(name))
 
 
 # GROUPS
-def import_groups(groups):
-    for group_data in groups:
-        alerts = group_data['alerts']
-        name = group_data['name']
-        thumbnail = group_data.get('thumbnail', '')
-        always_chat = group_data.get('always_chat', False)
-        chat_message = group_data.get('chat_message', None)
-        set_group(name, alerts, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message, save=False)
-    db.session.commit()
-
-
-def set_group(group_name, alert_names, thumbnail='', always_chat=False, chat_message=None, save=True):
+def set_group(group_name, alert_names, thumbnail="", always_chat=False, chat_message=None, save=True):
     thumbnail = validate_thumbnail(thumbnail)
-    group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
+    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if group_alert:
         group_alert.thumbnail = thumbnail
         group_alert.always_chat = always_chat
@@ -232,8 +210,9 @@ def set_group(group_name, alert_names, thumbnail='', always_chat=False, chat_mes
         for alert in group_alert.alerts:
             db.session.delete(alert)
     else:
-        group_alert = GroupAlert(group_name=group_name, thumbnail=thumbnail, always_chat=always_chat,
-                                 chat_message=chat_message)
+        group_alert = GroupAlert(
+            group_name=group_name, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message
+        )
         db.session.add(group_alert)
 
     if save:
@@ -245,21 +224,22 @@ def set_group(group_name, alert_names, thumbnail='', always_chat=False, chat_mes
 def add_to_group(group_name, alert_names, save=True):
     new_alerts = []
 
-    group_alert = GroupAlert.query.filter_by(group_name=group_name).one_or_none()
+    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if not group_alert:
         group_alert = GroupAlert(group_name=group_name)
         db.session.add(group_alert)
 
-    index = GroupAlertAssociation.query.filter_by(group_name=group_name).count()
+    index = db.session.query(GroupAlertAssociation).filter_by(group_name=group_name).count()
     for alert_name in alert_names:
         alert = db.session.query(Alert).filter_by(name=alert_name)
         if not alert.count():
-            raise Exception('Alert not found: {}'.format(alert_name))
+            raise Exception("Alert not found: {}".format(alert_name))
 
-        if not GroupAlertAssociation.query.filter_by(group_name=group_name, alert_name=alert_name).count():
+        if not db.session.query(GroupAlertAssociation).filter_by(group_name=group_name, alert_name=alert_name).count():
             new_alerts.append(alert_name)
-            new_association = GroupAlertAssociation(group_name=group_alert.group_name, alert_name=alert_name,
-                                                    index=index)
+            new_association = GroupAlertAssociation(
+                group_name=group_alert.group_name, alert_name=alert_name, index=index
+            )
             db.session.add(new_association)
             index += 1
     if save:
@@ -267,24 +247,23 @@ def add_to_group(group_name, alert_names, save=True):
     return new_alerts
 
 
-def list_groups(sort='name', page=1, limit=None, search=None):
+def list_groups(sort="name", page=1, limit=None, search=None):
     groups = OrderedDict()
     # TODO: sort by age, popularity
-    sort_options = {
-        'name': GroupAlert.group_name
-    }
-    group_alerts, page_metadata = apply_filters(GroupAlert, sort_options, 'group_name', sort=sort, page=page,
-                                                limit=limit, search=search)
+    sort_options = {"name": GroupAlert.group_name}
+    group_alerts, page_metadata = apply_filters(
+        GroupAlert, sort_options, "group_name", sort=sort, page=page, limit=limit, search=search
+    )
 
     for group_alert in group_alerts:
         alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
         alerts = [alert.alert_name for alert in alerts]
         groups[group_alert.group_name] = {
-            'name': group_alert.group_name,
-            'alerts': alerts,
-            'thumbnail': group_alert.thumbnail,
-            'always_chat': group_alert.always_chat,
-            'chat_message': group_alert.chat_message
+            "name": group_alert.group_name,
+            "alerts": alerts,
+            "thumbnail": group_alert.thumbnail,
+            "always_chat": group_alert.always_chat,
+            "chat_message": group_alert.chat_message,
         }
     listed_groups = list(groups.values())
     return listed_groups, page_metadata
@@ -293,7 +272,7 @@ def list_groups(sort='name', page=1, limit=None, search=None):
 def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
     group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if not group_alert:
-        raise Exception('Group not found: {}'.format(group_name))
+        raise Exception("Group not found: {}".format(group_name))
     group_alerts = [result.alert_name for result in group_alert.alerts]
     if random_choice:
         chosen_alert = random.choice(group_alerts)
@@ -310,7 +289,7 @@ def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
 
     chatbot = get_chatbot()
     if chatbot and (chat or group_alert.always_chat):
-        message = group_alert.chat_message if group_alert.chat_message else '/me {}'.format(alert_message)
+        message = group_alert.chat_message if group_alert.chat_message else "/me {}".format(alert_message)
         chatbot.chat(message)
 
     return alert_message
@@ -319,12 +298,12 @@ def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
 def remove_from_group(group_name, alert_names):
     group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
     if not group_alert:
-        raise Exception('Group not found: {}'.format(group_name))
+        raise Exception("Group not found: {}".format(group_name))
 
     for alert_name in alert_names:
-        alert = Alert.query.filter_by(name=alert_name)
+        alert = db.session.query(Alert).filter_by(name=alert_name)
         if not alert.count():
-            raise Exception('Alert not found: {}'.format(alert_name))
+            raise Exception("Alert not found: {}".format(alert_name))
 
     alerts = [alert for alert in group_alert.alerts if alert.alert_name in alert_names]
     removed_alerts = [alert.alert_name for alert in alerts]
@@ -344,4 +323,4 @@ def remove_group(group_name):
         db.session.commit()
         return group_name
     else:
-        raise Exception('Group not found: {}'.format(group_name))
+        raise Exception("Group not found: {}".format(group_name))
