@@ -6,7 +6,7 @@ from custom_stream_api.shared import db
 
 def import_lists(import_lists):
     for list_dict in import_lists:
-        set_list(list_dict['name'], list_dict['items'], save=False)
+        set_list(list_dict["name"], list_dict["items"], save=False)
     db.session.commit()
 
 
@@ -26,12 +26,12 @@ def set_list(name, items, save=True):
 def add_to_list(name, items, save=True):
     new_items = []
 
-    found_list = List.query.filter_by(name=name).one_or_none()
+    found_list = db.session.query(List).filter_by(name=name).one_or_none()
     if not found_list:
         found_list = List(name=name)
         db.session.add(found_list)
 
-    index = ListItem.query.filter_by(list_name=name).count()
+    index = db.session.query(ListItem).filter_by(list_name=name).count()
     for item in items:
         new_items.append(item)
         new_item = ListItem(list_name=name, item=item, index=index)
@@ -50,7 +50,7 @@ def list_lists():
 def get_list(name):
     list_query = db.session.query(List).filter(List.name == name).first()
     if list_query:
-        return list(list_query.as_dict()['items'])
+        return list(list_query.as_dict()["items"])
     else:
         return []
 
@@ -83,8 +83,11 @@ def remove_from_list(name, index):
         if not index.isdigit():
             return
         index = int(index)
-    found_list_item = db.session.query(ListItem).filter(ListItem.list_name == name, ListItem.index >= index).\
-        order_by(ListItem.index.asc())
+    found_list_item = (
+        db.session.query(ListItem)
+        .filter(ListItem.list_name == name, ListItem.index >= index)
+        .order_by(ListItem.index.asc())
+    )
     if not found_list_item.count():
         return
     found_list_item_obj = found_list_item.first()
