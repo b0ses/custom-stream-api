@@ -14,7 +14,7 @@ greenlet==2.0.1
 irc
 mock
 psycopg2-binary==2.9.6
-pyjwt==1.7.1
+pyjwt==2.4.0
 pytest==6.2.5
 pytest-flask-sqlalchemy==1.1.0
 python-socketio==5.7.2
