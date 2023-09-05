@@ -20,4 +20,4 @@ pytest-flask-sqlalchemy==1.1.0
 python-socketio==5.7.2
 requests
 SQLAlchemy==2.0.18
-uwsgi==2.0.21
+uwsgi==2.0.22
