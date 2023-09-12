@@ -116,7 +116,7 @@ def apply_filters(model, sort_options, search_attr, sort="name", page=1, limit=N
 
 
 # ALERTS
-def add_alert(name="", text="", sound="", duration=3000, effect="", image="", thumbnail="", save=True):
+def add_alert(name="", text="", sound="", duration=0, effect="", image="", thumbnail="", save=True):
     generated_name = generate_name(name, text, sound)
     validate_sound(sound)
     effect = validate_effect(effect)
@@ -156,7 +156,7 @@ def list_alerts(sort="name", page=1, limit=None, search=None):
     return [alert.as_dict() for alert in alerts], page_metadata
 
 
-def alert(name="", text="", sound="", effect="", duration=3000, image="", hit_socket=True, chat=False):
+def alert(name="", text="", sound="", effect="", duration=0, image="", hit_socket=True, chat=False):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
