@@ -31,7 +31,7 @@ def add_alert_post():
             "name": data.get("name", ""),
             "text": data.get("text", ""),
             "sound": data.get("sound", ""),
-            "duration": data.get("duration", 3000),
+            "duration": data.get("duration", 0),
             "effect": data.get("effect", ""),
             "image": data.get("image", ""),
             "thumbnail": data.get("thumbnail", ""),
@@ -52,7 +52,7 @@ def alert_post():
             "name": data.get("name", ""),
             "text": data.get("text", ""),
             "sound": data.get("sound", ""),
-            "duration": data.get("duration", 3000),
+            "duration": data.get("duration", 0),
             "effect": data.get("effect", ""),
             "image": data.get("image", ""),
         }
