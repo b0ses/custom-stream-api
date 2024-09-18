@@ -1,6 +1,7 @@
 import re
 import random
 from collections import OrderedDict
+from sqlalchemy import func
 
 from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssociation
 from custom_stream_api.counts import counts
@@ -93,7 +94,7 @@ def apply_filters(model, sort_options, search_attr, sort="name", page=1, limit=N
 
     list_query = db.session.query(model)
     if search and isinstance(search, str):
-        list_query = list_query.filter(getattr(model, search_attr).contains(search))
+        list_query = list_query.filter(func.lower(getattr(model, search_attr)).contains(search.lower()))
     if sort:
         list_query = list_query.order_by(order_by)
     if page and limit:
