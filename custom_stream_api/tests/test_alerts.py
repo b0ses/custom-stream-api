@@ -226,7 +226,7 @@ def test_filter_alerts(import_alerts):
 
     assert alerts.list_alerts(sort="-name")[0][0] == TEST_ALERTS_DICTS[2]
 
-    assert alerts.list_alerts(search="2")[0][0] == TEST_ALERTS_DICTS[1]
+    assert alerts.list_alerts(search="tExT_2")[0][0] == TEST_ALERTS_DICTS[1]
 
 
 def test_remove_alert(import_groups):
