@@ -77,8 +77,7 @@ def create_app(**settings_override):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s: %(message)s",
-        handlers=[logging.FileHandler(os.path.join(APP_DIR, "app.log"), mode='w'),
-                  logging.StreamHandler()]
+        handlers=[logging.FileHandler(os.path.join(APP_DIR, "app.log"), mode="w"), logging.StreamHandler()],
     )
 
     from custom_stream_api.alerts.views import alert_endpoints
