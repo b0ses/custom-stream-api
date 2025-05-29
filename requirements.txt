@@ -1,2 +1,3 @@
 -r ./requirements/server_requirements.txt
+-r ./requirements/dev_requirements.txt
 -r ./requirements/app_requirements.txt
