@@ -3,3 +3,4 @@
 *pytest_cache
 custom_stream_api/app.db
 .venvs/*
+*.log

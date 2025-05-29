@@ -1,3 +1,4 @@
+import logging
 import os
 from alembic.config import Config
 from alembic import command
@@ -71,7 +72,14 @@ def create_app(**settings_override):
     if not app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
     db.init_app(app)
-    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True, engineio_logger=True)
+    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s: %(message)s",
+        handlers=[logging.FileHandler(os.path.join(APP_DIR, "app.log"), mode='w'),
+                  logging.StreamHandler()]
+    )
 
     from custom_stream_api.alerts.views import alert_endpoints
     from custom_stream_api.lists.views import lists_endpoints
