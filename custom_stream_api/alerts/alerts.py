@@ -177,7 +177,7 @@ def alert(name="", text="", sound="", effect="", duration=0, image="", hit_socke
         validate_image(image)
         socket_data = {"text": text, "sound": sound, "effect": effect, "image": image, "duration": duration}
     if hit_socket:
-        socketio.emit("FromAPI", socket_data, namespace="/", broadcast=True)
+        socketio.emit("FromAPI", socket_data)
     chatbot = get_chatbot()
     if chat and chatbot:
         chatbot.chat("/me {}".format(socket_data["text"]))

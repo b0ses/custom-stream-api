@@ -1,4 +1,4 @@
-""" Wrapper for the Hue Lights API """
+"""Wrapper for the Hue Lights API"""
 
 import requests
 import logging
