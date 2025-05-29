@@ -44,7 +44,7 @@ def run_migrations(dsn: str) -> None:
 
 
 def create_app(**settings_override):
-    global app, socketio, db, g
+    global app, socketio, db, g  # noqa: F824
 
     app = Flask(__name__)
 
