@@ -12,5 +12,5 @@ irc==20.5.0
 psycopg2-binary==2.9.10
 pyjwt==2.10.0
 python-socketio==5.13.0
-requests==2.32.3
+requests==2.32.4
 SQLAlchemy==2.0.41
