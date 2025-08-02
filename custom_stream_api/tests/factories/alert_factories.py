@@ -8,34 +8,35 @@ class AlertFactory(factory.Factory):
     class Meta:
         model = models.Alert
 
+    id = factory.Faker("random_number")
     created_at = factory.Faker("date_time", tzinfo=dt.timezone.utc)
     name = factory.Faker("word")
     text = factory.Faker("text")
     sound = factory.Faker("url")
     image = factory.Faker("image_url")
-    duration = factory.Faker("random_number")
     thumbnail = factory.Faker("image_url")
     effect = factory.Faker("word")
+    tags = []
 
 
-class GroupAlertFactory(factory.Factory):
+class TagFactory(factory.Factory):
     class Meta:
-        model = models.GroupAlert
+        model = models.Tag
 
+    id = factory.Faker("random_number")
     created_at = factory.Faker("date_time", tzinfo=dt.timezone.utc)
-    group_name = factory.Faker("word")
-    alerts = []
+    name = factory.Faker("word")
     thumbnail = factory.Faker("image_url")
     current_index = 0
-    counts = []
     always_chat = factory.Faker("boolean")
     chat_message = factory.Faker("text")
+    alerts = []
+    counts = []
 
 
-class GroupAlertAssociationFactory(factory.Factory):
+class TagAssociationFactory(factory.Factory):
     class Meta:
-        model = models.GroupAlertAssociation
+        model = models.TagAssociation
 
-    group_name = factory.Faker("word")
-    alert_name = factory.Faker("word")
-    index = factory.Faker("random_number")
+    tag_name = factory.Faker("text")
+    alert_name = factory.Faker("text")

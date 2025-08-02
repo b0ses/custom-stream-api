@@ -35,6 +35,12 @@ def import_lists(session):
 
     TEST_LISTS_DICTS = [test_list.as_dict() for test_list in TEST_LISTS]
 
+    yield session
+
+    session.query(ListItemFactory._meta.model).delete()
+    session.query(ListFactory._meta.model).delete()
+    session.commit()
+
 
 def test_import_export(import_lists):
     assert lists.list_lists() == TEST_LISTS_DICTS

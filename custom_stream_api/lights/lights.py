@@ -9,7 +9,7 @@ import re
 from custom_stream_api import settings
 from custom_stream_api.shared import g
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 BASIC_COLORS = {
     "red": "#FF0000",

@@ -1,6 +1,9 @@
-from flask import Blueprint, request
-from flask import jsonify
 import logging
+
+from flask import Blueprint
+from flask import jsonify
+from webargs import fields
+from webargs.flaskparser import use_kwargs
 
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.auth import twitch_auth
@@ -8,15 +11,19 @@ from custom_stream_api.auth import hue_auth
 
 auth_endpoints = Blueprint("auth", __name__)
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @auth_endpoints.route("/twitch_login", methods=["POST"])
-def login_post():
-    data = request.get_json()
-    login_data = {"code": data.get("code", None)}
+@use_kwargs(
+    {
+        "code": fields.Str(),
+    },
+    location="json",
+)
+def login_post(**kwargs):
     try:
-        response = twitch_auth.login(**login_data)
+        response = twitch_auth.login(**kwargs)
     except Exception as e:
         raise InvalidUsage(str(e))
     return jsonify(response)
@@ -52,11 +59,15 @@ def logout_post():
 
 
 @auth_endpoints.route("/hue_login", methods=["POST"])
-def hue_login_post():
-    data = request.get_json()
-    login_data = {"code": data.get("code", None)}
+@use_kwargs(
+    {
+        "code": fields.Str(),
+    },
+    location="json",
+)
+def hue_login_post(**kwargs):
     try:
-        response = hue_auth.login(**login_data)
+        response = hue_auth.login(**kwargs)
     except Exception as e:
         raise InvalidUsage(str(e))
     return jsonify(response)

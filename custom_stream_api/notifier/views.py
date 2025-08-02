@@ -7,7 +7,7 @@ from custom_stream_api.notifier.twitch_notifier import setup_webhook
 
 notifier_endpoints = Blueprint("notifier", __name__)
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @notifier_endpoints.route("/setup_webhook", methods=["POST"])

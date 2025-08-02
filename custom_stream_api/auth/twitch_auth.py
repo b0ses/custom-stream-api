@@ -18,7 +18,7 @@ TWITCH_TOKEN = "https://id.twitch.tv/oauth2/token"
 TWITCH_USERINFO = "https://id.twitch.tv/oauth2/userinfo"
 TWITCH_JWT_KEYS = "https://id.twitch.tv/oauth2/keys"
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def twitch_login_required(func):

@@ -8,6 +8,7 @@ class ListFactory(factory.Factory):
     class Meta:
         model = models.List
 
+    id = factory.Faker("random_number")
     created_at = factory.Faker("date_time", tzinfo=dt.timezone.utc)
     name = factory.Faker("word")
     items = []
@@ -18,6 +19,7 @@ class ListItemFactory(factory.Factory):
     class Meta:
         model = models.ListItem
 
+    id = factory.Faker("random_number")
     list_name = factory.Faker("word")
     index = factory.Faker("random_number")
     item = factory.Faker("text")

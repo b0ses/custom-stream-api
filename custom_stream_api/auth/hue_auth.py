@@ -13,7 +13,7 @@ HUE_CLIENT_SECRET = settings.HUE_CLIENT_SECRET
 HUE_REDIRECT_URI = settings.HUE_REDIRECT_URI
 HUE_APP_NAME = settings.HUE_APP_NAME
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 HUE_TOKEN = "https://api.meethue.com/oauth2/token"
 HUE_REFRESH = "https://api.meethue.com/oauth2/refresh?grant_type=refresh_token"

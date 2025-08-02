@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, MetaData
 from sqlalchemy.orm import sessionmaker, close_all_sessions, scoped_session
 
 from custom_stream_api.settings import DB_URI
@@ -7,6 +7,8 @@ from custom_stream_api.shared import create_app, run_migrations, db as _db
 
 TEST_DB_NAME = f"test_{DB_URI.split('/')[-1]}"
 TEST_DB_URI = "/".join(DB_URI.split("/")[:-1]) + "/" + TEST_DB_NAME
+
+metadata = MetaData()
 
 
 def create_test_db():
@@ -41,7 +43,7 @@ def app(request):
     ctx.pop()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def db(app, request):
     """Session-wide test database."""
     create_test_db()
@@ -68,7 +70,17 @@ def session(db, request):
             yield session
 
             transaction.rollback()
-            db.session.commit()
-            db.session.close()
+
+        with connection.begin() as transaction:
+            metadata.reflect(db.engine)
+            for table in metadata.tables.keys():
+                if table == "alembic_version":
+                    continue
+                connection.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE;"))
+            transaction.commit()
+
+        db.session.flush()
+        db.session.close()
+
     db.drop_all()
     close_all_sessions()
