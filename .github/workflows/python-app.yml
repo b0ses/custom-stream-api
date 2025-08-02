@@ -32,10 +32,7 @@ jobs:
       uses: ikalnytskyi/action-setup-postgres@v4
     - name: Update config for postgres
       run: |
-        sed -i '15 s/""/"postgresql:\/\/postgres:postgres@localhost\/postgres"/' custom_stream_api/settings.py
-    - name: Echo settings.py
-      run: |
-        cat custom_stream_api/settings.py
+        sed -i '16 s/""/"postgresql:\/\/postgres:postgres@localhost\/postgres"/' custom_stream_api/settings.py
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
