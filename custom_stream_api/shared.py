@@ -1,4 +1,5 @@
 import logging
+import logging.config
 import os
 from alembic.config import Config
 from alembic import command
@@ -16,7 +17,6 @@ socketio = None
 db = SQLAlchemy()
 g = {}
 Base = declarative_base()
-
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -43,6 +43,32 @@ def run_migrations(dsn: str) -> None:
     command.upgrade(alembic_cfg, "head")
 
 
+# Reasonable defaults to avoid clutter in our config files
+DEFAULT_CONFIG = {
+    "version": 1,
+    "level": logging.INFO,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {"format": "%(asctime)s %(levelname)s:%(name)s:%(message)s"},
+    },
+    "handlers": {
+        "console": {"formatter": "default", "class": "logging.StreamHandler"},
+        "file": {
+            "formatter": "default",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(APP_DIR, "app.log"),
+            "mode": "w",
+        },
+    },
+    "loggers": {
+        # i.e. "all modules"
+        "": {"handlers": ["console"], "level": "INFO", "propagate": True},
+        "../custom_stream_api": {"handlers": ["console"], "level": "DEBUG", "propagate": True},
+        "__main__": {"level": "DEBUG", "propagate": True},
+    },
+}
+
+
 def create_app(**settings_override):
     global app, socketio, db, g  # noqa: F824
 
@@ -52,7 +78,7 @@ def create_app(**settings_override):
         app.config[setting] = value
 
     hosts = ["localhost", "127.0.0.1", settings.HOST]
-    ports = ["80", settings.DASHBOARD_PORT, settings.OVERLAY_PORT]
+    ports = ["80", settings.DASHBOARD_PORT, settings.OVERLAY_PORT, settings.PREVIEW_PORT]
     protocols = ["http", "https"]
 
     origins = []
@@ -72,13 +98,12 @@ def create_app(**settings_override):
     if not app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
     db.init_app(app)
-    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True)
+    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True, engineio_logger=False, logger=False)
+    # DO NOT REMOVE. Flask-SocketIO needs the namespaces to have handlers on them to emit from them. It's silly.
+    socketio.on_event("FromAPI", lambda data: None, namespace="/live")
+    socketio.on_event("FromAPI", lambda data: None, namespace="/preview")
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s: %(message)s",
-        handlers=[logging.FileHandler(os.path.join(APP_DIR, "app.log"), mode="w"), logging.StreamHandler()],
-    )
+    logging.config.dictConfig(DEFAULT_CONFIG)
 
     from custom_stream_api.alerts.views import alert_endpoints
     from custom_stream_api.lists.views import lists_endpoints

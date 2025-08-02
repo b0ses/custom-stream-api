@@ -1,14 +1,18 @@
+import logging
 import re
 import random
-from collections import OrderedDict
-from sqlalchemy import func
+from sqlalchemy import func, null, sql
 
-from custom_stream_api.alerts.models import Alert, GroupAlert, GroupAlertAssociation
+from custom_stream_api.alerts.models import Alert, Tag, TagAssociation
 from custom_stream_api.counts import counts
 from custom_stream_api.shared import db, socketio, get_chatbot
 
+logger = logging.getLogger(__name__)
+
+MAX_LIMIT = 100
+
 VALID_SOUNDS = ["wav", "mp3", "ogg"]
-VALID_IMAGES = ["jpg", "png", "tif", "gif", "jpeg"]
+VALID_IMAGES = ["jpg", "png", "tif", "tiff", "gif", "raw", "jpeg", "webp"]
 URL_REGEX = r"^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$"
 SOUND_REGEX = URL_REGEX.format("|".join(VALID_SOUNDS))
 IMAGE_REXEX = URL_REGEX.format("|".join(VALID_IMAGES))
@@ -23,7 +27,7 @@ def validate_sound(sound=""):
     if sound:
         matches = re.findall(SOUND_REGEX, sound)
         if not matches:
-            raise Exception("Invalid sound url: {}".format(sound))
+            raise ValueError(f"Invalid sound url: {sound}")
         else:
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
@@ -33,20 +37,14 @@ def validate_effect(effect):
     if effect in VALID_EFFECTS:
         return effect
     else:
-        raise Exception("Invalid effect: {}".format(effect))
-
-
-def validate_duration(duration):
-    if not str(duration).isdigit():
-        raise Exception("Invalid duration: {}".format(duration))
-    return int(duration)
+        raise ValueError(f"Invalid effect: {effect}")
 
 
 def validate_image(image=""):
     if image:
         matches = re.findall(IMAGE_REXEX, image)
         if not matches:
-            raise Exception("Invalid image url: {}".format(image))
+            raise ValueError(f"Invalid image url: {image}")
         else:
             return matches[0][4]  # using the regex, this'll return the filename sans extension
 
@@ -55,7 +53,7 @@ def validate_color_hex(color_hex):
     if color_hex:
         matches = re.findall(HEX_CODE_REGEX, color_hex)
         if not matches:
-            raise Exception("Invalid color hex: {}".format(color_hex))
+            raise ValueError(f"Invalid color hex: {color_hex}")
         else:
             return color_hex
 
@@ -67,7 +65,7 @@ def validate_thumbnail(thumbnail):
         elif thumbnail[:4] == "http":
             validate_image(thumbnail)
         else:
-            raise Exception("Invalid thumbnail: {}".format(thumbnail))
+            raise Exception(f"Invalid thumbnail: {thumbnail}")
     return thumbnail
 
 
@@ -85,16 +83,15 @@ def generate_name(name="", text="", sound="", image=""):
     return generated_name.strip().lower().replace(" ", "_")
 
 
-def apply_filters(model, sort_options, search_attr, sort="name", page=1, limit=None, search=None):
+def apply_filters(list_query, sort_options, search_attr, sort="name", page=1, limit=None, search=None):
     if sort:
-        sort_options.update({"-{}".format(sort_option): sort_value for sort_option, sort_value in sort_options.items()})
+        sort_options.update({f"-{sort_option}": sort_value for sort_option, sort_value in sort_options.items()})
         if sort not in sort_options:
-            raise ValueError("Invalid sort option: {}".format(sort))
+            raise ValueError(f"Invalid sort option: {sort}")
         order_by = sort_options[sort].desc() if sort[0] == "-" else sort_options[sort].asc()
 
-    list_query = db.session.query(model)
     if search and isinstance(search, str):
-        list_query = list_query.filter(func.lower(getattr(model, search_attr)).contains(search.lower()))
+        list_query = list_query.filter(func.lower(search_attr).contains(search.lower()))
     if sort:
         list_query = list_query.order_by(order_by)
     if page and limit:
@@ -110,78 +107,133 @@ def apply_filters(model, sort_options, search_attr, sort="name", page=1, limit=N
     else:
         results = list_query.all()
 
-    total = db.session.query(model).count()
+    total = list_query.count()
     page_metadata = {"total": total, "page": page or 1, "limit": limit}
 
     return results, page_metadata
 
 
 # ALERTS
-def add_alert(name="", text="", sound="", duration=0, effect="", image="", thumbnail="", save=True):
-    generated_name = generate_name(name, text, sound)
+def save_alert(name, text="", sound="", effect="", image="", thumbnail="", tags=None, save=True):
     validate_sound(sound)
     effect = validate_effect(effect)
-    duration = validate_duration(duration)
     validate_image(image)
     thumbnail = validate_thumbnail(thumbnail)
 
-    found_alert = db.session.query(Alert).filter_by(name=generated_name).one_or_none()
+    found_alert = db.session.query(Alert).filter_by(name=name).one_or_none()
     if found_alert:
-        found_alert.name = generated_name
+        found_alert.name = name
         found_alert.text = text
         found_alert.sound = sound
-        found_alert.duration = duration
         found_alert.thumbnail = thumbnail
         found_alert.image = image
         found_alert.effect = effect
     else:
-        new_alert = Alert(
-            name=generated_name,
+        found_alert = Alert(
+            name=name,
             text=text,
             sound=sound,
-            duration=duration,
             effect=effect,
             image=image,
             thumbnail=thumbnail,
         )
-        db.session.add(new_alert)
+        db.session.add(found_alert)
+
+    if tags is not None:
+        set_tags(alert_name=found_alert.name, tags=tags, save=save)
+
     if save:
         db.session.commit()
-    return generated_name
+    return found_alert
 
 
-def list_alerts(sort="name", page=1, limit=None, search=None):
-    # TODO: sort by age, popularity
-    sort_options = {"name": Alert.name, "created_at": Alert.created_at}
-    alerts, page_metadata = apply_filters(Alert, sort_options, "name", sort=sort, page=page, limit=limit, search=search)
-    return [alert.as_dict() for alert in alerts], page_metadata
+def set_tags(alert_name, tags, save=True):
+    alert = db.session.query(Alert).filter_by(name=alert_name).one_or_none()
+    if not alert:
+        raise Exception(f"Alert not found: {alert_name}")
+    if tags is None:
+        raise Exception(f"Tags must be a list: {tags}")
+
+    # Ignore any tags that are already associated with this alert
+    existing_tags = (
+        db.session.query(Tag.name)
+        .join(TagAssociation, TagAssociation.tag_name == Tag.name)
+        .filter(TagAssociation.alert_name == alert.name)
+        .all()
+    )
+    existing_tag_names = set([tag[0] for tag in existing_tags])
+
+    # Delete current tags not in the new set
+    delete_tags = list(existing_tag_names - set(tags))
+    if delete_tags:
+        delete_associations = (
+            db.session.query(TagAssociation.id)
+            .join(Alert, TagAssociation.alert_name == Alert.name)
+            .join(Tag, TagAssociation.tag_name == Tag.name)
+            .filter(Alert.id == alert.id, Tag.name.in_(delete_tags))
+        )
+        delete_tags_ids = [result[0] for result in delete_associations]
+        logger.info(f"Deleting old tags from {alert.name}: {delete_tags}")
+        db.session.query(TagAssociation).filter(TagAssociation.id.in_(delete_tags_ids)).delete()
+
+        # Delete any lingering empty tags
+        empty_tags = (
+            db.session.query(Tag.id, Tag.name)
+            .outerjoin(TagAssociation, TagAssociation.tag_name == Tag.name)
+            .filter(TagAssociation.id == null())
+            .all()
+        )
+        empty_tag_names = [result[1] for result in empty_tags]
+        logger.info(f"Deleting empty tags: {empty_tag_names}")
+        db.session.query(Tag).filter(Tag.name.in_(empty_tag_names)).delete()
+
+    # Set any new tags, *ignoring any tags that don't exist*
+    new_tags = set(tags) - existing_tag_names
+    if new_tags:
+        logger.info(f"Setting new tags to {alert.name}: {new_tags}")
+        for tag_name in new_tags:
+            tag = db.session.query(Tag).filter_by(name=tag_name).one_or_none()
+            if not tag:
+                continue
+            db.session.add(TagAssociation(alert=alert, tag=tag))
+
+    if save:
+        db.session.commit()
 
 
-def alert(name="", text="", sound="", effect="", duration=0, image="", hit_socket=True, chat=False):
+def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, chat=False, live=True):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
-            raise Exception("Alert not found: {}".format(name))
+            raise Exception(f"Alert not found: {name}")
         alert_data = alert_obj.as_dict()
         socket_data = {
             "text": alert_data["text"],
             "sound": alert_data["sound"],
             "effect": alert_data["effect"],
             "image": alert_data["image"],
-            "duration": alert_data["duration"],
         }
     else:
         validate_sound(sound)
         effect = validate_effect(effect)
-        duration = validate_duration(duration)
         validate_image(image)
-        socket_data = {"text": text, "sound": sound, "effect": effect, "image": image, "duration": duration}
+        socket_data = {"text": text, "sound": sound, "effect": effect, "image": image}
+    logger.info(socket_data)
     if hit_socket:
-        socketio.emit("FromAPI", socket_data)
+        namespace = "live" if live else "preview"
+        socketio.emit("FromAPI", socket_data, namespace=f"/{namespace}")
+
     chatbot = get_chatbot()
     if chat and chatbot:
-        chatbot.chat("/me {}".format(socket_data["text"]))
+        chatbot.chat(f"/me {socket_data['text']}")
     return socket_data["text"]
+
+
+def alert_details(name):
+    found_alert = db.session.query(Alert).filter_by(name=name).one_or_none()
+    if not found_alert:
+        raise Exception(f"Alert not found: {name}")
+    return found_alert.as_dict()
 
 
 def remove_alert(name):
@@ -189,139 +241,214 @@ def remove_alert(name):
     if alert.count():
         alert_name = alert.one_or_none().name
 
-        for group in list_groups()[0]:
-            if alert_name in group["alerts"]:
-                remove_from_group(group["name"], [alert_name])
         alert.delete()
 
         db.session.commit()
         return alert_name
     else:
-        raise Exception("Alert not found: {}".format(name))
+        raise Exception(f"Alert not found: {name}")
 
 
-# GROUPS
-def set_group(group_name, alert_names, thumbnail="", always_chat=False, chat_message=None, save=True):
+# TAGS
+def save_tag(name, thumbnail="", always_chat=False, chat_message=None, alerts=None, save=True):
     thumbnail = validate_thumbnail(thumbnail)
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if group_alert:
-        group_alert.thumbnail = thumbnail
-        group_alert.always_chat = always_chat
-        group_alert.chat_message = chat_message
-        for alert in group_alert.alerts:
-            db.session.delete(alert)
+
+    found_tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+
+    if found_tag:
+        found_tag.name = name
+        found_tag.thumbnail = thumbnail
+        found_tag.always_chat = always_chat
+        found_tag.chat_message = chat_message
     else:
-        group_alert = GroupAlert(
-            group_name=group_name, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message
-        )
-        db.session.add(group_alert)
+        found_tag = Tag(name=name, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message)
+        db.session.add(found_tag)
+
+    if alerts:
+        set_alerts(tag_name=found_tag.name, alerts=alerts, save=save)
 
     if save:
         db.session.commit()
 
-    return add_to_group(group_name, alert_names, save=save)
+    return found_tag
 
 
-def add_to_group(group_name, alert_names, save=True):
-    new_alerts = []
+def set_alerts(tag_name, alerts, save=True):
+    tag = db.session.query(Tag).filter_by(name=tag_name).one_or_none()
+    if not tag:
+        raise Exception(f"Tag not found: {tag_name}")
+    if alerts is None:
+        raise Exception(f"Alerts must be a list: {alerts}")
 
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if not group_alert:
-        group_alert = GroupAlert(group_name=group_name)
-        db.session.add(group_alert)
-
-    index = db.session.query(GroupAlertAssociation).filter_by(group_name=group_name).count()
-    for alert_name in alert_names:
-        alert = db.session.query(Alert).filter_by(name=alert_name)
-        if not alert.count():
-            raise Exception("Alert not found: {}".format(alert_name))
-
-        if not db.session.query(GroupAlertAssociation).filter_by(group_name=group_name, alert_name=alert_name).count():
-            new_alerts.append(alert_name)
-            new_association = GroupAlertAssociation(
-                group_name=group_alert.group_name, alert_name=alert_name, index=index
-            )
-            db.session.add(new_association)
-            index += 1
-    if save:
-        db.session.commit()
-    return new_alerts
-
-
-def list_groups(sort="name", page=1, limit=None, search=None):
-    groups = OrderedDict()
-    # TODO: sort by age, popularity
-    sort_options = {"name": GroupAlert.group_name}
-    group_alerts, page_metadata = apply_filters(
-        GroupAlert, sort_options, "group_name", sort=sort, page=page, limit=limit, search=search
+    # Ignore any tags that are already associated with this alert
+    existing_alerts = (
+        db.session.query(Alert.name)
+        .join(TagAssociation, TagAssociation.alert_name == Alert.name)
+        .filter(TagAssociation.tag_name == tag.name)
+        .all()
     )
+    existing_alert_names = set([tag[0] for tag in existing_alerts])
 
-    for group_alert in group_alerts:
-        alerts = sorted(group_alert.alerts, key=lambda group_alert: group_alert.index)
-        alerts = [alert.alert_name for alert in alerts]
-        groups[group_alert.group_name] = {
-            "name": group_alert.group_name,
-            "alerts": alerts,
-            "thumbnail": group_alert.thumbnail,
-            "always_chat": group_alert.always_chat,
-            "chat_message": group_alert.chat_message,
-        }
-    listed_groups = list(groups.values())
-    return listed_groups, page_metadata
+    # Delete current tags not in the new set
+    delete_alerts = list(existing_alert_names - set(alerts))
+    if delete_alerts:
+        delete_associations = (
+            db.session.query(TagAssociation.id)
+            .join(Alert, TagAssociation.alert_name == Alert.name)
+            .join(Tag, TagAssociation.tag_name == Tag.name)
+            .filter(Tag.id == tag.id, Alert.name.in_(delete_alerts))
+        )
+        delete_alerts_ids = [result[0] for result in delete_associations]
+        logger.info(f"Deleting old tags from {tag.name}: {delete_alerts}")
+        db.session.query(TagAssociation).filter(TagAssociation.id.in_(delete_alerts_ids)).delete()
 
+        # Unlike set_tags, we're *not* deleting any alerts that dont have tags
 
-def group_alert(group_name, random_choice=True, hit_socket=True, chat=False):
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if not group_alert:
-        raise Exception("Group not found: {}".format(group_name))
-    group_alerts = [result.alert_name for result in group_alert.alerts]
-    if random_choice:
-        chosen_alert = random.choice(group_alerts)
-    else:
-        chosen_alert = group_alerts[group_alert.current_index]
-        group_alert.current_index = (group_alert.current_index + 1) % len(group_alerts)
+    # Set any new tags, *ignoring any alerts that don't exist*
+    new_alerts = set(alerts) - existing_alert_names
+    if new_alerts:
+        logger.info(f"Setting new tags to {tag.name}: {new_alerts}")
+        for alert_name in new_alerts:
+            alert = db.session.query(Alert).filter_by(name=alert_name).one_or_none()
+            if not alert:
+                continue
+            db.session.add(TagAssociation(alert=alert, tag=tag))
+
+    if save:
         db.session.commit()
+
+
+def tag_alert(name, random_choice=True, hit_socket=True, chat=False, live=True):
+    tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+    if not tag:
+        raise Exception(f"Tag not found: {name}")
+    if tag.name != "random":
+        alert_names = tag.as_dict()["alerts"]
+        if random_choice:
+            chosen_alert = random.choice(alert_names)
+        else:
+            chosen_alert = alert_names[tag.current_index]
+            tag.current_index = (tag.current_index + 1) % len(alert_names)
+            db.session.commit()
+    else:
+        all_alerts = db.session.query(Alert.name).all()
+        chosen_alert = random.choice([alert[0] for alert in all_alerts])
 
     # add to counts
-    for count in group_alert.counts:
+    for count in tag.counts:
         counts.add_to_count(count.name)
 
-    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=False)
+    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=False, live=live)
 
     chatbot = get_chatbot()
-    if chatbot and (chat or group_alert.always_chat):
-        message = group_alert.chat_message if group_alert.chat_message else "/me {}".format(alert_message)
+    if chatbot and (chat or tag.always_chat):
+        message = tag.chat_message if tag.chat_message else f"/me {alert_message}"
         chatbot.chat(message)
 
     return alert_message
 
 
-def remove_from_group(group_name, alert_names):
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if not group_alert:
-        raise Exception("Group not found: {}".format(group_name))
-
-    for alert_name in alert_names:
-        alert = db.session.query(Alert).filter_by(name=alert_name)
-        if not alert.count():
-            raise Exception("Alert not found: {}".format(alert_name))
-
-    alerts = [alert for alert in group_alert.alerts if alert.alert_name in alert_names]
-    removed_alerts = [alert.alert_name for alert in alerts]
-    for alert in alerts:
-        db.session.delete(alert)
-
-    db.session.commit()
-    return removed_alerts
+def tag_details(name):
+    found_tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+    if not found_tag:
+        raise Exception(f"Tag not found: {name}")
+    return found_tag.as_dict()
 
 
-def remove_group(group_name):
-    group = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if group:
-        for alert in group.alerts:
-            db.session.delete(alert)
-        db.session.delete(group)
+def remove_tag(name):
+    if name == "random":
+        raise Exception("Cannot remove 'random' tag")
+
+    tag = db.session.query(Tag).filter_by(name=name)
+    if tag.count():
+        tag_name = tag.one_or_none().name
+
+        tag.delete()
+
         db.session.commit()
-        return group_name
+        return tag_name
     else:
-        raise Exception("Group not found: {}".format(group_name))
+        raise Exception(f"Tag not found: {name}")
+
+
+# BROWSE
+def browse(sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=True, include_tags=True):
+    # TODO: sort by popularity
+
+    results = []
+
+    if include_alerts and include_tags:
+        tag_query = db.session.query(
+            Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
+        )
+        sort_options = {"name": Tag.name, "created_at": Tag.created_at}
+        tag_results, _ = apply_filters(tag_query, sort_options, Tag.name, sort=sort, search=search)
+
+        # same thing minus page + limit
+        alert_query = db.session.query(
+            Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
+        )
+        sort_options = {"name": Alert.name, "created_at": Alert.created_at}
+        alert_results, _ = apply_filters(alert_query, sort_options, Alert.name, sort=sort, search=search)
+        alert_names = [alert.name for alert in list(alert_results)]
+
+        # exploded alerts from tags
+        # don't do this if there isn't a filter already
+        exploded_alerts = []
+        if search:
+            tag_query = (
+                db.session.query(
+                    Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
+                )
+                .join(TagAssociation, TagAssociation.alert_name == Alert.name)
+                .join(Tag, TagAssociation.tag_name == Tag.name)
+            )
+            sort_options = {"name": Tag.name, "created_at": Tag.created_at}
+            exploded_tag_results, _ = apply_filters(
+                tag_query, sort_options, TagAssociation.tag_name, sort=sort, search=search
+            )
+            # dedupe, prioritize on matched alerts
+            exploded_alerts = [
+                exploded_tag_result
+                for exploded_tag_result in list(exploded_tag_results)
+                if exploded_tag_result.name not in alert_names
+            ]
+
+        # tags > matched alerts > exploded alerts from tags
+        results = list(tag_results) + list(alert_results) + exploded_alerts
+
+        # manually get the page metadata
+        def paginate(data, page_number, items_per_page):
+            start_index = (page_number - 1) * items_per_page
+            end_index = start_index + items_per_page
+            return data[start_index:end_index]
+
+        results = paginate(results, int(page), int(limit))
+        page_metadata = {"total": len(results), "limit": limit, "page": page}
+    elif include_alerts:
+        alert_query = db.session.query(
+            Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
+        )
+        sort_options = {"name": Alert.name, "created_at": Alert.created_at}
+        results, page_metadata = apply_filters(
+            alert_query,
+            sort_options,
+            Alert.name,
+            sort=sort,
+            search=search,
+            page=page,
+            limit=limit,
+        )
+    else:
+        tag_query = db.session.query(
+            Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
+        )
+        sort_options = {"name": Tag.name, "created_at": Tag.created_at}
+        results, page_metadata = apply_filters(
+            tag_query, sort_options, Tag.name, sort=sort, search=search, page=page, limit=limit
+        )
+
+    def dict_results(results):
+        return [{"name": result[0], "thumbnail": result[1], "type": result[2]} for result in list(results)]
+
+    return dict_results(results), page_metadata

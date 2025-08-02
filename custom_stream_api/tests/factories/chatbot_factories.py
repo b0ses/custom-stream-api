@@ -8,6 +8,7 @@ class AliasFactory(factory.Factory):
     class Meta:
         model = models.Alias
 
+    id = factory.Faker("random_number")
     created_at = factory.Faker("date_time", tzinfo=dt.timezone.utc)
     alias = factory.Faker("word")
     command = factory.Faker("text")
@@ -18,6 +19,7 @@ class TimerFactory(factory.Factory):
     class Meta:
         model = models.Timer
 
+    id = factory.Faker("random_number")
     created_at = factory.Faker("date_time", tzinfo=dt.timezone.utc)
     command = factory.Faker("text")
     interval = factory.Faker("random_number")

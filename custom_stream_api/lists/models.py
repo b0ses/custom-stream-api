@@ -10,9 +10,10 @@ from sqlalchemy.orm import relationship
 class List(Base):
     __tablename__ = "list"
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
-    name = Column(Text, primary_key=True, nullable=False)
-    items = relationship("ListItem", cascade="all,delete", backref="group_alert")
+    name = Column(Text, unique=True, nullable=False)
+    items = relationship("ListItem", cascade="all,delete", backref="tag_alert")
     current_index = Column(Integer, default=0)
 
     def as_dict(self):
@@ -25,7 +26,7 @@ class List(Base):
 class ListItem(Base):
     __tablename__ = "list_item"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     list_name = Column(Text, ForeignKey("list.name"), nullable=False)
     index = Column(Integer, nullable=False)
     item = Column(Text, nullable=False)

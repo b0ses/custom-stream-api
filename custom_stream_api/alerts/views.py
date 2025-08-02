@@ -1,168 +1,179 @@
-from flask import Blueprint, request
+import logging
+
+from flask import Blueprint
 from flask import jsonify
+from webargs import fields, validate
+from webargs.flaskparser import use_kwargs
+
 from custom_stream_api.alerts import alerts
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.auth import twitch_auth
 
 alert_endpoints = Blueprint("alerts", __name__)
 
+logger = logging.getLogger(__name__)
 
-@alert_endpoints.route("/", methods=["GET", "POST"])
+
+@alert_endpoints.route("/", methods=["GET"])
 @twitch_auth.twitch_login_required
-def list_alerts_get():
-    if request.method == "GET":
-        sort = request.args.get("sort")
-        page = request.args.get("page")
-        limit = request.args.get("limit")
-        search = request.args.get("search")
-        try:
-            list_alerts, page_metadata = alerts.list_alerts(sort=sort, page=page, limit=limit, search=search)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"alerts": list_alerts, "page_metadata": page_metadata})
+@use_kwargs(
+    {
+        "sort": fields.Str(
+            validate=validate.OneOf(["name", "created_at", "-name", "-created_at"]), load_default="-created_at"
+        ),
+        "page": fields.Int(validate=lambda val: val > 0, load_default=1),
+        "limit": fields.Int(validate=lambda val: val > 0, load_default=alerts.MAX_LIMIT),
+        "search": fields.Str(load_default=""),
+        "include_alerts": fields.Bool(load_default=True),
+        "include_tags": fields.Bool(load_default=True),
+    },
+    location="query",
+)
+def browse_get(**kwargs):
+    try:
+        search_results, page_metadata = alerts.browse(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"search_results": search_results, "page_metadata": page_metadata})
 
 
-@alert_endpoints.route("/add_alert", methods=["POST"])
+@alert_endpoints.route("/alert_details", methods=["GET"])
 @twitch_auth.twitch_login_required
-def add_alert_post():
-    if request.method == "POST":
-        data = request.get_json()
-        add_alert_data = {
-            "name": data.get("name", ""),
-            "text": data.get("text", ""),
-            "sound": data.get("sound", ""),
-            "duration": data.get("duration", 0),
-            "effect": data.get("effect", ""),
-            "image": data.get("image", ""),
-            "thumbnail": data.get("thumbnail", ""),
-        }
-        try:
-            alert_name = alerts.add_alert(**add_alert_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Alert in database: {}".format(alert_name)})
+@use_kwargs(
+    {
+        "name": fields.Str(required=True),
+    },
+    location="query",
+)
+def alert_details_get(**kwargs):
+    try:
+        alert = alerts.alert_details(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"alert": alert})
+
+
+@alert_endpoints.route("/save_alert", methods=["POST"])
+@twitch_auth.twitch_login_required
+@use_kwargs(
+    {
+        "name": fields.Str(required=True),
+        "text": fields.Str(),
+        "sound": fields.Str(),
+        "effect": fields.Str(),
+        "image": fields.Str(),
+        "thumbnail": fields.Str(allow_none=True),
+        "tags": fields.List(fields.Str),
+    },
+    location="json",
+)
+def save_alert_post(**kwargs):
+    try:
+        alert = alerts.save_alert(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": f"Alert saved: {alert.name}"})
 
 
 @alert_endpoints.route("/alert", methods=["POST"])
 @twitch_auth.twitch_login_required
-def alert_post():
-    if request.method == "POST":
-        data = request.get_json()
-        alert_data = {
-            "name": data.get("name", ""),
-            "text": data.get("text", ""),
-            "sound": data.get("sound", ""),
-            "duration": data.get("duration", 0),
-            "effect": data.get("effect", ""),
-            "image": data.get("image", ""),
-        }
-        try:
-            alert_text = alerts.alert(**alert_data)
-            if not alert_text:
-                alert_text = "Displayed alert"
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": alert_text})
+@use_kwargs(
+    {
+        "name": fields.Str(),
+        "text": fields.Str(),
+        "sound": fields.Str(),
+        "effect": fields.Str(),
+        "image": fields.Str(),
+        "live": fields.Bool(load_default=True),
+    },
+    location="json",
+)
+def alert_post(**kwargs):
+    try:
+        alert_text = alerts.alert(**kwargs)
+        if not alert_text:
+            alert_text = "Displayed alert"
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": alert_text})
 
 
 @alert_endpoints.route("/remove_alert", methods=["POST"])
 @twitch_auth.twitch_login_required
-def remove_alert_post():
-    if request.method == "POST":
-        data = request.get_json()
-        remove_alert_data = {
-            "name": data.get("name"),
-        }
-        try:
-            alert_name = alerts.remove_alert(**remove_alert_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Alert removed: {}".format(alert_name)})
+@use_kwargs({"name": fields.Str(required=True)}, location="json")
+def remove_alert_post(**kwargs):
+    try:
+        alert_name = alerts.remove_alert(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": f"Alert removed: {alert_name}"})
 
 
-@alert_endpoints.route("/groups", methods=["GET", "POST"])
+@alert_endpoints.route("/tag_alert", methods=["POST"])
 @twitch_auth.twitch_login_required
-def list_groups_get():
-    if request.method == "GET":
-        sort = request.args.get("sort")
-        page = request.args.get("page")
-        limit = request.args.get("limit")
-        search = request.args.get("search")
-        try:
-            list_groups, page_metadata = alerts.list_groups(sort=sort, page=page, limit=limit, search=search)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"groups": list_groups, "page_metadata": page_metadata})
+@use_kwargs(
+    {
+        "name": fields.Str(required=True),
+        "random_choice": fields.Bool(load_default=True),
+        "live": fields.Bool(load_default=True),
+    },
+    location="json",
+)
+def tag_alert_post(**kwargs):
+    try:
+        alert_text = alerts.tag_alert(**kwargs)
+        if not alert_text:
+            alert_text = "Displayed alert"
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": alert_text})
 
 
-@alert_endpoints.route("/save_group", methods=["POST"])
+@alert_endpoints.route("/tag_details", methods=["GET"])
 @twitch_auth.twitch_login_required
-def save_group_post():
-    if request.method == "POST":
-        data = request.get_json()
-        add_to_group_data = {
-            "group_name": data.get("group_name"),
-            "alert_names": data.get("alert_names"),
-            "thumbnail": data.get("thumbnail"),
-        }
-        try:
-            alert_names = alerts.set_group(**add_to_group_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Added to {}: {}".format(data.get("group_name"), alert_names)})
+@use_kwargs(
+    {
+        "name": fields.Str(required=True),
+    },
+    location="query",
+)
+def tag_details_get(**kwargs):
+    try:
+        tag = alerts.tag_details(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"tag": tag})
 
 
-@alert_endpoints.route("/add_to_group", methods=["POST"])
+@alert_endpoints.route("/save_tag", methods=["POST"])
 @twitch_auth.twitch_login_required
-def add_to_group_post():
-    if request.method == "POST":
-        data = request.get_json()
-        add_to_group_data = {"group_name": data.get("group_name"), "alert_names": data.get("alert_names")}
-        try:
-            alert_names = alerts.add_to_group(**add_to_group_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Added to {}: {}".format(data.get("group_name"), alert_names)})
+@use_kwargs(
+    {"name": fields.Str(required=True), "thumbnail": fields.Str(allow_none=True), "alerts": fields.List(fields.Str)},
+    location="json",
+)
+def save_tag_post(**kwargs):
+    try:
+        tag = alerts.save_tag(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": f"Tag saved: {tag.name}"})
 
 
-@alert_endpoints.route("/group_alert", methods=["POST"])
+@alert_endpoints.route("/remove_tag", methods=["POST"])
 @twitch_auth.twitch_login_required
-def group_alert_post():
-    if request.method == "POST":
-        data = request.get_json()
-        alert_data = {"group_name": data.get("group_name", ""), "random_choice": data.get("random", True)}
-        try:
-            alert_text = alerts.group_alert(**alert_data)
-            if not alert_text:
-                alert_text = "Displayed alert"
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": alert_text})
-
-
-@alert_endpoints.route("/remove_from_group", methods=["POST"])
-@twitch_auth.twitch_login_required
-def remove_from_group_post():
-    if request.method == "POST":
-        data = request.get_json()
-        remove_from_group_data = {"group_name": data.get("group_name"), "alert_names": data.get("alert_names")}
-        try:
-            alert_names = alerts.remove_from_group(**remove_from_group_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Removed from {}: {}".format(data.get("group_name"), alert_names)})
-
-
-@alert_endpoints.route("/remove_group", methods=["POST"])
-@twitch_auth.twitch_login_required
-def remove_group_post():
-    if request.method == "POST":
-        data = request.get_json()
-        remove_group_data = {
-            "group_name": data.get("group_name"),
-        }
-        try:
-            group_name = alerts.remove_group(**remove_group_data)
-        except Exception as e:
-            raise InvalidUsage(str(e))
-        return jsonify({"message": "Group removed: {}".format(group_name)})
+@use_kwargs({"name": fields.Str(required=True)}, location="json")
+def remove_tag_post(**kwargs):
+    try:
+        tag_name = alerts.remove_tag(**kwargs)
+    except Exception as e:
+        logger.exception(e)
+        raise InvalidUsage(str(e))
+    return jsonify({"message": f"Tag removed: {tag_name}"})

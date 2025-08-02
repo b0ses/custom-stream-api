@@ -1,8 +1,8 @@
-from collections import namedtuple
-
 import mock
 import pytest
 import time
+
+from collections import namedtuple
 
 from custom_stream_api.alerts import alerts
 from custom_stream_api.chatbot import aliases, twitchbot, timers
@@ -11,7 +11,7 @@ from custom_stream_api.lists import lists
 from custom_stream_api.shared import g
 
 from custom_stream_api.tests.factories.chatbot_factories import AliasFactory, TimerFactory
-from custom_stream_api.tests.test_alerts import import_groups, import_alerts  # noqa
+from custom_stream_api.tests.test_alerts import import_tags, import_alerts  # noqa
 
 TEST_ALIAS_DICTS = []
 TEST_TIMER_DICTS = []
@@ -43,6 +43,11 @@ def import_aliases(session):
     session.add_all(TEST_ALIASES)
     session.commit()
 
+    yield session
+
+    session.query(AliasFactory._meta.model).delete()
+    session.commit()
+
 
 @pytest.fixture(scope="function")
 def import_timers(session):
@@ -55,6 +60,11 @@ def import_timers(session):
 
     TEST_TIMER_DICTS = [test_timer.as_dict() for test_timer in TEST_TIMERS]
     session.add_all(TEST_TIMERS)
+    session.commit()
+
+    yield session
+
+    session.query(TimerFactory._meta.model).delete()
     session.commit()
 
 
@@ -71,7 +81,7 @@ def fake_alert_api(cls, user, badges, alert):
         pass
 
 
-def fake_group_alert_api(cls, user, badges, group_alert):
+def fake_tag_alert_api(cls, user, badges, tag_name):
     if user in lists.get_list("banned_users"):
         return
     elif not cls._badge_check(badges, Badges.VIP) and cls.spamming(user):
@@ -79,7 +89,7 @@ def fake_group_alert_api(cls, user, badges, group_alert):
         return
 
     try:
-        alerts.group_alert(group_name=group_alert, hit_socket=False, chat=True)
+        alerts.tag_alert(name=tag_name, hit_socket=False, chat=True)
     except Exception:
         pass
 
@@ -296,8 +306,8 @@ def test_get_aliases(import_aliases, chatbot):
 
 
 @mock.patch.object(twitchbot.TwitchBot, "alert_api", new=fake_alert_api)
-@mock.patch.object(twitchbot.TwitchBot, "group_alert_api", new=fake_group_alert_api)
-def test_aliases(import_aliases, import_groups, chatbot):  # noqa
+@mock.patch.object(twitchbot.TwitchBot, "tag_alert_api", new=fake_tag_alert_api)
+def test_aliases(import_aliases, import_tags, chatbot):  # noqa
     badge_level = [Badges.SUBSCRIBER]
     simulate_chat(chatbot, "test_user", "!mod_test_alias", badge_level)
     expected_responses = []
@@ -660,13 +670,13 @@ def test_get_alert_commands(chatbot):
 
     badge_level = [Badges.VIP]
     simulate_chat(chatbot, "test_user", "!get_alert_commands", badge_level)
-    expected_response = "Commands include: alert, ban, group_alert, unban"
+    expected_response = "Commands include: alert, ban, tag_alert, unban"
     assert chatbot.responses[-1] == expected_response
 
 
 @mock.patch.object(twitchbot.TwitchBot, "alert_api", new=fake_alert_api)
-@mock.patch.object(twitchbot.TwitchBot, "group_alert_api", new=fake_group_alert_api)
-def test_alert_commands(chatbot, import_groups):  # noqa
+@mock.patch.object(twitchbot.TwitchBot, "tag_alert_api", new=fake_tag_alert_api)
+def test_alert_commands(chatbot, import_tags):  # noqa
     badge_level = [Badges.VIP]
     simulate_chat(chatbot, "test_user", "!alert test_text_1", badge_level)
     expected_response = "/me Test Text 1"
@@ -683,23 +693,23 @@ def test_alert_commands(chatbot, import_groups):  # noqa
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [Badges.VIP]
-    simulate_chat(chatbot, "test_user", "!group_alert first_two", badge_level)
+    simulate_chat(chatbot, "test_user", "!tag_alert first_two", badge_level)
     expected_responses = ["/me Test Text 1", "/me Test Text 2"]
     assert chatbot.responses[-1] in expected_responses
 
     badge_level = [Badges.VIP]
-    simulate_chat(chatbot, "test_user", "!group_alert last_two", badge_level)
+    simulate_chat(chatbot, "test_user", "!tag_alert last_two", badge_level)
     expected_response = "last two!"
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [Badges.VIP]
-    simulate_chat(chatbot, "test_user", "!group_alert", badge_level)
-    expected_response = "Format: !group_alert group_alert_name"
+    simulate_chat(chatbot, "test_user", "!tag_alert", badge_level)
+    expected_response = "Format: !tag_alert tag_name"
     assert chatbot.responses[-1] == expected_response
 
     badge_level = [Badges.VIP]
-    simulate_chat(chatbot, "test_user", "!group_alert first_two blah", badge_level)
-    expected_response = "Format: !group_alert group_alert_name"
+    simulate_chat(chatbot, "test_user", "!tag_alert first_two blah", badge_level)
+    expected_response = "Format: !tag_alert tag_name"
     assert chatbot.responses[-1] == expected_response
 
     # banning

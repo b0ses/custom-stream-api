@@ -45,8 +45,9 @@ BADGE_NAMES = [badge.value for badge in BADGE_LEVELS]
 class Alias(Base):
     __tablename__ = "alias"
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
-    alias = Column(Text, primary_key=True, nullable=False)
+    alias = Column(Text, unique=True, nullable=False)
     command = Column(Text, nullable=False)
     badge = Column(Text, nullable=False)
 
@@ -57,8 +58,9 @@ class Alias(Base):
 class Timer(Base):
     __tablename__ = "timer"
 
+    id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
-    command = Column(Text, primary_key=True, nullable=False)
+    command = Column(Text, unique=True, nullable=False)
     interval = Column(Integer(), nullable=False)
 
     def as_dict(self):

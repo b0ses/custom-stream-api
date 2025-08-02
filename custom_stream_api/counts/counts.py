@@ -1,17 +1,10 @@
 from custom_stream_api.counts.models import Count
-from custom_stream_api.alerts.models import GroupAlert
+from custom_stream_api.alerts.models import Tag
 from custom_stream_api.shared import db
 
 
 def list_counts():
     return [count.as_dict() for count in db.session.query(Count).order_by(Count.name.asc()).all()]
-
-
-def import_counts(import_counts):
-    for count_dict in import_counts:
-        group_name = count_dict.get("group_name", "")
-        set_count(count_dict["name"], count_dict["count"], group_name=group_name, save=False)
-    db.session.commit()
 
 
 def get_count(name):
@@ -44,15 +37,16 @@ def reset_count(name, save=True):
     return set_count(name, 0, save=save)
 
 
-def set_count(name, count, group_name="", save=True):
+def set_count(name, count, tag_name=None, save=True):
     count_obj = db.session.query(Count).filter(Count.name == name).one_or_none()
     if not count_obj:
         count_obj = Count(name=name, count=0)
         db.session.add(count_obj)
     count_obj.count = count
-    group_alert = db.session.query(GroupAlert).filter_by(group_name=group_name).one_or_none()
-    if group_alert:
-        count_obj.group_alert = group_alert
+
+    tag = db.session.query(Tag).filter_by(name=tag_name).one_or_none()
+    if tag:
+        count_obj.tag_name = tag
 
     if save:
         db.session.commit()

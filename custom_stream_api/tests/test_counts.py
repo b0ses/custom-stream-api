@@ -14,21 +14,26 @@ def import_counts(session):
         CountFactory(
             name="count1",
             count=-10,
-            group_name=None,
+            tag_name=None,
         ),
         CountFactory(
             name="count2",
             count=20,
-            group_name=None,
+            tag_name=None,
         ),
         CountFactory(
             name="count3",
             count=90,
-            group_name=None,
+            tag_name=None,
         ),
     ]
     TEST_COUNTS_DICTS = [test_count.as_dict() for test_count in TEST_COUNTS]
     session.add_all(TEST_COUNTS)
+    session.commit()
+
+    yield session
+
+    session.query(CountFactory._meta.model).delete()
     session.commit()
 
 

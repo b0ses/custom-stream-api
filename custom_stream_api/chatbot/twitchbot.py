@@ -25,7 +25,7 @@ from custom_stream_api.alerts import alerts
 
 # from custom_stream_api.lights import lights
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class TwitchBot(irc.bot.SingleServerIRCBot):
@@ -90,7 +90,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             # if it's a count name, return the count
             found_count = counts.get_count(variable)
             if found_count is not None:
-                message = message.replace("{{{}}}".format(variable), str(found_count))
+                message = message.replace(f"{{{variable}}}", str(found_count))
                 continue
 
             # if it's a list, return a random one or use the index
@@ -110,7 +110,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
 
             found_item, index = lists.get_list_item(name=list_name, index=index)
             if found_item is not None:
-                message = message.replace("{{{}}}".format(variable), found_item)
+                message = message.replace(f"{{{variable}}}", found_item)
                 continue
 
         return message
@@ -131,7 +131,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
     # NOTIFICATIONS
 
     def on_usernotice(self, connection, event):
-        logger.warning("USERNOTICE:{}".format(event))
+        logger.warning(f"USERNOTICE:{event}")
 
     # PARSE MESSAGES
 
@@ -142,7 +142,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         badges = self.get_user_badges(tags)
         command = event.arguments[0]
         if command[:1] == "!":
-            logger.info("{} (badges:{}) commanded: {}".format(user, badges, command))
+            logger.info(f"{user} (badges:{badges}) commanded: {command}")
             try:
                 self.queue.appendleft({"command": command, "user": user, "badges": badges})
             except Exception as e:
@@ -178,7 +178,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         if badge_objects:
             return badge_objects[0]
         else:
-            logger.warning("Possible new badge: {}".format(badge_string))
+            logger.warning(f"Possible new badge: {badge_string}")
 
     def get_min_badge(self, badges):
         min_badge = Badges.CHAT
@@ -210,7 +210,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         if not re.match(found_command["format"], strip_text):
-            self.chat("Format: {}".format(found_command["help"]))
+            self.chat(f"Format: {found_command['help']}")
             return
 
         found_command["callback"](command_text, user, badges)
@@ -648,11 +648,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
                 "format": r"^!alert\s+\S+$",
                 "help": "!alert alert_name",
             },
-            "group_alert": {
+            "tag_alert": {
                 "badge": Badges.VIP,
-                "callback": lambda text, user, badges: self.group_alert_api(user, badges, text),
-                "format": r"^!group_alert\s+\S+$",
-                "help": "!group_alert group_alert_name",
+                "callback": lambda text, user, badges: self.tag_alert_api(user, badges, text),
+                "format": r"^!tag\_alert\s+\S+$",
+                "help": "!tag_alert tag_name",
             },
             "ban": {
                 "badge": Badges.VIP,
@@ -676,11 +676,11 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         try:
-            alerts.alert(name=alert, chat=True)
+            alerts.alert(alert_name=alert, chat=True)
         except Exception:
             pass
 
-    def group_alert_api(self, user, badges, group_alert):
+    def tag_alert_api(self, user, badges, tag_name):
         if user in lists.get_list("banned_users"):
             return
         elif not self._badge_check(badges, Badges.VIP) and self.spamming(user):
@@ -688,7 +688,7 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
             return
 
         try:
-            alerts.group_alert(group_name=group_alert, chat=True)
+            alerts.tag_alert(name=tag_name, chat=True)
         except Exception:
             pass
 
@@ -783,14 +783,12 @@ class TwitchBot(irc.bot.SingleServerIRCBot):
         self.display_commands(self.main_commands, None, badges)
 
     def taco(self, from_user, to_user):
-        self.chat("/me {} aggressively hurls a :taco: at {}".format(from_user, to_user))
-        taco_user_count = "{}_tacos".format(to_user)
+        self.chat(f"/me {from_user} aggressively hurls a :taco: at {to_user}")
+        taco_user_count = f"{to_user}_tacos"
         self.chat_count_output(taco_user_count, counts.add_to_count(taco_user_count)),
 
     def shoutout(self, text):
-        self.chat(
-            "Hey I know {}! You should check'em out and drop a follow " "- https://www.twitch.tv/{}".format(text, text)
-        )
+        self.chat(f"Hey I know {text}! You should check'em out and drop a follow - https://www.twitch.tv/{text}")
 
     # Helper commands
 

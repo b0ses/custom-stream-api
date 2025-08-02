@@ -5,7 +5,7 @@ from custom_stream_api.shared import create_app
 
 app, socketio, _, _ = create_app()
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     if not settings.SECRET:

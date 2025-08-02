@@ -14,3 +14,4 @@ pyjwt==2.10.0
 python-socketio==5.13.0
 requests==2.32.3
 SQLAlchemy==2.0.41
+webargs==8.7.0
