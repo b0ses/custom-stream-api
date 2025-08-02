@@ -33,6 +33,9 @@ jobs:
     - name: Update config for postgres
       run: |
         sed -i '15 s/""/"postgresql:\/\/postgres:postgres@localhost\/postgres"/' custom_stream_api/settings.py
+    - name: Echo settings.py
+      run: |
+        echo custom_stream_api/settings.py
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
