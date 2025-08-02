@@ -6,6 +6,7 @@ HOST = "127.0.0.1"
 PORT = 5000
 DASHBOARD_PORT = 8080
 OVERLAY_PORT = None
+PREVIEW_PORT = 81
 
 # Just fill these in with whatever. Adds security to your server.
 SECRET = ""
