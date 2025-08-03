@@ -51,15 +51,7 @@ DEFAULT_CONFIG = {
     "formatters": {
         "default": {"format": "%(asctime)s %(levelname)s:%(name)s:%(message)s"},
     },
-    "handlers": {
-        "console": {"formatter": "default", "class": "logging.StreamHandler"},
-        "file": {
-            "formatter": "default",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(APP_DIR, "app.log"),
-            "mode": "w",
-        },
-    },
+    "handlers": {"console": {"formatter": "default", "class": "logging.StreamHandler"}},
     "loggers": {
         # i.e. "all modules"
         "": {"handlers": ["console"], "level": "INFO", "propagate": True},
@@ -103,6 +95,14 @@ def create_app(**settings_override):
     socketio.on_event("FromAPI", lambda data: None, namespace="/live")
     socketio.on_event("FromAPI", lambda data: None, namespace="/preview")
 
+    # write to app.log if local
+    if settings.HOST == "127.0.0.1":
+        DEFAULT_CONFIG["handlers"]["file"] = {
+            "formatter": "default",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(APP_DIR, "app.log"),
+            "mode": "w",
+        }
     logging.config.dictConfig(DEFAULT_CONFIG)
 
     from custom_stream_api.alerts.views import alert_endpoints
