@@ -83,36 +83,6 @@ def generate_name(name="", text="", sound="", image=""):
     return generated_name.strip().lower().replace(" ", "_")
 
 
-def apply_filters(list_query, sort_options, search_attr, sort="name", page=1, limit=None, search=None):
-    if sort:
-        sort_options.update({f"-{sort_option}": sort_value for sort_option, sort_value in sort_options.items()})
-        if sort not in sort_options:
-            raise ValueError(f"Invalid sort option: {sort}")
-        order_by = sort_options[sort].desc() if sort[0] == "-" else sort_options[sort].asc()
-
-    if search and isinstance(search, str):
-        list_query = list_query.filter(func.lower(search_attr).contains(search.lower()))
-    if sort:
-        list_query = list_query.order_by(order_by)
-    if page and limit:
-        page = int(page)
-        index_0_page = page - 1
-        limit = int(limit)
-        start = index_0_page * limit
-        end = start + limit
-        results = list_query.slice(start, end)
-    elif limit:
-        limit = int(limit)
-        results = list_query.limit(limit)
-    else:
-        results = list_query.all()
-
-    total = list_query.count()
-    page_metadata = {"total": total, "page": page or 1, "limit": limit}
-
-    return results, page_metadata
-
-
 # ALERTS
 def save_alert(name, text="", sound="", effect="", image="", thumbnail="", tags=None, save=True):
     validate_sound(sound)
@@ -372,17 +342,65 @@ def remove_tag(name):
 
 
 # BROWSE
+def apply_filters(list_query, sort_options, search_attr, sort="name", page=1, limit=None, search=None):
+    if sort:
+        sort_options.update({f"-{sort_option}": sort_value for sort_option, sort_value in sort_options.items()})
+        if sort not in sort_options:
+            raise ValueError(f"Invalid sort option: {sort}")
+        order_by = sort_options[sort].desc() if sort[0] == "-" else sort_options[sort].asc()
+
+    if search and isinstance(search, str):
+        list_query = list_query.filter(func.lower(search_attr).contains(search.lower()))
+    if sort:
+        list_query = list_query.order_by(order_by)
+    if page and limit:
+        page = int(page)
+        index_0_page = page - 1
+        limit = int(limit)
+        start = index_0_page * limit
+        end = start + limit
+        results = list_query.slice(start, end)
+    elif limit:
+        limit = int(limit)
+        results = list_query.limit(limit)
+    else:
+        results = list_query.all()
+
+    total = list_query.count()
+    page_metadata = {"total": total, "page": page or 1, "limit": limit}
+
+    return results, page_metadata
+
+
+def get_exploded_alerts(search, sort):
+    tag_query = (
+        db.session.query(Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type"))
+        .join(TagAssociation, TagAssociation.alert_name == Alert.name)
+        .join(Tag, TagAssociation.tag_name == Tag.name)
+    )
+    sort_options = {"name": Tag.name, "created_at": Tag.created_at}
+    exploded_alerts, _ = apply_filters(tag_query, sort_options, TagAssociation.tag_name, sort=sort, search=search)
+    return exploded_alerts
+
+
+def paginate(data, page_number, items_per_page):
+    start_index = (page_number - 1) * items_per_page
+    end_index = start_index + items_per_page
+    return data[start_index:end_index]
+
+
 def browse(sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=True, include_tags=True):
     # TODO: sort by popularity
 
     results = []
-
-    if include_alerts and include_tags:
-        tag_query = db.session.query(
-            Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
-        )
-        sort_options = {"name": Tag.name, "created_at": Tag.created_at}
-        tag_results, _ = apply_filters(tag_query, sort_options, Tag.name, sort=sort, search=search)
+    if include_alerts:
+        tag_results = []
+        if include_tags:
+            tag_query = db.session.query(
+                Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
+            )
+            sort_options = {"name": Tag.name, "created_at": Tag.created_at}
+            tag_results, _ = apply_filters(tag_query, sort_options, Tag.name, sort=sort, search=search)
 
         # same thing minus page + limit
         alert_query = db.session.query(
@@ -392,53 +410,19 @@ def browse(sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=Tru
         alert_results, _ = apply_filters(alert_query, sort_options, Alert.name, sort=sort, search=search)
         alert_names = [alert.name for alert in list(alert_results)]
 
-        # exploded alerts from tags
-        # don't do this if there isn't a filter already
         exploded_alerts = []
         if search:
-            tag_query = (
-                db.session.query(
-                    Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
-                )
-                .join(TagAssociation, TagAssociation.alert_name == Alert.name)
-                .join(Tag, TagAssociation.tag_name == Tag.name)
-            )
-            sort_options = {"name": Tag.name, "created_at": Tag.created_at}
-            exploded_tag_results, _ = apply_filters(
-                tag_query, sort_options, TagAssociation.tag_name, sort=sort, search=search
-            )
+            exploded_alerts = get_exploded_alerts(search, sort)
             # dedupe, prioritize on matched alerts
             exploded_alerts = [
-                exploded_tag_result
-                for exploded_tag_result in list(exploded_tag_results)
-                if exploded_tag_result.name not in alert_names
+                exploded_alert for exploded_alert in list(exploded_alerts) if exploded_alert.name not in alert_names
             ]
 
         # tags > matched alerts > exploded alerts from tags
         results = list(tag_results) + list(alert_results) + exploded_alerts
-
-        # manually get the page metadata
-        def paginate(data, page_number, items_per_page):
-            start_index = (page_number - 1) * items_per_page
-            end_index = start_index + items_per_page
-            return data[start_index:end_index]
-
+        results = list(dict.fromkeys(results))
         results = paginate(results, int(page), int(limit))
         page_metadata = {"total": len(results), "limit": limit, "page": page}
-    elif include_alerts:
-        alert_query = db.session.query(
-            Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
-        )
-        sort_options = {"name": Alert.name, "created_at": Alert.created_at}
-        results, page_metadata = apply_filters(
-            alert_query,
-            sort_options,
-            Alert.name,
-            sort=sort,
-            search=search,
-            page=page,
-            limit=limit,
-        )
     else:
         tag_query = db.session.query(
             Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
