@@ -38,6 +38,7 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(Text, unique=True, nullable=False)
     thumbnail = Column(Text)
+    category = Column(Text)
     current_index = Column(Integer, default=0)
     counts = relationship("Count", backref="tag")
     always_chat = Column(Boolean, default=False, nullable=False, server_default="f")

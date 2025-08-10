@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
         ),
         "page": fields.Int(validate=lambda val: val > 0, load_default=1),
         "limit": fields.Int(validate=lambda val: val > 0, load_default=alerts.MAX_LIMIT),
+        "tag_category": fields.Str(allow_none=True),
         "search": fields.Str(load_default=""),
         "include_alerts": fields.Bool(load_default=True),
         "include_tags": fields.Bool(load_default=True),
@@ -155,7 +156,12 @@ def tag_details_get(**kwargs):
 @alert_endpoints.route("/save_tag", methods=["POST"])
 @twitch_auth.twitch_login_required
 @use_kwargs(
-    {"name": fields.Str(required=True), "thumbnail": fields.Str(allow_none=True), "alerts": fields.List(fields.Str)},
+    {
+        "name": fields.Str(required=True),
+        "thumbnail": fields.Str(allow_none=True),
+        "category": fields.Str(required=True, validate=validate.OneOf(alerts.TAG_CATEGORIES)),
+        "alerts": fields.List(fields.Str),
+    },
     location="json",
 )
 def save_tag_post(**kwargs):
