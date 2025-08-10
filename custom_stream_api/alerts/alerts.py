@@ -450,6 +450,9 @@ def browse(
         tag_query = db.session.query(
             Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
         )
+        if tag_category:
+            tag_category = validate_tag_category(tag_category)
+            tag_query = tag_query.filter_by(category=tag_category)
         sort_options = {"name": Tag.name, "created_at": Tag.created_at}
         results, page_metadata = apply_filters(
             tag_query, sort_options, Tag.name, sort=sort, search=search, page=page, limit=limit
