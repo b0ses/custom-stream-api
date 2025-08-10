@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 
 MAX_LIMIT = 100
 
+TAG_CATEGORIES = [
+    "reference",  # where is the sound from (star wars, jurassic park, etc.)
+    "character",  # who said it (batman, spongebob)
+    "content",  # what is it (fight, pain, win, lose, item, love, directions, numbers)
+]
+
 VALID_SOUNDS = ["wav", "mp3", "ogg"]
 VALID_IMAGES = ["jpg", "png", "tif", "tiff", "gif", "raw", "jpeg", "webp"]
 URL_REGEX = r"^(http[s]?):\/?\/?([^:\/\s]+)((\/.+)*\/)(.+)\.({})$"
@@ -67,6 +73,14 @@ def validate_thumbnail(thumbnail):
         else:
             raise Exception(f"Invalid thumbnail: {thumbnail}")
     return thumbnail
+
+
+def validate_tag_category(tag_category):
+    tag_category = tag_category or ""
+    if tag_category in TAG_CATEGORIES:
+        return tag_category
+    else:
+        raise ValueError(f"Invalid tag_category: {tag_category}")
 
 
 def generate_name(name="", text="", sound="", image=""):
@@ -220,8 +234,9 @@ def remove_alert(name):
 
 
 # TAGS
-def save_tag(name, thumbnail="", always_chat=False, chat_message=None, alerts=None, save=True):
+def save_tag(name, thumbnail="", category="content", always_chat=False, chat_message=None, alerts=None, save=True):
     thumbnail = validate_thumbnail(thumbnail)
+    category = validate_tag_category(category)
 
     found_tag = db.session.query(Tag).filter_by(name=name).one_or_none()
 
@@ -230,8 +245,11 @@ def save_tag(name, thumbnail="", always_chat=False, chat_message=None, alerts=No
         found_tag.thumbnail = thumbnail
         found_tag.always_chat = always_chat
         found_tag.chat_message = chat_message
+        found_tag.category = category
     else:
-        found_tag = Tag(name=name, thumbnail=thumbnail, always_chat=always_chat, chat_message=chat_message)
+        found_tag = Tag(
+            name=name, thumbnail=thumbnail, category=category, always_chat=always_chat, chat_message=chat_message
+        )
         db.session.add(found_tag)
 
     if alerts:
@@ -389,7 +407,9 @@ def paginate(data, page_number, items_per_page):
     return data[start_index:end_index]
 
 
-def browse(sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=True, include_tags=True):
+def browse(
+    sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=True, include_tags=True, tag_category=None
+):
     # TODO: sort by popularity
 
     results = []
@@ -399,6 +419,9 @@ def browse(sort="name", page=1, limit=MAX_LIMIT, search=None, include_alerts=Tru
             tag_query = db.session.query(
                 Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
             )
+            if tag_category:
+                tag_category = validate_tag_category(tag_category)
+                tag_query = tag_query.filter_by(category=tag_category)
             sort_options = {"name": Tag.name, "created_at": Tag.created_at}
             tag_results, _ = apply_filters(tag_query, sort_options, Tag.name, sort=sort, search=search)
 
