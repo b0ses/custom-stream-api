@@ -285,6 +285,7 @@ def test_save_tag(import_tags):
     all_tag_dict = {
         "name": "all_alerts",
         "thumbnail": "http://www.test.com/test_thumbnail.png",
+        "category": 'reference',
         "always_chat": True,
         "chat_message": "",
         "alerts": [],
@@ -298,7 +299,8 @@ def test_save_tag(import_tags):
     assert expected == all_tag_dict
 
     # Modifying an existing one
-    all_tag_dict = {"name": "all_alerts", "thumbnail": "", "always_chat": False, "chat_message": "", "alerts": []}
+    all_tag_dict = {"name": "all_alerts", "thumbnail": "", "category": 'reference', "always_chat": False,
+                    "chat_message": "", "alerts": []}
     alerts.save_tag(**all_tag_dict)
     all_tag = db.session.query(Tag).filter_by(name="all_alerts").one()
     expected = all_tag.as_dict()
