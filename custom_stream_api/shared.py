@@ -1,21 +1,24 @@
+import asyncio
+import janus
 import logging
 import logging.config
 import os
+import socketio
+import threading
+
 from alembic.config import Config
 from alembic import command
 from flask import Flask
 from flask import jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import declarative_base
+from asgiref.wsgi import WsgiToAsgi
 
 from custom_stream_api import settings
 
 app = None
-socketio = None
 db = SQLAlchemy()
-g = {}
 Base = declarative_base()
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -60,14 +63,53 @@ DEFAULT_CONFIG = {
     },
 }
 
+# MAGICAL SYNC -> SYNC
+
+
+def start_background_task_thread(task, *args, **kwargs):
+    """Starts the asyncio event loop for the background task."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(task(*args, **kwargs))
+
+
+def run_async_in_thread(task, *args, **kwargs):
+    thread = threading.Thread(target=start_background_task_thread, args=(task,) + args, kwargs=kwargs, daemon=True)
+    thread.start()
+
+
+# MAGICAL SYNC -> SYNC
+
+
+async def socket_io_emitter(sio, socketio_queue):
+    while True:
+        queue_message = await socketio_queue.get()
+        await sio.emit("FromAPI", queue_message["data"], namespace=f"/{queue_message['namespace']}")
+        socketio_queue.task_done()
+
+
+def run_socket_io_thread(app, sio):
+    app.socketio_queue = janus.Queue()
+    run_async_in_thread(socket_io_emitter, sio, app.socketio_queue.async_q)
+
+
+# In async land, it seems like accessing the global constants among modules isn't available
+# So we're including some basic accessors here
+def get_app():
+    return app
+
+
+def get_db():
+    return db
+
 
 def create_app(**settings_override):
-    global app, socketio, db, g  # noqa: F824
+    global app, db  # noqa: F824
 
-    app = Flask(__name__)
+    flask_app = Flask(__name__)
 
     for setting, value in settings_override.items():
-        app.config[setting] = value
+        flask_app.config[setting] = value
 
     hosts = ["localhost", "127.0.0.1", settings.HOST]
     ports = ["80", settings.DASHBOARD_PORT, settings.OVERLAY_PORT, settings.PREVIEW_PORT]
@@ -82,18 +124,26 @@ def create_app(**settings_override):
 
     # TODO: Use the commented lines below if flask_socketio supports regex origins
     # origins = ['https?:\/\/{}.*'.format(host) for host in hosts]
-    CORS(app, origins=origins, supports_credentials=True)
+    CORS(flask_app, origins=origins, supports_credentials=True)
 
-    app.config["SECRET_KEY"] = settings.SECRET
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    flask_app.config["SECRET_KEY"] = settings.SECRET
+    flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    if not app.config.get("SQLALCHEMY_DATABASE_URI", ""):
-        app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
-    db.init_app(app)
-    socketio = SocketIO(app, cors_allowed_origins=origins, cors_credentials=True, engineio_logger=False, logger=False)
-    # DO NOT REMOVE. Flask-SocketIO needs the namespaces to have handlers on them to emit from them. It's silly.
-    socketio.on_event("FromAPI", lambda data: None, namespace="/live")
-    socketio.on_event("FromAPI", lambda data: None, namespace="/preview")
+    if not flask_app.config.get("SQLALCHEMY_DATABASE_URI", ""):
+        flask_app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
+    db.init_app(flask_app)
+    sio = socketio.AsyncServer(
+        cors_allowed_origins=origins, cors_credentials=True, engineio_logger=False, logger=False, async_mode="asgi"
+    )
+
+    # # DO NOT REMOVE. Flask-SocketIO needs the namespaces to have handlers on them to emit from them. It's silly.
+    @sio.on("FromAPI", namespace="/live")
+    def live():
+        pass
+
+    @sio.on("FromAPI", namespace="/preview")
+    def preview():
+        pass
 
     # write to app.log if local
     if settings.HOST == "127.0.0.1":
@@ -109,27 +159,23 @@ def create_app(**settings_override):
     from custom_stream_api.lists.views import lists_endpoints
     from custom_stream_api.counts.views import counts_endpoints
     from custom_stream_api.chatbot.views import chatbot_endpoints
-    from custom_stream_api.notifier.views import notifier_endpoints
     from custom_stream_api.auth.views import auth_endpoints
 
     # from custom_stream_api.lights.views import lights_endpoints
-    app.register_blueprint(alert_endpoints, url_prefix="/alerts")
-    app.register_blueprint(lists_endpoints, url_prefix="/lists")
-    app.register_blueprint(counts_endpoints, url_prefix="/counts")
-    app.register_blueprint(chatbot_endpoints, url_prefix="/chatbot")
-    app.register_blueprint(notifier_endpoints, url_prefix="/notifier")
-    app.register_blueprint(auth_endpoints, url_prefix="/auth")
+    flask_app.register_blueprint(alert_endpoints, url_prefix="/alerts")
+    flask_app.register_blueprint(lists_endpoints, url_prefix="/lists")
+    flask_app.register_blueprint(counts_endpoints, url_prefix="/counts")
+    flask_app.register_blueprint(chatbot_endpoints, url_prefix="/chatbot")
+    flask_app.register_blueprint(auth_endpoints, url_prefix="/auth")
     # app.register_blueprint(lights_endpoints, url_prefix='/lights')
 
-    @app.errorhandler(InvalidUsage)
+    @flask_app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
         response = jsonify(error.to_dict())
         response.status_code = error.status_code
         return response
 
-    return app, socketio, db, g
+    app = socketio.ASGIApp(sio, WsgiToAsgi(flask_app))
+    app.flask_app = flask_app
 
-
-def get_chatbot():
-    if g.get("chatbot") and g["chatbot"].get("object") and g["chatbot"]["object"].running():
-        return g["chatbot"]["object"]
+    return app, sio, db

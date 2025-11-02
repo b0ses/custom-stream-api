@@ -1,18 +1,9 @@
 from custom_stream_api.chatbot.models import Alias, BADGE_NAMES
-from custom_stream_api.shared import db, get_chatbot
+from custom_stream_api.shared import db, get_app
 
 
 def list_aliases():
     return [alias.as_dict() for alias in db.session.query(Alias).order_by(Alias.command.asc()).all()]
-
-
-def import_aliases(aliases):
-    for alias_dict in aliases:
-        add_alias(**alias_dict, save=False)
-    db.session.commit()
-    chatbot = get_chatbot()
-    if chatbot:
-        chatbot.update_commands()
 
 
 def add_alias(alias, command, badge, save=True):
@@ -27,9 +18,11 @@ def add_alias(alias, command, badge, save=True):
         db.session.add(new_alias)
     if save:
         db.session.commit()
-        chatbot = get_chatbot()
-        if chatbot:
-            chatbot.update_commands()
+
+        app = get_app()
+        twitch_chatbot = getattr(app, "twitch_chatbot", None)
+        if twitch_chatbot:
+            twitch_chatbot.update_commands()
     return alias
 
 
@@ -38,7 +31,9 @@ def remove_alias(alias):
     if found_alias.count():
         found_alias.delete()
         db.session.commit()
-        chatbot = get_chatbot()
-        if chatbot:
-            chatbot.update_commands()
+
+        app = get_app()
+        twitch_chatbot = getattr(app, "twitch_chatbot", None)
+        if twitch_chatbot:
+            twitch_chatbot.update_commands()
         return alias

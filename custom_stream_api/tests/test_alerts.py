@@ -19,6 +19,7 @@ TEST_TAGS = []
 @pytest.fixture(scope="function")
 def import_alerts(session):
     global TEST_ALERTS
+
     session.query(AlertFactory._meta.model).delete()
     session.commit()
 
@@ -53,10 +54,19 @@ def import_alerts(session):
     session.add_all(TEST_ALERTS)
     session.commit()
 
+    yield session
+
+    session.query(AlertFactory._meta.model).delete()
+    session.commit()
+
 
 @pytest.fixture(scope="function")
 def import_tags(import_alerts, session):
     global TEST_TAGS, TEST_ALERTS  # noqa
+
+    session.query(TagAssociationFactory._meta.model).delete()
+    session.query(TagFactory._meta.model).delete()
+    session.commit()
 
     TEST_TAGS = [
         TagFactory(name="first_two", thumbnail=None, chat_message=None, always_chat=False),
@@ -79,7 +89,6 @@ def import_tags(import_alerts, session):
 
     yield session
 
-    session.query(CountFactory._meta.model).delete()
     session.query(TagAssociationFactory._meta.model).delete()
     session.query(TagFactory._meta.model).delete()
     session.commit()
@@ -87,6 +96,9 @@ def import_tags(import_alerts, session):
 
 @pytest.fixture(scope="function")
 def import_counts(import_tags, session):
+    session.query(CountFactory._meta.model).delete()
+    session.commit()
+
     TEST_COUNTS = [
         CountFactory(
             name="count1",

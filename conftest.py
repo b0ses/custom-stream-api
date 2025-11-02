@@ -32,10 +32,10 @@ def teardown_test_db():
 def app(request):
     """Session-wide test `Flask` application."""
     settings_override = {"TESTING": True, "SQLALCHEMY_DATABASE_URI": TEST_DB_URI}
-    app, _, _, _ = create_app(**settings_override)
+    app, _, _ = create_app(**settings_override)
 
     # Establish an application context before running the tests.
-    ctx = app.app_context()
+    ctx = app.flask_app.app_context()
     ctx.push()
 
     yield app

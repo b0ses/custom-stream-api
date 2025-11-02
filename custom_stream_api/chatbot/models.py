@@ -1,6 +1,6 @@
 from enum import Enum
 from sqlalchemy.sql import func
-from sqlalchemy import Column, DateTime, Integer, Text
+from sqlalchemy import Column, DateTime, Integer, Text, Boolean
 from custom_stream_api.shared import Base
 
 
@@ -60,8 +60,12 @@ class Timer(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
+    bot_name = Column(Text, unique=True, nullable=False)
     command = Column(Text, unique=True, nullable=False)
-    interval = Column(Integer(), nullable=False)
+    cron = Column(Text, nullable=False)
+    next_time = Column(DateTime(timezone=True), default=func.now(), nullable=False)
+    repeat = Column(Boolean, default=True, nullable=False)
+    active = Column(Boolean, default=True, nullable=False)
 
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

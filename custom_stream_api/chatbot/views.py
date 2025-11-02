@@ -5,7 +5,6 @@ from flask import jsonify
 from webargs import fields
 from webargs.flaskparser import use_kwargs
 
-from custom_stream_api.chatbot import twitchbot
 from custom_stream_api.shared import InvalidUsage
 from custom_stream_api.chatbot import aliases, timers
 from custom_stream_api.auth import twitch_auth
@@ -13,27 +12,6 @@ from custom_stream_api.auth import twitch_auth
 chatbot_endpoints = Blueprint("chatbot", __name__)
 
 logger = logging.getLogger(__name__)
-
-
-@chatbot_endpoints.route("/restart", methods=["POST"])
-@twitch_auth.twitch_login_required
-@use_kwargs(
-    {
-        "bot_name": fields.Str(required=True),
-        "client_id": fields.Str(required=True),
-        "chat_token": fields.Str(required=True),
-        "channel": fields.Str(required=True),
-        "timeout": fields.Int(load_default=15),
-    },
-    location="json",
-)
-def start_post(**kwargs):
-    try:
-        bot_id = twitchbot.setup_chatbot(**kwargs)
-        return jsonify({"message": "started chatbot: {}".format(bot_id)})
-    except Exception as e:
-        logger.exception(e)
-        raise InvalidUsage(str(e))
 
 
 @chatbot_endpoints.route("/aliases", methods=["GET"])
@@ -100,8 +78,9 @@ def list_timers_get():
 @twitch_auth.twitch_login_required
 @use_kwargs(
     {
+        "bot_name": fields.Str(required=True),
         "command": fields.Str(required=True),
-        "interval": fields.Int(load_default=30),
+        "cron": fields.Str(required=True),
     },
     location="json",
 )
@@ -118,6 +97,7 @@ def add_timer_post(**kwargs):
 @twitch_auth.twitch_login_required
 @use_kwargs(
     {
+        "bot_name": fields.Str(required=True),
         "command": fields.Str(required=True),
     },
     location="json",
