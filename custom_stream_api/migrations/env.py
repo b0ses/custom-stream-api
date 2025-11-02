@@ -18,13 +18,14 @@ logger = logging.getLogger('alembic.env')
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from custom_stream_api.shared import create_app, Base
+from custom_stream_api.auth.models import *
 from custom_stream_api.alerts.models import *
 from custom_stream_api.chatbot.models import *
 from custom_stream_api.counts.models import *
 from custom_stream_api.lists.models import *
 app = create_app()[0]
 config.set_main_option('sqlalchemy.url',
-                       app.config.get('SQLALCHEMY_DATABASE_URI'))
+                       app.flask_app.config.get('SQLALCHEMY_DATABASE_URI'))
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

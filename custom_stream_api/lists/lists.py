@@ -31,12 +31,10 @@ def add_to_list(name, items, save=True):
         found_list = List(name=name)
         db.session.add(found_list)
 
-    index = db.session.query(ListItem).filter_by(list_name=name).count()
     for item in items:
         new_items.append(item)
-        new_item = ListItem(list_name=name, item=item, index=index)
+        new_item = ListItem(list_name=name, item=item)
         db.session.add(new_item)
-        index += 1
     if save:
         db.session.commit()
     return items
@@ -55,59 +53,57 @@ def get_list(name):
         return []
 
 
-def get_list_item(name, index=None):
-    found_list = db.session.query(List).filter_by(name=name).one_or_none()
+def get_list_item(list_name, index=None):
+    found_list = db.session.query(List).filter_by(name=list_name).one_or_none()
     if not found_list:
-        return None, None
-    items = found_list.items
+        raise Exception("List not found")
+    items = sorted(found_list.items, key=lambda list_item: list_item.id)
+    if len(items) == 0:
+        raise Exception("Empty list")
     if index is None:
-        index = random.choice(range(0, len(items)))
+        index = random.choice(range(1, len(items) + 1))
     else:
         if not isinstance(index, int):
             if not index.isdigit():
-                return None, None
+                return None
             index = int(index)
-        if index >= len(items):
-            return None, None
-    return items[index].item, items[index].index
+    if index > len(items):
+        raise Exception("Index too high")
+    elif index == 0:
+        raise Exception("Lists are 1-indexed.")
+    # Negative nonzero indexes are already 1-indexed
+    # Positive non-zero indexes need correction
+    elif index > 0:
+        index = index - 1
+    # Need to return the index too as it could be random
+    return items[index], index + 1 if index >= 0 else len(items) + index + 1
 
 
-def get_list_size(name):
-    found_list_size = db.session.query(ListItem.index).filter_by(list_name=name).order_by(ListItem.index.desc()).first()
-    if found_list_size:
-        return found_list_size[0] + 1
+def get_list_size(list_name):
+    found_list = db.session.query(List).filter_by(name=list_name).one_or_none()
+    if not found_list:
+        raise Exception("List not found")
+    return len(found_list.items)
 
 
-def remove_from_list(name, index):
+def remove_from_list(list_name, index):
     if not isinstance(index, int):
         if not index.isdigit():
             return
         index = int(index)
-    found_list_item = (
-        db.session.query(ListItem)
-        .filter(ListItem.list_name == name, ListItem.index >= index)
-        .order_by(ListItem.index.asc())
-    )
-    if not found_list_item.count():
-        return
-    found_list_item_obj = found_list_item.first()
-    found_list_item_value = found_list_item_obj.item
-    db.session.delete(found_list_item_obj)
 
-    # reset indexes
-    new_index = index
-    for list_item in found_list_item.all():
-        list_item.index = new_index
-        new_index += 1
-
+    found_list_item, index = get_list_item(list_name, index)
+    found_list_item_value = found_list_item.item
+    db.session.delete(found_list_item)
     db.session.commit()
 
-    return found_list_item_value
+    return found_list_item_value, index
 
 
 def remove_list(name):
     found_list = db.session.query(List).filter_by(name=name)
-    if found_list.count():
-        found_list.delete()
-        db.session.commit()
-        return name
+    if not found_list.count():
+        raise Exception("List not found")
+    found_list.delete()
+    db.session.commit()
+    return name

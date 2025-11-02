@@ -1,42 +1,114 @@
+import logging
+import threading
+from cron_converter import Cron
+from datetime import datetime
+
 from custom_stream_api.chatbot.models import Timer
-from custom_stream_api.shared import db, get_chatbot
+from custom_stream_api.shared import run_async_in_thread, db
+
+logger = logging.getLogger(__name__)
+
+# redundant but allows different variable names
+SUPPORTED_BOTS = {
+    "twitch_chatbot": "twitch_chatbot",
+    "discord_chatbot": "discord_chatbot",
+}
+
+
+INTERRUPTER = threading.Event()
 
 
 def list_timers():
     return [timer.as_dict() for timer in db.session.query(Timer).order_by(Timer.command.asc()).all()]
 
 
-def import_timers(timers):
-    for timer_dict in timers:
-        add_timer(**timer_dict, save=False)
-    db.session.commit()
-    chatbot = get_chatbot()
-    if chatbot:
-        chatbot.restart_timers()
+def calculate_next_time(cron):
+    now = datetime.now().astimezone()
+    cron_instance = Cron(cron)
+    schedule = cron_instance.schedule(now)
+    return schedule.next()
 
 
-def add_timer(command, interval=30, save=True):
-    found_timer = db.session.query(Timer).filter_by(command=command).one_or_none()
+def add_timer(bot_name, command, cron, repeat=False, save=True):
+    if bot_name not in SUPPORTED_BOTS:
+        raise ValueError(f"Invalid bot_name: {bot_name}")
+    found_timer = db.session.query(Timer).filter_by(bot_name=bot_name, command=command).one_or_none()
     if found_timer:
-        found_timer.command = command
-        found_timer.interval = interval
+        found_timer.cron = cron
     else:
-        new_timer = Timer(command=command, interval=interval)
+        new_timer = Timer(
+            bot_name=bot_name,
+            command=command,
+            cron=cron,
+            next_time=calculate_next_time(cron),
+            active=True,
+            repeat=repeat,
+        )
         db.session.add(new_timer)
     if save:
         db.session.commit()
-        chatbot = get_chatbot()
-        if chatbot:
-            chatbot.restart_timers()
+        refresh_timers()
+
     return command
 
 
-def remove_timer(command):
-    found_timer = db.session.query(Timer).filter_by(command=command)
+def remove_timer(bot_name, command):
+    if bot_name not in SUPPORTED_BOTS:
+        raise ValueError(f"Invalid bot_name: {bot_name}")
+    found_timer = db.session.query(Timer).filter_by(bot_name=bot_name, command=command)
     if found_timer.count():
         found_timer.delete()
         db.session.commit()
-        chatbot = get_chatbot()
-        if chatbot:
-            chatbot.restart_timers()
-        return command
+
+        refresh_timers()
+    else:
+        raise Exception(f"Timer not found: {bot_name} {command}")
+    return command
+
+
+async def scheduler_in_background(app, db, scheduler_event):
+    """Run in background, check for things to run when interrupted by signal or the earliest timer finishes"""
+    logger.info("Running scheduler in background")
+    with app.flask_app.app_context():
+        while True:
+            # Check if there are any timers to run and execute them
+            now = datetime.now().astimezone()
+            timers = db.session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
+            for timer in timers:
+                logger.info(f"Executing timer: {timer.bot_name} {timer.command}")
+                bot = getattr(app, SUPPORTED_BOTS[timer.bot_name])
+                bot.do_command(timer.command, bot.name, [], ignore_badges=True)
+
+                cron_next_time = calculate_next_time(timer.cron)
+                if not cron_next_time or not timer.repeat:
+                    # timer's run out, remove it
+                    db.session.query(Timer).filter(Timer.id == timer.id).delete()
+                else:
+                    timer.next_time = cron_next_time
+            db.session.commit()
+
+            if db.session.query(Timer).count():
+                # If there are timers, wait until the earliest timer or an interruption
+                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.desc()).first()[0]
+                time_to_wait = (next_time - now).total_seconds()
+                logger.info(f"Waiting for next signal: {time_to_wait}")
+            else:
+                # If there are no timers, just wait till we get one
+                time_to_wait = None
+                logger.info("No timers found. Waiting for a timer to be made.")
+
+            # if await event_wait_with_timeout(scheduler_event, time_to_wait):
+            if scheduler_event.wait(time_to_wait):
+                logger.info("RECEIVED INTERRUPTION")
+                # prep for the next cycle which will be the next timer or an interruption
+                scheduler_event.clear()
+                continue
+
+
+def refresh_timers():
+    # logger.info('SENDING INTERRUPTION')
+    INTERRUPTER.set()
+
+
+def run_scheduler(app, db):
+    run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)

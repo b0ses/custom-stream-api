@@ -5,7 +5,7 @@ from sqlalchemy import func, null, sql
 
 from custom_stream_api.alerts.models import Alert, Tag, TagAssociation
 from custom_stream_api.counts import counts
-from custom_stream_api.shared import db, socketio, get_chatbot
+from custom_stream_api.shared import db, get_app
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ def set_tags(alert_name, tags, save=True):
         db.session.commit()
 
 
-def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, chat=False, live=True):
+def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, chat=None, live=True):
     if name:
         alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
         if not alert_obj:
@@ -203,13 +203,19 @@ def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, ch
         validate_image(image)
         socket_data = {"text": text, "sound": sound, "effect": effect, "image": image}
     logger.info(socket_data)
+
+    app = get_app()
     if hit_socket:
         namespace = "live" if live else "preview"
-        socketio.emit("FromAPI", socket_data, namespace=f"/{namespace}")
+        # add to queue, background async process will take it
+        app.socketio_queue.sync_q.put({"namespace": namespace, "data": socket_data})
 
-    chatbot = get_chatbot()
-    if chat and chatbot:
-        chatbot.chat(f"/me {socket_data['text']}")
+    if (chat is not None or socket_data["text"]) and getattr(app, "twitch_chatbot", None):
+        # default is the alert text, but for reminders we can overwrite the chatbot text
+        message = socket_data["text"]
+        if isinstance(chat, str) and len(chat.strip()) > 0:
+            message = chat
+        app.twitch_chatbot.chat(f"/me {message}")
     return socket_data["text"]
 
 
@@ -306,7 +312,7 @@ def set_alerts(tag_name, alerts, save=True):
         db.session.commit()
 
 
-def tag_alert(name, random_choice=True, hit_socket=True, chat=False, live=True):
+def tag_alert(name, random_choice=True, hit_socket=True, chat=None, live=True):
     tag = db.session.query(Tag).filter_by(name=name).one_or_none()
     if not tag:
         raise Exception(f"Tag not found: {name}")
@@ -322,16 +328,21 @@ def tag_alert(name, random_choice=True, hit_socket=True, chat=False, live=True):
         all_alerts = db.session.query(Alert.name).all()
         chosen_alert = random.choice([alert[0] for alert in all_alerts])
 
+    app = get_app()
+    twitch_chatbot = getattr(app, "twitch_chatbot", None)
+    override_chat_message = None
+    if twitch_chatbot and (chat is not None or tag.always_chat):
+        override_chat_message = tag.chat_message
+        if isinstance(chat, str) and len(chat.strip()) > 0:
+            override_chat_message = chat
+
+    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=override_chat_message, live=live)
+
     # add to counts
     for count in tag.counts:
-        counts.add_to_count(count.name)
-
-    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=False, live=live)
-
-    chatbot = get_chatbot()
-    if chatbot and (chat or tag.always_chat):
-        message = tag.chat_message if tag.chat_message else f"/me {alert_message}"
-        chatbot.chat(message)
+        amount = counts.add_to_count(count.name)
+        if twitch_chatbot and (chat or tag.always_chat):
+            twitch_chatbot.chat_count_output(count.name, amount)
 
     return alert_message
 

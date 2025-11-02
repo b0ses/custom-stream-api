@@ -21,5 +21,4 @@ class ListItemFactory(factory.Factory):
 
     id = factory.Faker("random_number")
     list_name = factory.Faker("word")
-    index = factory.Faker("random_number")
     item = factory.Faker("text")
