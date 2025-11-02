@@ -629,7 +629,7 @@ def test_alert_commands(chatbot, import_tags):  # noqa
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!tag last_two", badge_level)
-    expected_response = "last two!"
+    expected_response = "/me last two!"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
