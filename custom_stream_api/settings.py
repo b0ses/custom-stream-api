@@ -23,6 +23,8 @@ TWITCH_REDIRECT_URI = ""
 
 # Chatbot Settings
 TIMEOUT = 15  # seconds between spamming sounds
+BOT_NAME = ""
+TWITCH_CHANNEL = ""
 
 # Hue Lights Settings
 LIGHTS_LOCAL = True

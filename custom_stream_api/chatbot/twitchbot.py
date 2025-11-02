@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
-    await ready_event.chat.join_room(settings.CHANNEL)
+    await ready_event.chat.join_room(settings.TWITCH_CHANNEL)
 
     chatbot_instance.start()
 
@@ -58,7 +58,7 @@ async def run(app, db, chatbot_queue):
             db.session.commit()
 
     # create chat instance
-    chatter = await Chat(twitch, initial_channel=[settings.CHANNEL])
+    chatter = await Chat(twitch, initial_channel=[settings.TWITCH_CHANNEL])
 
     # register the handlers for the events you want
     chatter.register_event(ChatEvent.READY, on_ready)
@@ -72,7 +72,7 @@ async def run(app, db, chatbot_queue):
         # check for messages on the queue
         while True:
             message = await chatbot_queue.get()
-            await chatter.send_message(room=settings.CHANNEL, text=message)
+            await chatter.send_message(room=settings.TWITCH_CHANNEL, text=message)
             chatbot_queue.task_done()
     finally:
         # now we can close the chat bot and the twitch api client
