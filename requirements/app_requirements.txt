@@ -18,4 +18,3 @@ requests==2.32.3
 SQLAlchemy==2.0.41
 twitchAPI==4.5.0
 webargs==8.7.0
-uvicorn==0.37.0
