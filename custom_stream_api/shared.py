@@ -145,14 +145,12 @@ def create_app(**settings_override):
     def preview():
         pass
 
-    # write to app.log if local
-    if settings.HOST == "127.0.0.1":
-        DEFAULT_CONFIG["handlers"]["file"] = {
-            "formatter": "default",
-            "class": "logging.FileHandler",
-            "filename": os.path.join(APP_DIR, "app.log"),
-            "mode": "w",
-        }
+    DEFAULT_CONFIG["handlers"]["file"] = {
+        "formatter": "default",
+        "class": "logging.FileHandler",
+        "filename": os.path.join(APP_DIR, "app.log"),
+        "mode": "w",
+    }
     logging.config.dictConfig(DEFAULT_CONFIG)
 
     from custom_stream_api.alerts.views import alert_endpoints
@@ -175,7 +173,10 @@ def create_app(**settings_override):
         response.status_code = error.status_code
         return response
 
-    app = socketio.ASGIApp(sio, WsgiToAsgi(flask_app))
+    app = socketio.ASGIApp(
+        socketio_server=sio,
+        other_asgi_app=WsgiToAsgi(flask_app),
+    )
     app.flask_app = flask_app
 
     return app, sio, db
