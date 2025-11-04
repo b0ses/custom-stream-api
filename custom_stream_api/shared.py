@@ -133,7 +133,7 @@ def create_app(**settings_override):
         flask_app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
     db.init_app(flask_app)
     sio = socketio.AsyncServer(
-        cors_allowed_origins=origins, cors_credentials=True, engineio_logger=False, logger=False, async_mode="asgi"
+        cors_allowed_origins=origins, cors_credentials=True, engineio_logger=True, logger=True, async_mode="asgi"
     )
 
     # # DO NOT REMOVE. Flask-SocketIO needs the namespaces to have handlers on them to emit from them. It's silly.
