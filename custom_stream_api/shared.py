@@ -145,7 +145,6 @@ def create_app(**settings_override):
     def preview():
         pass
 
-
     DEFAULT_CONFIG["handlers"]["file"] = {
         "formatter": "default",
         "class": "logging.FileHandler",
