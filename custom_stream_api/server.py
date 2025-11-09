@@ -5,6 +5,7 @@ from custom_stream_api import settings
 from custom_stream_api.shared import create_app, run_socket_io_thread
 
 from custom_stream_api.chatbot.twitchbot import run_twitchbot_thread
+from custom_stream_api.chatbot.discordbot import run_discordbot_thread
 from custom_stream_api.chatbot.timers import run_scheduler
 
 app, sio, db = create_app()
@@ -16,6 +17,9 @@ if sio:
 
 if settings.TWITCH_CLIENT_SECRET:
     app.twitch_chatbot = run_twitchbot_thread(app, db)
+
+if settings.DISCORD_TOKEN:
+    app.discord_chatbot = run_discordbot_thread()
 
 run_scheduler(app, db)
 
