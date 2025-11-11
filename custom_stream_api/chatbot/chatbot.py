@@ -442,7 +442,7 @@ class ChatBot:
             "get_list_item": {
                 "badge": Badges.CHAT,
                 "callback": lambda text, user, badges: self.get_list_item(text),
-                "format": r"^!get_list_item\s+\S+(\s+-?\d+|\s+next|\s+random)?$",
+                "format": r"^!get_list_item\s+\S+(\s+-?\d+|\s+next|\s+random)$",
                 "help": "!get_list_item list_name [index]/next/random",
             },
             "get_list_size": {

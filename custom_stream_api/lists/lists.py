@@ -85,6 +85,7 @@ def get_list_item(list_name, index):
         # current_index is 0-indexed, adding 1 to be in sync with the rest
         index = (found_list.current_index + 1) % len(items)
         found_list.current_index = index
+        db.session.commit()
         index += 1
     else:
         raise Exception("Invalid index. Must be a non-zero integer, 'random', or 'next'")
