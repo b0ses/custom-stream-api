@@ -21,6 +21,10 @@ TWITCH_CLIENT_ID = ""
 TWITCH_CLIENT_SECRET = ""
 TWITCH_REDIRECT_URI = ""
 
+# Discord Login
+DISCORD_TOKEN = ""
+DISCORD_CHANNEL = ""
+
 # Chatbot Settings
 TIMEOUT = 15  # seconds between spamming sounds
 BOT_NAME = ""
