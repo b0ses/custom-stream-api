@@ -506,23 +506,23 @@ def test_list_commands(chatbot):
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.BROADCASTER]
-    chatbot.parse_message("test_user", "!echo random.{test_list}", badge_level)
+    chatbot.parse_message("test_user", "!echo random.{test_list random}", badge_level)
     expected_responses = ["random.item_one", "random.item_two"]
     assert chatbot.queue[-1] in expected_responses
 
     badge_level = []
-    chatbot.parse_message("test_user", "!get_list_item test_list", badge_level)
+    chatbot.parse_message("test_user", "!get_list_item test_list random", badge_level)
     expected_responses = ["1. item_one", "2. item_two"]
     assert chatbot.queue[-1] in expected_responses
 
     badge_level = []
     chatbot.parse_message("test_user", "!get_list_item", badge_level)
-    expected_response = "Format: !get_list_item list_name [index]"
+    expected_response = "Format: !get_list_item list_name [index]/next/random"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = []
     chatbot.parse_message("test_user", "!get_list_item test_list test", badge_level)
-    expected_response = "Format: !get_list_item list_name [index]"
+    expected_response = "Format: !get_list_item list_name [index]/next/random"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = []
@@ -556,7 +556,7 @@ def test_list_commands(chatbot):
     assert chatbot.queue[-1] == expected_response
 
     badge_level = []
-    chatbot.parse_message("test_user", "!get_list_item test_list", badge_level)
+    chatbot.parse_message("test_user", "!get_list_item test_list random", badge_level)
     expected_response = "Empty list"
     assert chatbot.queue[-1] == expected_response
 

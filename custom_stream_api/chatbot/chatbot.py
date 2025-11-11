@@ -58,20 +58,22 @@ class ChatBot:
                 message = message.replace(f"{{{variable}}}", str(found_count))
                 continue
 
-            # if it's a list, return a random one or use the index
-            # {list_name} -> [random list entry]
+            # if it's a list, use the index
+            # {list_name next} -> [next list entry]
+            # {list_name random} -> [random list entry]
             # {list_name 2} -> [specific list entry]
             list_params = variable.split()
-            list_name = list_params[0]
-            if list_name not in [list_dict["name"] for list_dict in lists.list_lists()]:
-                logger.info(f"List not found in variable: {list_name}")
-                continue
+            if len(list_params) > 1:
+                list_name = list_params[0]
+                list_index = list_params[1]
+                if list_name not in [list_dict["name"] for list_dict in lists.list_lists()]:
+                    logger.info(f"List not found in variable: {list_name}")
+                    continue
 
-            list_index = int(list_params[1]) if len(list_params) > 1 else None
-            found_item, index = lists.get_list_item(list_name=list_name, index=list_index)
-            if found_item is not None:
-                message = message.replace(f"{{{variable}}}", found_item.item)
-                continue
+                found_item, index = lists.get_list_item(list_name=list_name, index=list_index)
+                if found_item is not None:
+                    message = message.replace(f"{{{variable}}}", found_item.item)
+                    continue
 
         return message
 
@@ -440,8 +442,8 @@ class ChatBot:
             "get_list_item": {
                 "badge": Badges.CHAT,
                 "callback": lambda text, user, badges: self.get_list_item(text),
-                "format": r"^!get_list_item\s+\S+(\s+-?\d+)?$",
-                "help": "!get_list_item list_name [index]",
+                "format": r"^!get_list_item\s+\S+(\s+-?\d+|\s+next|\s+random)?$",
+                "help": "!get_list_item list_name [index]/next/random",
             },
             "get_list_size": {
                 "badge": Badges.CHAT,
@@ -479,7 +481,7 @@ class ChatBot:
     def get_list_item(self, text):
         argv = text.split()
         list_name = argv[0]
-        index = int(argv[1]) if len(argv) > 1 else None
+        index = argv[1]
         try:
             item, index = lists.get_list_item(list_name, index=index)
             self.output_list_item(index, item.item)

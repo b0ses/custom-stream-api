@@ -2,7 +2,7 @@ import pytest
 
 from custom_stream_api.shared import db
 from custom_stream_api.lists import lists
-from custom_stream_api.lists.models import ListItem
+from custom_stream_api.lists.models import List, ListItem
 
 from custom_stream_api.tests.factories.lists_factories import ListFactory, ListItemFactory
 
@@ -59,7 +59,7 @@ def test_set_list(import_lists):
 def test_get_list_item(import_lists):
     assert (lists.get_list_item("list1", 2)[0].item, lists.get_list_item("list1", 2)[1]) == ("two", 2)
     assert (lists.get_list_item("list1", -1)[0].item, lists.get_list_item("list1", -1)[1]) == ("three", 3)
-    assert lists.get_list_item("list1")[0].item in ["one", "two", "three"]
+    assert lists.get_list_item("list1", "random")[0].item in ["one", "two", "three"]
     with pytest.raises(Exception, match="Index too high"):
         lists.get_list_item("list1", 4)
 
@@ -80,6 +80,17 @@ def test_remove_from_list(import_lists):
     # make sure the indexes are reset
     list_item = db.session.query(ListItem).filter_by(list_name="list2").order_by(ListItem.id.desc()).first()
     assert list_item.item == "five"
+
+    list1 = db.session.query(List).filter_by(name="list1").first()
+    list1.current_index = 1
+    db.session.commit()
+    # Remove the one ahead, no change
+    lists.remove_from_list("list1", 3)
+    assert list1.current_index == 1
+    # Remove the one on top of or behind, subtract 1
+    lists.remove_from_list("list1", 2)
+    assert list1.current_index == 0
+    # If adding to list, dont change current_index cause it adds it at the end
 
 
 def test_remove_list(import_lists):
