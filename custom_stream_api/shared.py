@@ -127,6 +127,7 @@ def create_app(**settings_override):
     CORS(flask_app, origins=origins, supports_credentials=True)
 
     flask_app.config["SECRET_KEY"] = settings.SECRET
+    flask_app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     if not flask_app.config.get("SQLALCHEMY_DATABASE_URI", ""):

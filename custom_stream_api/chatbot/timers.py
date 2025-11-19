@@ -29,6 +29,24 @@ def calculate_next_time(cron):
     return schedule.next()
 
 
+def check_timers(app, db, execute=True):
+    now = datetime.now().astimezone()
+    timers = db.session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
+    for timer in timers:
+        if execute:
+            logger.info(f"Executing timer: {timer.bot_name} {timer.command}")
+            bot = getattr(app, SUPPORTED_BOTS[timer.bot_name])
+            bot.do_command(timer.command, bot.name, [], ignore_badges=True)
+
+        cron_next_time = calculate_next_time(timer.cron)
+        if not cron_next_time or not timer.repeat:
+            # timer's run out, remove it
+            db.session.query(Timer).filter(Timer.id == timer.id).delete()
+        else:
+            timer.next_time = cron_next_time
+    db.session.commit()
+
+
 def add_timer(bot_name, command, cron, repeat=False, save=True):
     if bot_name not in SUPPORTED_BOTS:
         raise ValueError(f"Invalid bot_name: {bot_name}")
@@ -47,7 +65,7 @@ def add_timer(bot_name, command, cron, repeat=False, save=True):
         db.session.add(new_timer)
     if save:
         db.session.commit()
-        refresh_timers()
+        ping_scheduler()
 
     return command
 
@@ -60,7 +78,7 @@ def remove_timer(bot_name, command):
         found_timer.delete()
         db.session.commit()
 
-        refresh_timers()
+        ping_scheduler()
     else:
         raise Exception(f"Timer not found: {bot_name} {command}")
     return command
@@ -72,24 +90,12 @@ async def scheduler_in_background(app, db, scheduler_event):
     with app.flask_app.app_context():
         while True:
             # Check if there are any timers to run and execute them
-            now = datetime.now().astimezone()
-            timers = db.session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
-            for timer in timers:
-                logger.info(f"Executing timer: {timer.bot_name} {timer.command}")
-                bot = getattr(app, SUPPORTED_BOTS[timer.bot_name])
-                bot.do_command(timer.command, bot.name, [], ignore_badges=True)
-
-                cron_next_time = calculate_next_time(timer.cron)
-                if not cron_next_time or not timer.repeat:
-                    # timer's run out, remove it
-                    db.session.query(Timer).filter(Timer.id == timer.id).delete()
-                else:
-                    timer.next_time = cron_next_time
-            db.session.commit()
+            check_timers(app, db, execute=True)
 
             if db.session.query(Timer).count():
                 # If there are timers, wait until the earliest timer or an interruption
                 next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.desc()).first()[0]
+                now = datetime.now().astimezone()
                 time_to_wait = (next_time - now).total_seconds()
                 logger.info(f"Waiting for next signal: {time_to_wait}")
             else:
@@ -105,10 +111,12 @@ async def scheduler_in_background(app, db, scheduler_event):
                 continue
 
 
-def refresh_timers():
+def ping_scheduler():
     # logger.info('SENDING INTERRUPTION')
     INTERRUPTER.set()
 
 
 def run_scheduler(app, db):
+    # Check for any outdated timers the first time and don't execute them.
+    check_timers(app, db, execute=False)
     run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)
