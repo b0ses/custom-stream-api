@@ -118,5 +118,6 @@ def ping_scheduler():
 
 def run_scheduler(app, db):
     # Check for any outdated timers the first time and don't execute them.
-    check_timers(app, db, execute=False)
+    with app.flask_app.app_context():
+        check_timers(app, db, execute=False)
     run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)
