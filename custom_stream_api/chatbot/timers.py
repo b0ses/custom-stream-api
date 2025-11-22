@@ -94,7 +94,7 @@ async def scheduler_in_background(app, db, scheduler_event):
 
             if db.session.query(Timer).count():
                 # If there are timers, wait until the earliest timer or an interruption
-                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.desc()).first()[0]
+                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
                 now = datetime.now().astimezone()
                 time_to_wait = (next_time - now).total_seconds()
                 logger.info(f"Waiting for next signal: {time_to_wait}")
