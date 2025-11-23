@@ -425,7 +425,7 @@ class ChatBot:
                 "8": "8️⃣",
                 "9": "9️⃣",
             }
-            emoji_count = " ".join([emoji_mapper[char] for char in str(count)])
+            emoji_count = "".join([emoji_mapper[char] for char in str(count)])
             self.chat("{}: {}".format(count_name, emoji_count))
 
     def copy_count(self, text):
