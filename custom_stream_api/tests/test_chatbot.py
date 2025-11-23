@@ -197,7 +197,7 @@ def test_taco(chatbot):
     assert chatbot.queue == expected_response
 
     chatbot.parse_message("test_user", "!taco test_user2", [Badges.SUBSCRIBER])
-    expected_response = ["/me test_user aggressively hurls a :taco: at test_user2", "test_user2_tacos: :one:"]
+    expected_response = ["/me test_user aggressively hurls a :taco: at test_user2", "test_user2_tacos: 1️⃣"]
     assert chatbot.queue == expected_response
 
     chatbot.parse_message("test_user", "!taco  ", [Badges.SUBSCRIBER])
@@ -258,12 +258,12 @@ def test_aliases(import_aliases, import_tags, chatbot, app):  # noqa
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!mod_test_alias", badge_level)
-    expected_response = "test_count: :one: :zero:"
+    expected_response = "test_count: 1️⃣0️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!test_alias_args 14", badge_level)
-    expected_response = "test_count: :one: :four:"
+    expected_response = "test_count: 1️⃣4️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
@@ -318,7 +318,7 @@ def test_count_commands(chatbot):
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!set_count test_count 10", badge_level)
-    expected_response = "test_count: :one: :zero:"
+    expected_response = "test_count: 1️⃣0️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
@@ -338,12 +338,12 @@ def test_count_commands(chatbot):
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!add_count test_count", badge_level)
-    expected_response = "test_count: :one: :one:"
+    expected_response = "test_count: 1️⃣1️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!add_count test_count2", badge_level)
-    expected_response = "test_count2: :one:"
+    expected_response = "test_count2: 1️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
@@ -358,7 +358,7 @@ def test_count_commands(chatbot):
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!subtract_count test_count", badge_level)
-    expected_response = "test_count: :one: :zero:"
+    expected_response = "test_count: 1️⃣0️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
@@ -373,8 +373,8 @@ def test_count_commands(chatbot):
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!reset_count test_count test_count3", badge_level)
-    expected_response1 = "test_count: :zero:"
-    expected_response2 = "test_count3: :zero:"
+    expected_response1 = "test_count: 0️⃣"
+    expected_response2 = "test_count3: 0️⃣"
     assert chatbot.queue[-2] == expected_response1
     assert chatbot.queue[-1] == expected_response2
 
@@ -385,7 +385,7 @@ def test_count_commands(chatbot):
 
     badge_level = []
     chatbot.parse_message("test_user", "!get_count test_count", badge_level)
-    expected_response = "test_count: :zero:"
+    expected_response = "test_count: 0️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = []
@@ -405,7 +405,7 @@ def test_count_commands(chatbot):
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!copy_count test_count test_count5", badge_level)
-    expected_response = "test_count5: :zero:"
+    expected_response = "test_count5: 0️⃣"
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]

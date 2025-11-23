@@ -413,18 +413,19 @@ class ChatBot:
     def chat_count_output(self, count_name, count):
         if count is not None:
             emoji_mapper = {
-                "0": ":zero:",
-                "1": ":one:",
-                "2": ":two:",
-                "3": ":three:",
-                "4": ":four:",
-                "5": ":five:",
-                "6": ":six:",
-                "7": ":seven:",
-                "8": ":eight:",
-                "9": ":nine:",
+                # :one: - 1 would be nice but doesnt always translate to emoji depending on the app
+                "0": "0️⃣",
+                "1": "1️⃣",
+                "2": "2️⃣",
+                "3": "3️⃣",
+                "4": "4️⃣",
+                "5": "5️⃣",
+                "6": "6️⃣",
+                "7": "7️⃣",
+                "8": "8️⃣",
+                "9": "9️⃣",
             }
-            emoji_count = " ".join([emoji_mapper[char] for char in str(count)])
+            emoji_count = "".join([emoji_mapper[char] for char in str(count)])
             self.chat("{}: {}".format(count_name, emoji_count))
 
     def copy_count(self, text):
