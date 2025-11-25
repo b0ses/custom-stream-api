@@ -19,8 +19,7 @@ SUPPORTED_BOTS = {
 
 INTERRUPTER = threading.Event()
 
-if TIMER_TZ:
-    TIMER_TZ = ZoneInfo(TIMER_TZ)
+TZ = ZoneInfo(TIMER_TZ) if TIMER_TZ else None
 
 
 def list_timers():
@@ -29,14 +28,14 @@ def list_timers():
 
 # Note: Next time values in the database are *not* UTC like the rest of the database, it's relative to TIMER_TZ
 def calculate_next_time(cron):
-    now = datetime.now(TIMER_TZ)
+    now = datetime.now(TZ)
     cron_instance = Cron(cron)
     schedule = cron_instance.schedule(now)
     return schedule.next()
 
 
 def check_timers(app, db, execute=True):
-    now = datetime.now(TIMER_TZ)
+    now = datetime.now(TZ)
     timers = db.session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
     for timer in timers:
         if execute:
@@ -93,6 +92,7 @@ def remove_timer(bot_name, command):
 async def scheduler_in_background(app, db, scheduler_event):
     """Run in background, check for things to run when interrupted by signal or the earliest timer finishes"""
     logger.info("Running scheduler in background")
+
     with app.flask_app.app_context():
         while True:
             # Check if there are any timers to run and execute them
@@ -101,7 +101,7 @@ async def scheduler_in_background(app, db, scheduler_event):
             if db.session.query(Timer).count():
                 # If there are timers, wait until the earliest timer or an interruption
                 next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
-                now = datetime.now(TIMER_TZ)
+                now = datetime.now(TZ)
                 time_to_wait = (next_time - now).total_seconds()
                 logger.info(f"Waiting for next signal: {time_to_wait}")
             else:
