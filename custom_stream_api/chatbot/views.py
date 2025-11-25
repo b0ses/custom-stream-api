@@ -81,6 +81,7 @@ def list_timers_get():
         "bot_name": fields.Str(required=True),
         "command": fields.Str(required=True),
         "cron": fields.Str(required=True),
+        "repeat": fields.Bool(load_default=False),
     },
     location="json",
 )

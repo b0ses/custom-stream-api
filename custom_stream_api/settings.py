@@ -29,6 +29,8 @@ DISCORD_CHANNEL = ""
 TIMEOUT = 15  # seconds between spamming sounds
 BOT_NAME = ""
 TWITCH_CHANNEL = ""
+# Set to a supported string of IANA tz
+TIMER_TZ = None
 
 # Hue Lights Settings
 LIGHTS_LOCAL = True
