@@ -127,12 +127,11 @@ def create_app(**settings_override):
     CORS(flask_app, origins=origins, supports_credentials=True)
 
     flask_app.config["SECRET_KEY"] = settings.SECRET
-    flask_app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     if not flask_app.config.get("SQLALCHEMY_DATABASE_URI", ""):
         flask_app.config["SQLALCHEMY_DATABASE_URI"] = settings.DB_URI
-    db.init_app(flask_app)
+    db = SQLAlchemy(flask_app, engine_options={"pool_pre_ping": True})
     sio = socketio.AsyncServer(
         cors_allowed_origins=origins, cors_credentials=True, engineio_logger=True, logger=True, async_mode="asgi"
     )
