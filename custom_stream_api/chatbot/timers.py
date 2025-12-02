@@ -1,5 +1,6 @@
 import logging
 import threading
+from sqlalchemy.exc import OperationalError
 from cron_converter import Cron
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -95,6 +96,12 @@ async def scheduler_in_background(app, db, scheduler_event):
 
     with app.flask_app.app_context():
         while True:
+            # Refresh database connection
+            try:
+                db.session.query(Timer).count()
+            except OperationalError:
+                logger.info("Connection dropped. Refreshing.")
+
             # Check if there are any timers to run and execute them
             check_timers(app, db, execute=True)
 
