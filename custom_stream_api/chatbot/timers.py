@@ -1,9 +1,10 @@
 import logging
 import threading
-from sqlalchemy.exc import OperationalError
 from cron_converter import Cron
 from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 from zoneinfo import ZoneInfo
+
 
 from custom_stream_api.settings import TIMER_TZ
 from custom_stream_api.chatbot.models import Timer
@@ -90,24 +91,22 @@ def remove_timer(bot_name, command):
     return command
 
 
-async def scheduler_in_background(app, db, scheduler_event):
+async def scheduler_in_background(app, scheduler_event):
     """Run in background, check for things to run when interrupted by signal or the earliest timer finishes"""
     logger.info("Running scheduler in background")
 
     with app.flask_app.app_context():
         while True:
             # Refresh database connection
-            try:
-                db.session.query(Timer).count()
-            except OperationalError:
-                logger.info("Connection dropped. Refreshing.")
+            db_refresh = SQLAlchemy()
+            db_refresh.init_app(app.flask_app)
 
             # Check if there are any timers to run and execute them
-            check_timers(app, db, execute=True)
+            check_timers(app, db_refresh, execute=True)
 
-            if db.session.query(Timer).count():
+            if db_refresh.session.query(Timer).count():
                 # If there are timers, wait until the earliest timer or an interruption
-                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
+                next_time = db_refresh.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
                 now = datetime.now(TZ)
                 time_to_wait = (next_time - now).total_seconds()
                 logger.info(f"Waiting for next signal: {time_to_wait}")
@@ -133,4 +132,4 @@ def run_scheduler(app, db):
     # Check for any outdated timers the first time and don't execute them.
     with app.flask_app.app_context():
         check_timers(app, db, execute=False)
-    run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)
+    run_async_in_thread(scheduler_in_background, app, INTERRUPTER)
