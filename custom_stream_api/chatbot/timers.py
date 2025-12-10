@@ -91,7 +91,7 @@ def remove_timer(bot_name, command):
     return command
 
 
-async def scheduler_in_background(app, scheduler_event):
+async def scheduler_in_background(app, db, scheduler_event):
     """Run in background, check for things to run when interrupted by signal or the earliest timer finishes"""
     logger.info("Running scheduler in background")
 
@@ -131,4 +131,4 @@ def run_scheduler(app, db):
     # Check for any outdated timers the first time and don't execute them.
     with app.flask_app.app_context():
         check_timers(app, db, execute=False)
-    run_async_in_thread(scheduler_in_background, app, INTERRUPTER)
+    run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)
