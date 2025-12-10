@@ -98,15 +98,14 @@ async def scheduler_in_background(app, scheduler_event):
     with app.flask_app.app_context():
         while True:
             # Refresh database connection
-            db_refresh = SQLAlchemy()
-            db_refresh.init_app(app.flask_app)
+            db.session.commit()
 
             # Check if there are any timers to run and execute them
-            check_timers(app, db_refresh, execute=True)
+            check_timers(app, db, execute=True)
 
-            if db_refresh.session.query(Timer).count():
+            if db.session.query(Timer).count():
                 # If there are timers, wait until the earliest timer or an interruption
-                next_time = db_refresh.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
+                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
                 now = datetime.now(TZ)
                 time_to_wait = (next_time - now).total_seconds()
                 logger.info(f"Waiting for next signal: {time_to_wait}")
