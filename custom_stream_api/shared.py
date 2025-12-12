@@ -11,9 +11,12 @@ from alembic import command
 from flask import Flask
 from flask import jsonify
 from flask_cors import CORS
+from asgiref.wsgi import WsgiToAsgi
+
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import declarative_base
-from asgiref.wsgi import WsgiToAsgi
+from sqlalchemy.orm import sessionmaker
+from contextlib import contextmanager
 
 from custom_stream_api import settings
 
@@ -101,6 +104,21 @@ def get_app():
 
 def get_db():
     return db
+
+
+@contextmanager
+def db_session(engine, commit=True):
+    """Provides a transactional scope around a series of operations."""
+    session = sessionmaker(bind=engine)
+    try:
+        yield session
+        if commit:
+            session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()  # Ensures the session is always closed
 
 
 def create_app(**settings_override):
