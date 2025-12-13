@@ -109,7 +109,8 @@ def get_db():
 @contextmanager
 def db_session(engine, commit=True):
     """Provides a transactional scope around a series of operations."""
-    session = sessionmaker(bind=engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     try:
         yield session
         if commit:
