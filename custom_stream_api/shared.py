@@ -102,6 +102,11 @@ def get_app():
     return app
 
 
+def set_db(new_db):
+    global db
+    db = new_db
+
+
 def get_db():
     return db
 
