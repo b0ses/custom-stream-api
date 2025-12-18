@@ -15,13 +15,15 @@ from asgiref.wsgi import WsgiToAsgi
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-from contextlib import contextmanager
+
+# from sqlalchemy.orm import sessionmaker
+# from contextlib import contextmanager
 
 from custom_stream_api import settings
 
 app = None
-db = SQLAlchemy()
+ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 3600}
+db = SQLAlchemy(engine_options=ENGINE_OPTIONS)
 Base = declarative_base()
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -102,29 +104,29 @@ def get_app():
     return app
 
 
-def set_db(new_db):
-    global db
-    db = new_db
+# def set_db(new_db):
+#     global db
+#     db = new_db
 
 
 def get_db():
     return db
 
 
-@contextmanager
-def db_session(engine, commit=True):
-    """Provides a transactional scope around a series of operations."""
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    try:
-        yield session
-        if commit:
-            session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()  # Ensures the session is always closed
+# @contextmanager
+# def db_session(engine, commit=True):
+#     """Provides a transactional scope around a series of operations."""
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
+#     try:
+#         yield session
+#         if commit:
+#             session.commit()
+#     except Exception:
+#         session.rollback()
+#         raise
+#     finally:
+#         session.close()  # Ensures the session is always closed
 
 
 def create_app(**settings_override):
@@ -151,7 +153,7 @@ def create_app(**settings_override):
     CORS(flask_app, origins=origins, supports_credentials=True)
 
     flask_app.config["SECRET_KEY"] = settings.SECRET
-    flask_app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True, "pool_recycle": 3600}
+    flask_app.config["SQLALCHEMY_ENGINE_OPTIONS"] = ENGINE_OPTIONS
     flask_app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     if not flask_app.config.get("SQLALCHEMY_DATABASE_URI", ""):
