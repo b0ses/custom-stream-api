@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from custom_stream_api.settings import TIMER_TZ
 from custom_stream_api.chatbot.models import Timer
-from custom_stream_api.shared import run_async_in_thread, db, db_session, set_db
+from custom_stream_api.shared import run_async_in_thread, db  # db_session, set_db
 
 logger = logging.getLogger(__name__)
 
@@ -96,24 +96,24 @@ async def scheduler_in_background(app, db, scheduler_event):
     while True:
         with app.flask_app.app_context():
             # Build new session every time
-            with db_session(db.engine) as session:
-                db.session = session
-                # maybe overkill, just wanting the app.bot's to pick up the new db session
-                set_db(db)
+            # with db_session(db.engine) as session:
+            # db.session = session
+            # # maybe overkill, just wanting the app.bot's to pick up the new db session
+            # set_db(db)
 
-                # Check if there are any timers to run and execute them
-                check_timers(app, db, execute=True)
+            # Check if there are any timers to run and execute them
+            check_timers(app, db, execute=True)
 
-                if db.session.query(Timer).count():
-                    # If there are timers, wait until the earliest timer or an interruption
-                    next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
-                    now = datetime.now(TZ)
-                    time_to_wait = (next_time - now).total_seconds()
-                    logger.info(f"Waiting for next signal: {time_to_wait}")
-                else:
-                    # If there are no timers, just wait till we get one
-                    time_to_wait = None
-                    logger.info("No timers found. Waiting for a timer to be made.")
+            if db.session.query(Timer).count():
+                # If there are timers, wait until the earliest timer or an interruption
+                next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
+                now = datetime.now(TZ)
+                time_to_wait = (next_time - now).total_seconds()
+                logger.info(f"Waiting for next signal: {time_to_wait}")
+            else:
+                # If there are no timers, just wait till we get one
+                time_to_wait = None
+                logger.info("No timers found. Waiting for a timer to be made.")
 
         # if await event_wait_with_timeout(scheduler_event, time_to_wait):
         if scheduler_event.wait(time_to_wait):
