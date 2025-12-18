@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from custom_stream_api.settings import TIMER_TZ
 from custom_stream_api.chatbot.models import Timer
-from custom_stream_api.shared import run_async_in_thread, db, db_session
+from custom_stream_api.shared import run_async_in_thread, db, db_session, set_db
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +34,9 @@ def calculate_next_time(cron):
     return schedule.next()
 
 
-def check_timers(app, session, execute=True):
+def check_timers(app, db, execute=True):
     now = datetime.now(TZ)
-    timers = session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
+    timers = db.session.query(Timer).filter(Timer.next_time <= now, Timer.active.is_(True))
     for timer in timers:
         if execute:
             logger.info(f"Executing timer: {timer.bot_name} {timer.command}")
@@ -46,10 +46,10 @@ def check_timers(app, session, execute=True):
         cron_next_time = calculate_next_time(timer.cron)
         if not cron_next_time or not timer.repeat:
             # timer's run out, remove it
-            session.query(Timer).filter(Timer.id == timer.id).delete()
+            db.session.query(Timer).filter(Timer.id == timer.id).delete()
         else:
             timer.next_time = cron_next_time
-    session.commit()
+    db.session.commit()
 
 
 def add_timer(bot_name, command, cron, repeat=False, save=True):
@@ -93,16 +93,20 @@ async def scheduler_in_background(app, db, scheduler_event):
     """Run in background, check for things to run when interrupted by signal or the earliest timer finishes"""
     logger.info("Running scheduler in background")
 
-    with app.flask_app.app_context():
-        while True:
+    while True:
+        with app.flask_app.app_context():
             # Build new session every time
             with db_session(db.engine) as session:
-                # Check if there are any timers to run and execute them
-                check_timers(app, session, execute=True)
+                db.session = session
+                # maybe overkill, just wanting the app.bot's to pick up the new db session
+                set_db(db)
 
-                if session.query(Timer).count():
+                # Check if there are any timers to run and execute them
+                check_timers(app, db, execute=True)
+
+                if db.session.query(Timer).count():
                     # If there are timers, wait until the earliest timer or an interruption
-                    next_time = session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
+                    next_time = db.session.query(Timer.next_time).order_by(Timer.next_time.asc()).first()[0]
                     now = datetime.now(TZ)
                     time_to_wait = (next_time - now).total_seconds()
                     logger.info(f"Waiting for next signal: {time_to_wait}")
@@ -111,12 +115,12 @@ async def scheduler_in_background(app, db, scheduler_event):
                     time_to_wait = None
                     logger.info("No timers found. Waiting for a timer to be made.")
 
-            # if await event_wait_with_timeout(scheduler_event, time_to_wait):
-            if scheduler_event.wait(time_to_wait):
-                logger.info("RECEIVED INTERRUPTION")
-                # prep for the next cycle which will be the next timer or an interruption
-                scheduler_event.clear()
-                continue
+        # if await event_wait_with_timeout(scheduler_event, time_to_wait):
+        if scheduler_event.wait(time_to_wait):
+            logger.info("RECEIVED INTERRUPTION")
+            # prep for the next cycle which will be the next timer or an interruption
+            scheduler_event.clear()
+            continue
 
 
 def ping_scheduler():
@@ -127,5 +131,5 @@ def ping_scheduler():
 def run_scheduler(app, db):
     # Check for any outdated timers the first time and don't execute them.
     with app.flask_app.app_context():
-        check_timers(app, db.session, execute=False)
+        check_timers(app, db, execute=False)
     run_async_in_thread(scheduler_in_background, app, db, INTERRUPTER)
