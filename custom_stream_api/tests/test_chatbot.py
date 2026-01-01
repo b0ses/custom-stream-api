@@ -126,20 +126,23 @@ def test_get_commands(chatbot):
 
     badge_level = []
     chatbot.parse_message("test_user", "!get_commands", badge_level)
-    expected_response = "Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help"
+    expected_response = (
+        "Commands include: friday, get_aliases, get_commands, get_count_commands, get_list_commands, help"
+    )
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.SUBSCRIBER]
     chatbot.parse_message("test_user", "!get_commands", badge_level)
     expected_response = (
-        "Commands include: get_aliases, get_commands, get_count_commands, get_list_commands, help, " "spongebob, taco"
+        "Commands include: friday, get_aliases, get_commands, get_count_commands, get_list_commands, help, "
+        "spongebob, taco"
     )
     assert chatbot.queue[-1] == expected_response
 
     badge_level = [Badges.VIP]
     chatbot.parse_message("test_user", "!get_commands", badge_level)
     expected_response = (
-        "Commands include: get_alert_commands, get_aliases, get_commands, get_count_commands, "
+        "Commands include: friday, get_alert_commands, get_aliases, get_commands, get_count_commands, "
         "get_list_commands, get_timer_commands, help, random, spongebob, taco"
     )
     assert chatbot.queue[-1] == expected_response
@@ -147,7 +150,7 @@ def test_get_commands(chatbot):
     badge_level = [Badges.BROADCASTER]
     chatbot.parse_message("test_user", "!get_commands", badge_level)
     expected_response = (
-        "Commands include: echo, get_alert_commands, get_aliases, get_commands, "
+        "Commands include: echo, friday, get_alert_commands, get_aliases, get_commands, "
         "get_count_commands, get_list_commands, get_timer_commands, help, random, "
         "spongebob, taco"
     )
@@ -156,7 +159,7 @@ def test_get_commands(chatbot):
     badge_level = []
     chatbot.parse_message("test_user", "!get_commands broadcaster", badge_level)
     expected_response = (
-        "Commands include: echo, get_alert_commands, get_aliases, get_commands, "
+        "Commands include: echo, friday, get_alert_commands, get_aliases, get_commands, "
         "get_count_commands, get_list_commands, get_timer_commands, help, random, "
         "spongebob, taco"
     )
