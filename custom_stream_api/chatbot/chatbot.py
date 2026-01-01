@@ -1,6 +1,7 @@
 """
 Service agnostic chatbot to work with the web app
 """
+
 import os
 import csv
 import logging
@@ -697,18 +698,17 @@ class ChatBot:
         if date is None:
             date = datetime.today().date()
         else:
-            date = datetime.strptime(date, '%m/%d/%Y')
+            date = datetime.strptime(date, "%m/%d/%Y")
 
-        fridays_csv_path = os.path.join(APP_DIR, 'chatbot', 'David Lynch Weather Reports.csv')
-        default = 'https://www.youtube.com/watch?v=5Ib_PrnSi50'
+        fridays_csv_path = os.path.join(APP_DIR, "chatbot", "David Lynch Weather Reports.csv")
+        default = "https://www.youtube.com/watch?v=5Ib_PrnSi50"
 
         def match_date(date):
-            return f'{date.month}/{date.day}'
+            return f"{date.month}/{date.day}"
 
-        with open(fridays_csv_path, 'r') as fridays_csv:
+        with open(fridays_csv_path, "r") as fridays_csv:
             reader = csv.DictReader(fridays_csv)
-            mapping = {match_date(datetime.strptime(row['friday'], '%m/%d/%Y')): row['url']
-                       for row in reader}
+            mapping = {match_date(datetime.strptime(row["friday"], "%m/%d/%Y")): row["url"] for row in reader}
 
         self.chat(mapping.get(match_date(date), default))
 
