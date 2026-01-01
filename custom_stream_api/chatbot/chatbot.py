@@ -2,6 +2,8 @@
 Service agnostic chatbot to work with the web app
 """
 
+import os
+import csv
 import logging
 import time
 import re
@@ -10,7 +12,7 @@ from datetime import datetime, timedelta
 from functools import partial
 
 from custom_stream_api import settings
-from custom_stream_api.shared import get_app
+from custom_stream_api.shared import get_app, APP_DIR
 from custom_stream_api.chatbot.models import Badges, BADGE_LEVELS, BADGE_NAMES
 from custom_stream_api.chatbot import aliases, timers
 from custom_stream_api.counts import counts
@@ -194,6 +196,12 @@ class ChatBot:
                 "format": r"^!taco\s+\S+$",
                 "help": "!taco [to_user]",
                 "callback": lambda text, user, badges: self.taco(user, text),
+            },
+            "friday": {
+                "badge": Badges.CHAT,
+                "format": r"^!friday$",
+                "help": "!friday",
+                "callback": lambda text, user, badges: self.friday(),
             },
         }
 
@@ -685,6 +693,24 @@ class ChatBot:
         self.chat(f"/me {from_user} aggressively hurls a :taco: at {to_user}")
         taco_user_count = f"{to_user}_tacos"
         self.chat_count_output(taco_user_count, counts.add_to_count(taco_user_count)),
+
+    def friday(self, date=None):
+        if date is None:
+            date = datetime.today().date()
+        else:
+            date = datetime.strptime(date, "%m/%d/%Y")
+
+        fridays_csv_path = os.path.join(APP_DIR, "chatbot", "David Lynch Weather Reports.csv")
+        default = "https://www.youtube.com/watch?v=5Ib_PrnSi50"
+
+        def match_date(date):
+            return f"{date.month}/{date.day}"
+
+        with open(fridays_csv_path, "r") as fridays_csv:
+            reader = csv.DictReader(fridays_csv)
+            mapping = {match_date(datetime.strptime(row["friday"], "%m/%d/%Y")): row["url"] for row in reader}
+
+        self.chat(mapping.get(match_date(date), default))
 
     # Helper commands
 
