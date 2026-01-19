@@ -31,7 +31,7 @@ VALID_EFFECTS = ["", "fade"]
 
 def validate_sound(sound=""):
     if sound:
-        matches = re.findall(SOUND_REGEX, sound)
+        matches = re.findall(SOUND_REGEX, sound.lower())
         if not matches:
             raise ValueError(f"Invalid sound url: {sound}")
         else:
@@ -48,7 +48,7 @@ def validate_effect(effect):
 
 def validate_image(image=""):
     if image:
-        matches = re.findall(IMAGE_REXEX, image)
+        matches = re.findall(IMAGE_REXEX, image.lower())
         if not matches:
             raise ValueError(f"Invalid image url: {image}")
         else:
