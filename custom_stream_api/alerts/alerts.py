@@ -404,7 +404,9 @@ def apply_filters(list_query, sort_options, search_attr, sort="name", page=1, li
 
 def get_exploded_alerts(search, sort):
     tag_query = (
-        db.session.query(Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type"))
+        db.session.query(
+            Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type"), Alert.text
+        )
         .join(TagAssociation, TagAssociation.alert_name == Alert.name)
         .join(Tag, TagAssociation.tag_name == Tag.name)
     )
@@ -429,7 +431,7 @@ def browse(
         tag_results = []
         if include_tags:
             tag_query = db.session.query(
-                Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
+                Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type"), Tag.display_name
             )
             if tag_category:
                 tag_category = validate_tag_category(tag_category)
@@ -439,7 +441,10 @@ def browse(
 
         # same thing minus page + limit
         alert_query = db.session.query(
-            Alert.name, Alert.thumbnail, sql.expression.literal_column("'Alert'").label("result_type")
+            Alert.name,
+            Alert.thumbnail,
+            sql.expression.literal_column("'Alert'").label("result_type"),
+            Alert.text.label("display_name"),
         )
         sort_options = {"name": Alert.name, "created_at": Alert.created_at}
         alert_results, _ = apply_filters(alert_query, sort_options, Alert.name, sort=sort, search=search)
@@ -460,7 +465,7 @@ def browse(
         page_metadata = {"total": len(results), "limit": limit, "page": page}
     else:
         tag_query = db.session.query(
-            Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type")
+            Tag.name, Tag.thumbnail, sql.expression.literal_column("'Tag'").label("result_type"), Tag.display_name
         )
         if tag_category:
             tag_category = validate_tag_category(tag_category)
@@ -471,6 +476,9 @@ def browse(
         )
 
     def dict_results(results):
-        return [{"name": result[0], "thumbnail": result[1], "type": result[2]} for result in list(results)]
+        return [
+            {"name": result[0], "thumbnail": result[1], "type": result[2], "display_name": result[3]}
+            for result in list(results)
+        ]
 
     return dict_results(results), page_metadata
