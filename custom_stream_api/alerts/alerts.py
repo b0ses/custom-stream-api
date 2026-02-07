@@ -29,9 +29,13 @@ VALID_EFFECTS = ["", "fade"]
 # HELPERS
 
 
+def standardize_name(name):
+    return re.sub(r"[^\w\d]", "", re.sub(r"\s|-", "_", name.strip().lower()))
+
+
 def validate_sound(sound=""):
     if sound:
-        matches = re.findall(SOUND_REGEX, sound)
+        matches = re.findall(SOUND_REGEX, sound.lower())
         if not matches:
             raise ValueError(f"Invalid sound url: {sound}")
         else:
@@ -48,7 +52,7 @@ def validate_effect(effect):
 
 def validate_image(image=""):
     if image:
-        matches = re.findall(IMAGE_REXEX, image)
+        matches = re.findall(IMAGE_REXEX, image.lower())
         if not matches:
             raise ValueError(f"Invalid image url: {image}")
         else:
@@ -83,20 +87,6 @@ def validate_tag_category(tag_category):
         raise ValueError(f"Invalid tag_category: {tag_category}")
 
 
-def generate_name(name="", text="", sound="", image=""):
-    generated_name = name
-    if not generated_name and text:
-        generated_name = text
-    elif not generated_name and sound:
-        generated_name = validate_sound(sound)
-    elif not generated_name and image:
-        generated_name = validate_image(image)
-    elif not generated_name:
-        raise Exception("Can't generate blank alert name.")
-
-    return generated_name.strip().lower().replace(" ", "_")
-
-
 # ALERTS
 def save_alert(name, text="", sound="", effect="", image="", thumbnail="", tags=None, save=True):
     validate_sound(sound)
@@ -104,7 +94,7 @@ def save_alert(name, text="", sound="", effect="", image="", thumbnail="", tags=
     validate_image(image)
     thumbnail = validate_thumbnail(thumbnail)
 
-    found_alert = db.session.query(Alert).filter_by(name=name).one_or_none()
+    found_alert = db.session.query(Alert).filter_by(name=standardize_name(name)).one_or_none()
     if found_alert:
         found_alert.name = name
         found_alert.text = text
@@ -132,7 +122,7 @@ def save_alert(name, text="", sound="", effect="", image="", thumbnail="", tags=
 
 
 def set_tags(alert_name, tags, save=True):
-    alert = db.session.query(Alert).filter_by(name=alert_name).one_or_none()
+    alert = db.session.query(Alert).filter_by(name=standardize_name(alert_name)).one_or_none()
     if not alert:
         raise Exception(f"Alert not found: {alert_name}")
     if tags is None:
@@ -187,7 +177,7 @@ def set_tags(alert_name, tags, save=True):
 
 def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, chat=None, live=True):
     if name:
-        alert_obj = db.session.query(Alert).filter_by(name=name).one_or_none()
+        alert_obj = db.session.query(Alert).filter_by(name=standardize_name(name)).one_or_none()
         if not alert_obj:
             raise Exception(f"Alert not found: {name}")
         alert_data = alert_obj.as_dict()
@@ -211,23 +201,23 @@ def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, ch
         app.socketio_queue.sync_q.put({"namespace": namespace, "data": socket_data})
 
     if (chat is not None or socket_data["text"]) and getattr(app, "twitch_chatbot", None):
-        # default is the alert text, but for reminders we can overwrite the chatbot text
+        # default is the alert text, but can be overridden (previously for reminders)
         message = socket_data["text"]
         if isinstance(chat, str) and len(chat.strip()) > 0:
             message = chat
         app.twitch_chatbot.chat(f"/me {message}")
-    return socket_data["text"]
+    return socket_data
 
 
 def alert_details(name):
-    found_alert = db.session.query(Alert).filter_by(name=name).one_or_none()
+    found_alert = db.session.query(Alert).filter_by(name=standardize_name(name)).one_or_none()
     if not found_alert:
         raise Exception(f"Alert not found: {name}")
     return found_alert.as_dict()
 
 
 def remove_alert(name):
-    alert = db.session.query(Alert).filter_by(name=name)
+    alert = db.session.query(Alert).filter_by(name=standardize_name(name))
     if alert.count():
         alert_name = alert.one_or_none().name
 
@@ -240,21 +230,29 @@ def remove_alert(name):
 
 
 # TAGS
-def save_tag(name, thumbnail="", category="content", always_chat=False, chat_message=None, alerts=None, save=True):
+def save_tag(
+    name, display_name, thumbnail="", category="content", always_chat=False, chat_message=None, alerts=None, save=True
+):
     thumbnail = validate_thumbnail(thumbnail)
     category = validate_tag_category(category)
 
-    found_tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+    found_tag = db.session.query(Tag).filter_by(name=standardize_name(name)).one_or_none()
 
     if found_tag:
-        found_tag.name = name
+        found_tag.name = standardize_name(name)
+        found_tag.display_name = display_name
         found_tag.thumbnail = thumbnail
         found_tag.always_chat = always_chat
         found_tag.chat_message = chat_message
         found_tag.category = category
     else:
         found_tag = Tag(
-            name=name, thumbnail=thumbnail, category=category, always_chat=always_chat, chat_message=chat_message
+            name=standardize_name(name),
+            display_name=display_name,
+            thumbnail=thumbnail,
+            category=category,
+            always_chat=always_chat,
+            chat_message=chat_message,
         )
         db.session.add(found_tag)
 
@@ -268,11 +266,14 @@ def save_tag(name, thumbnail="", category="content", always_chat=False, chat_mes
 
 
 def set_alerts(tag_name, alerts, save=True):
-    tag = db.session.query(Tag).filter_by(name=tag_name).one_or_none()
+    tag = db.session.query(Tag).filter_by(name=standardize_name(tag_name)).one_or_none()
     if not tag:
         raise Exception(f"Tag not found: {tag_name}")
     if alerts is None:
         raise Exception(f"Alerts must be a list: {alerts}")
+
+    # standardize incoming alerts
+    alerts = [standardize_name(alert) for alert in alerts]
 
     # Ignore any tags that are already associated with this alert
     existing_alerts = (
@@ -313,7 +314,7 @@ def set_alerts(tag_name, alerts, save=True):
 
 
 def tag_alert(name, random_choice=True, hit_socket=True, chat=None, live=True):
-    tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+    tag = db.session.query(Tag).filter_by(name=standardize_name(name)).one_or_none()
     if not tag:
         raise Exception(f"Tag not found: {name}")
     if tag.name != "random":
@@ -336,7 +337,7 @@ def tag_alert(name, random_choice=True, hit_socket=True, chat=None, live=True):
         if isinstance(chat, str) and len(chat.strip()) > 0:
             override_chat_message = chat
 
-    alert_message = alert(chosen_alert, hit_socket=hit_socket, chat=override_chat_message, live=live)
+    alert_data = alert(chosen_alert, hit_socket=hit_socket, chat=override_chat_message, live=live)
 
     # add to counts
     for count in tag.counts:
@@ -344,11 +345,11 @@ def tag_alert(name, random_choice=True, hit_socket=True, chat=None, live=True):
         if twitch_chatbot and (chat or tag.always_chat):
             twitch_chatbot.chat_count_output(count.name, amount)
 
-    return alert_message
+    return alert_data
 
 
 def tag_details(name):
-    found_tag = db.session.query(Tag).filter_by(name=name).one_or_none()
+    found_tag = db.session.query(Tag).filter_by(name=standardize_name(name)).one_or_none()
     if not found_tag:
         raise Exception(f"Tag not found: {name}")
     return found_tag.as_dict()
@@ -358,7 +359,7 @@ def remove_tag(name):
     if name == "random":
         raise Exception("Cannot remove 'random' tag")
 
-    tag = db.session.query(Tag).filter_by(name=name)
+    tag = db.session.query(Tag).filter_by(name=standardize_name(name))
     if tag.count():
         tag_name = tag.one_or_none().name
 
@@ -379,7 +380,7 @@ def apply_filters(list_query, sort_options, search_attr, sort="name", page=1, li
         order_by = sort_options[sort].desc() if sort[0] == "-" else sort_options[sort].asc()
 
     if search and isinstance(search, str):
-        list_query = list_query.filter(func.lower(search_attr).contains(search.lower()))
+        list_query = list_query.filter(func.lower(search_attr).contains(standardize_name(search)))
     if sort:
         list_query = list_query.order_by(order_by)
     if page and limit:

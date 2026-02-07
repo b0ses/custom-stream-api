@@ -63,7 +63,7 @@ def run_discordbot_thread():
     global chatbot_instance
 
     discordbot_queue = janus.Queue()
-    chatbot_instance = ChatBot(queue=discordbot_queue.sync_q)
+    chatbot_instance = ChatBot(bot_type="discord", queue=discordbot_queue.sync_q)
 
     run_async_in_thread(run, client, discordbot_queue.async_q)
 
