@@ -394,7 +394,12 @@ def test_remove_tag(import_tags):
 # BROWSE
 def test_browse(import_tags):
     def dict_alert(alert, tag=False):
-        return {"name": alert.name, "thumbnail": alert.thumbnail, "type": "Tag" if tag else "Alert"}
+        return {
+            "name": alert.name,
+            "thumbnail": alert.thumbnail,
+            "type": "Tag" if tag else "Alert",
+            "display_name": alert.text if not tag else alert.display_name,
+        }
 
     # Dropping the random tag as it messes with the expected ordering
     db.session.query(Tag).filter_by(name="random").delete()
@@ -419,7 +424,7 @@ def test_browse(import_tags):
     assert sans_tags == with_tags[2:]
 
     # when searching and a tag matches, include all the alerts associated with each matched tag
-    results, _ = alerts.browse(search="first_two", include_tags=True)
+    results, _ = alerts.browse(search="first two", include_tags=True)
     assert results == [
         dict_alert(TEST_TAGS[0], tag=True),
         dict_alert(TEST_ALERTS[0], tag=False),
