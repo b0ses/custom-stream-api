@@ -94,9 +94,8 @@ def save_alert_post(**kwargs):
 )
 def alert_post(**kwargs):
     try:
-        alert_text = alerts.alert(**kwargs)
-        if not alert_text:
-            alert_text = "Displayed alert"
+        alert_data = alerts.alert(**kwargs)
+        alert_text = alert_data["text"] if (alert_data and alert_data.get("text") is not None) else "Displayed alert"
     except Exception as e:
         logger.exception(e)
         raise InvalidUsage(str(e))
@@ -158,6 +157,7 @@ def tag_details_get(**kwargs):
 @use_kwargs(
     {
         "name": fields.Str(required=True),
+        "display_name": fields.Str(required=True),
         "thumbnail": fields.Str(allow_none=True),
         "category": fields.Str(required=True, validate=validate.OneOf(alerts.TAG_CATEGORIES)),
         "alerts": fields.List(fields.Str),

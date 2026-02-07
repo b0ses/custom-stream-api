@@ -84,7 +84,7 @@ def run_twitchbot_thread(app, db):
     global chatbot_instance
 
     twitchbot_queue = janus.Queue()
-    chatbot_instance = ChatBot(queue=twitchbot_queue.sync_q)
+    chatbot_instance = ChatBot(bot_type="twitch", queue=twitchbot_queue.sync_q)
 
     run_async_in_thread(run, app, db, twitchbot_queue.async_q)
 

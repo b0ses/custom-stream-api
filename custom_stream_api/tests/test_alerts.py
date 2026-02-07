@@ -69,9 +69,11 @@ def import_tags(import_alerts, session):
     session.commit()
 
     TEST_TAGS = [
-        TagFactory(name="first_two", thumbnail=None, chat_message=None, always_chat=False),
-        TagFactory(name="last_two", thumbnail=None, chat_message="last two!", always_chat=True),
-        TagFactory(name="random", thumbnail=None, chat_message=None, always_chat=False),
+        TagFactory(name="first_two", display_name="first two", thumbnail=None, chat_message=None, always_chat=False),
+        TagFactory(
+            name="last_two", display_name="last two", thumbnail=None, chat_message="last two!", always_chat=True
+        ),
+        TagFactory(name="random", display_name="random", thumbnail=None, chat_message=None, always_chat=False),
     ]
 
     TEST_TAG_ASSOCIATIONS = [
@@ -206,6 +208,20 @@ def test_validate_hex_color():
         assert hex is None
 
 
+def test_standardize_name():
+    # catchall case
+    assert alerts.standardize_name("$A( )b-1!") == "a_b_1"
+
+    # lower and keep numbers
+    assert alerts.standardize_name("ABC123") == "abc123"
+
+    # dashes + spaces => underscores
+    assert alerts.standardize_name("- _") == "___"
+
+    # special chars be gone
+    assert alerts.standardize_name("!@#$%^&*()=+[]{}:;'\",.<>/?") == ""
+
+
 # ALERTS
 def test_save_alert(import_alerts):
     # Adding new alert
@@ -275,7 +291,7 @@ def test_set_tags(import_tags):
 
 def test_alert(import_alerts):
     expected = "Test Text 1"
-    assert alerts.alert(TEST_ALERTS[0].name, hit_socket=False) == expected
+    assert alerts.alert(TEST_ALERTS[0].name, hit_socket=False)["text"] == expected
 
 
 def test_alert_details(import_alerts):
@@ -296,6 +312,7 @@ def test_save_tag(import_tags):
     # Adding new alert
     all_tag_dict = {
         "name": "all_alerts",
+        "display_name": "All Alerts",
         "thumbnail": "http://www.test.com/test_thumbnail.png",
         "category": "reference",
         "always_chat": True,
@@ -313,6 +330,7 @@ def test_save_tag(import_tags):
     # Modifying an existing one
     all_tag_dict = {
         "name": "all_alerts",
+        "display_name": "All Alerts",
         "thumbnail": "",
         "category": "reference",
         "always_chat": False,
@@ -342,16 +360,16 @@ def test_set_alerts(import_tags):
 
 def test_tag_alert(import_counts):
     expected = ["Test Text 2", "Test Text 3"]
-    assert alerts.tag_alert(TEST_TAGS[1].name, hit_socket=False) in expected
+    assert alerts.tag_alert(TEST_TAGS[1].name, hit_socket=False)["text"] in expected
 
     expected = ["Test Text 1", "Test Text 2"]
-    assert alerts.tag_alert(TEST_TAGS[0].name, hit_socket=False) in expected
+    assert alerts.tag_alert(TEST_TAGS[0].name, hit_socket=False)["text"] in expected
 
     expected = ["Test Text 1", "Test Text 2"]
-    assert alerts.tag_alert(TEST_TAGS[0].name, hit_socket=False) in expected
+    assert alerts.tag_alert(TEST_TAGS[0].name, hit_socket=False)["text"] in expected
 
     expected = ["Test Text 1", "Test Text 2", "Test Text 3"]
-    assert alerts.tag_alert("random", hit_socket=False) in expected
+    assert alerts.tag_alert("random", hit_socket=False)["text"] in expected
 
     count = counts.get_count("count1")
     assert count == 39

@@ -25,8 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 class ChatBot:
-    def __init__(self, queue, timeout=15):
+    def __init__(self, bot_type, queue, timeout=15):
         self.app = get_app()
+        self.bot_type = bot_type
         self.name = settings.BOT_NAME
         # driver reads from the queue for responses
         self.queue = queue
@@ -579,9 +580,12 @@ class ChatBot:
         display_text = " ".join(text_args[1:]) if len(text_args) > 1 else None
 
         try:
-            alerts.alert(name=alert_name, chat=display_text)
+            alert_data = alerts.alert(name=alert_name, chat=display_text)
         except Exception:
-            pass
+            alert_data = None
+
+        if self.bot_type == "discord" and alert_data and alert_data.get("sound") is not None:
+            self.chat(alert_data["sound"])
 
     def tag_alert_api(self, user, badges, text):
         if user in lists.get_list("banned_users"):
@@ -595,9 +599,12 @@ class ChatBot:
         display_text = " ".join(text_args[1:]) if len(text_args) > 1 else None
 
         try:
-            alerts.tag_alert(name=tag_name, chat=display_text)
+            alert_data = alerts.tag_alert(name=tag_name, chat=display_text)
         except Exception:
-            pass
+            alert_data = None
+
+        if self.bot_type == "discord" and alert_data and alert_data.get("sound") is not None:
+            self.chat(alert_data["sound"])
 
     def ban(self, ban_user):
         if ban_user:

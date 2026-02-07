@@ -95,7 +95,7 @@ def chatbot(session):
         cls.queue.append(message)
 
     with mock.patch.object(ChatBot, "chat", new=store_chat):
-        bot = ChatBot([], timeout=0.1)
+        bot = ChatBot("", [], timeout=0.1)
         app = get_app()
         app.twitch_chatbot = bot
         yield bot
