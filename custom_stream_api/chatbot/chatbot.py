@@ -579,13 +579,19 @@ class ChatBot:
         alert_name = text_args[0]
         display_text = " ".join(text_args[1:]) if len(text_args) > 1 else None
 
-        try:
-            alert_data = alerts.alert(name=alert_name, chat=display_text)
-        except Exception:
-            alert_data = None
+        twitch_chat = self.bot_type == "twitch"
 
-        if self.bot_type == "discord" and alert_data and alert_data.get("sound") is not None:
-            self.chat(alert_data["sound"])
+        # If from the main twitch chat, run the alert
+        # Otherwise, simulate the alert by responding with the sound url to not cross the streams
+        if twitch_chat:
+            try:
+                alerts.alert(name=alert_name, chat=display_text, hit_socket=twitch_chat)
+            except Exception as e:
+                logger.exception(e)
+        else:
+            alert_data = alerts.alert_details(name=alert_name)
+            if alert_data and alert_data.get("sound") is not None:
+                self.chat(alert_data["sound"])
 
     def tag_alert_api(self, user, badges, text):
         if user in lists.get_list("banned_users"):
