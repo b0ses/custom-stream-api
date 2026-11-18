@@ -200,7 +200,7 @@ def alert(name=None, text="", sound="", effect="", image="", hit_socket=True, ch
         # add to queue, background async process will take it
         app.socketio_queue.sync_q.put({"namespace": namespace, "data": socket_data})
 
-    if (chat is not None or socket_data["text"]) and getattr(app, "twitch_chatbot", None):
+    if live and (chat is not None or socket_data["text"]) and getattr(app, "twitch_chatbot", None):
         # default is the alert text, but can be overridden (previously for reminders)
         message = socket_data["text"]
         if isinstance(chat, str) and len(chat.strip()) > 0:
